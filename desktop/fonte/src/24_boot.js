@@ -15,6 +15,8 @@ window.addEventListener('error',e=>{ console.error('Erro global:',e.error||e.mes
     celLigarDesktop();
     await nvCarregar();
     nvPintarStatus(nvLigada()?'ok':'off');
+    /* por último: confere a versão do sistema (e testa, se acabou de trocar) */
+    verIniciar().catch(e=>console.error('atualizações:',e));
   }catch(err){
     console.error(err);
     document.querySelector('.wrap').innerHTML =

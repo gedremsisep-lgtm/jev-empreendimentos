@@ -2,6 +2,7 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
+const SISTEMA_VERSAO = '1.0.1';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 3;   // v2: tabela 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem)
 const STORES = [
@@ -76,8 +77,8 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','cfg'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem'],
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','ver'],
   c:['hub','obras','crono','mat','mo','rdo','proj','chacara','pes','cel']
 };
 
@@ -100,7 +101,8 @@ function go(pg){
   const R = {hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
-             midia:midiaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender};
+             midia:midiaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
+             ver:verRender};
   safeRender(R[pg], pg);
 }
 async function safeRender(fn,pg){
@@ -154,6 +156,7 @@ function menuMais(el){
   const d = document.getElementById('dropneg');
   if(d.style.display==='block'){ fecharDrops(); return; }
   const its = [['cel','Celular da equipe','ti-device-mobile'],['nuvem','Nuvem da JeV','ti-cloud'],['pes','Cadastros','ti-address-book'],['cfg','Configurações','ti-settings'],
+               ['ver','Atualizações','ti-refresh-dot'],
                ['__bkp','Backup e restauração','ti-database-export'],['__perf','Trocar perfil de acesso','ti-user-cog']];
   d.innerHTML = its.filter(i=>i[0].startsWith('__')||PERMS[CU].includes(i[0])).map(i=>
     `<div onclick="${i[0]==='__bkp'?'fecharDrops();openBackup()':i[0]==='__perf'?'fecharDrops();trocarPerfil()':`go('${i[0]}')`}"

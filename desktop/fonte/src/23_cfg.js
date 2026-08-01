@@ -235,7 +235,10 @@ async function cfgTabSistema(){
         infoprodutos e canais de vídeo.<br>
         Arquivo único, sem instalação e sem servidor. A fonte de ícones e a biblioteca 3D estão embutidas,
         então <b>funciona sem internet</b>, inclusive no canteiro e na chácara.<br>
-        Banco de dados local: IndexedDB (<span class="mono">${DB_NAME}</span> v${DB_VERSION}), ${STORES.length} tabelas.</div>
+        Versão do sistema: <b>${SISTEMA_VERSAO}</b> · Banco de dados local: IndexedDB
+        (<span class="mono">${DB_NAME}</span> v${DB_VERSION}), ${STORES.length} tabelas.</div>
+      <div class="brow" style="margin-top:12px">
+        <button class="btn gh" onclick="go('ver')"><i class="ti ti-refresh-dot"></i>Atualizações e volta atrás</button></div>
     </div></div>`;
 }
 
