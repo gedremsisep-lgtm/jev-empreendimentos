@@ -1,13 +1,18 @@
 name: Publicar o JeV Mobile
 
-# Publica o aplicativo do celular (PWA) no GitHub Pages.
-# O endereço aparece em Settings → Pages depois da primeira execução.
+# Publica no GitHub Pages:
+#   /            → o aplicativo do celular (PWA)
+#   /atualizacao → as versões do sistema, como endereço reserva de atualização
+# Depois de a primeira execução terminar, o endereço aparece em
+# Settings → Pages e fica no formato:
+#   https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/
 
 on:
   push:
     branches: [main]
     paths:
       - 'mobile/**'
+      - 'atualizacao/**'
       - '.github/workflows/publicar-mobile.yml'
   workflow_dispatch:
 
@@ -32,10 +37,17 @@ jobs:
       - name: Baixar o código
         uses: actions/checkout@v4
 
-      - name: Conferir se o aplicativo está montado
+      - name: Montar a pasta que vai para o ar
         run: |
-          test -f mobile/dist/index.html || { echo "Falta mobile/dist"; exit 1; }
-          echo "index.html: $(wc -c < mobile/dist/index.html) bytes"
+          test -f mobile/dist/index.html || { echo "Falta mobile/dist — rode mobile/build.sh e faça o commit"; exit 1; }
+          mkdir -p site
+          cp -r mobile/dist/. site/
+          if [ -d atualizacao ]; then
+            mkdir -p site/atualizacao
+            cp -r atualizacao/. site/atualizacao/
+            echo "atualização publicada: $(ls atualizacao | tr '\n' ' ')"
+          fi
+          echo "celular: $(wc -c < site/index.html) bytes"
 
       - name: Preparar o Pages
         uses: actions/configure-pages@v5
@@ -43,7 +55,7 @@ jobs:
       - name: Empacotar a pasta do aplicativo
         uses: actions/upload-pages-artifact@v3
         with:
-          path: mobile/dist
+          path: site
 
       - name: Publicar
         id: deploy
