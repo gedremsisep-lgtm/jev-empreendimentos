@@ -1,7 +1,7 @@
 {
   "name": "jev-empreendimentos",
   "productName": "JeV Empreendimentos",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Gestão integrada de obras, imóveis, veículos, chácara, produtos e mídia da JeV Empreendimentos",
   "author": {
     "name": "JeV Empreendimentos"
@@ -31,7 +31,9 @@
     },
     "files": [
       "main.js",
+      "atualizacao.js",
       "preload.js",
+      "package.json",
       "app/**/*",
       "!**/*.map"
     ],
@@ -77,12 +79,14 @@
     "publish": [
       {
         "provider": "github",
+        "owner": "gedremsisep-lgtm",
+        "repo": "jev-empreendimentos",
         "releaseType": "release"
       }
     ]
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SEU-USUARIO/jev-empreendimentos.git"
+    "url": "https://github.com/gedremsisep-lgtm/jev-empreendimentos.git"
   }
 }

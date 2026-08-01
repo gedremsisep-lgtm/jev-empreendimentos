@@ -8,8 +8,52 @@ const { app, BrowserWindow, Menu, dialog, shell, ipcMain, session } = require('e
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
-const versoes = require('./atualizacao');
 const pacote = require('./package.json');
+
+/* O motor de versões é um arquivo à parte. Se por qualquer motivo ele não
+   estiver dentro do pacote, o sistema PRECISA abrir assim mesmo — sem
+   atualização automática, mas abrindo. Nunca uma tela de erro no lugar. */
+let versoes;
+let motorOk = true;
+try {
+  versoes = require('./atualizacao');
+} catch (e) {
+  motorOk = false;
+  console.error('motor de versões indisponível:', e && e.message);
+  const semMotor = { ok: false, erro: 'o motor de atualização não veio neste pacote' };
+  versoes = {
+    preparar: () => ({ caminho: path.join(__dirname, 'app', 'index.html') }),
+    estado: () => ({
+      versaoPrograma: app.getVersion(), atual: null, anterior: null, pendente: null,
+      fase: 'ok', emTeste: null, recado: null, automatico: false, fonte: '',
+      fonteCustomizada: false, ultimaChecagem: 0, historico: [], semMotor: true
+    }),
+    procurar: async () => { throw new Error(semMotor.erro); },
+    baixarVersao: async () => { throw new Error(semMotor.erro); },
+    reverter: () => semMotor,
+    validar: () => ({ ok: true, jaValidada: true }),
+    limparRecado: () => true,
+    configurar: () => true,
+    historico: () => [],
+    guardarBackup: () => null,
+    precisaTestar: () => false,
+    cmpVer: () => 0
+  };
+}
+
+/* Rede de segurança final: qualquer erro não tratado no programa não pode
+   virar uma tela preta de erro. Registra, avisa em português e segue. */
+process.on('uncaughtException', err => {
+  console.error('erro não tratado:', err);
+  try {
+    if (app.isReady() && !BrowserWindow.getAllWindows().length) criarJanela();
+    dialog.showErrorBox('JeV Empreendimentos',
+      'Aconteceu um erro interno no programa, mas seus dados estão a salvo.\n\n' +
+      'Detalhe técnico: ' + ((err && err.message) || err) +
+      '\n\nSe a tela não abrir, use Atualizações → Reverter para a versão anterior, ' +
+      'ou instale novamente a última versão.');
+  } catch (e) {}
+});
 
 const ehWindows = process.platform === 'win32';
 let janela = null;
@@ -148,7 +192,11 @@ async function procurarSistema(manual) {
       }
       return r;
     }
-    if (janela) janela.webContents.send('jev-sistema', { fase: 'encontrada', info: r.info });
+    const e = versoes.estado(pacote);
+    if (janela) janela.webContents.send('jev-sistema', {
+      fase: 'encontrada', info: r.info,
+      automatico: !manual && e.automatico !== false   // sozinho: baixa em segundo plano
+    });
     return r;
   } catch (e) {
     if (manual) {
@@ -472,8 +520,10 @@ app.whenReady().then(() => {
   configurarAtualizacao();
 
   if (process.env.JEV_ROTEIRO) {
-    require('./teste_roteiro').rodar(process.env.JEV_ROTEIRO, janela, versoes, app)
-      .catch(e => { console.error(e); app.exit(1); });
+    try {
+      require('./teste_roteiro').rodar(process.env.JEV_ROTEIRO, janela, versoes, app)
+        .catch(e => { console.error(e); app.exit(1); });
+    } catch (e) { console.error('roteiro de teste ausente:', e && e.message); }
     return;
   }
 
