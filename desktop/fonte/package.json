@@ -1,0 +1,9 @@
+{
+  "name": "jev-fonte",
+  "private": true,
+  "description": "Bibliotecas usadas para montar o sistema: fonte de ícones, three.js e o gerador de QR.",
+  "devDependencies": {
+    "@tabler/icons-webfont": "3.46.0",
+    "three": "0.128.0"
+  }
+}

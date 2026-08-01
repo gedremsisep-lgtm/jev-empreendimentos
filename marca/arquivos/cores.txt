@@ -1,0 +1,11 @@
+Petróleo e Cobre
+
+Cor principal (selo).......: #123B4E
+Cor de destaque (letras)...: #E09659
+Texto......................: #0F3243
+Texto secundário...........: #6C8794
+Fundo claro................: #F2F1EC
+Fundo escuro...............: #0A2531
+
+Tipografia: Poppins (Bold para JeV, Medium para EMPREENDIMENTOS).
+Nos arquivos SVG o texto já está em curvas — abre igual em qualquer computador.

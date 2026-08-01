@@ -1,0 +1,27 @@
+{
+  "name": "JeV Mobile — Empreendimentos",
+  "short_name": "JeV Mobile",
+  "description": "Preencher, controlar e encaminhar as guias de obra, imóveis, veículos, chácara, produtos e mídia da JeV Empreendimentos — funciona sem internet.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#123B4E",
+  "theme_color": "#123B4E",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Diário de obra", "short_name": "Diário", "url": "./index.html?novo=rdo",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Lançar despesa", "short_name": "Despesa", "url": "./index.html?novo=despesa",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Encaminhar guias", "short_name": "Encaminhar", "url": "./index.html?pg=saida",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

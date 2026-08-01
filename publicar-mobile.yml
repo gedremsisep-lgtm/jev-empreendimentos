@@ -1,0 +1,52 @@
+name: Publicar o JeV Mobile
+
+# Publica o aplicativo do celular (PWA) no GitHub Pages.
+# Depois de a primeira execução terminar, o endereço aparece em
+# Settings → Pages e fica no formato:
+#   https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/publicar-mobile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    name: Enviar o PWA para o GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Conferir se o aplicativo está montado
+        run: |
+          test -f mobile/dist/index.html || { echo "Falta mobile/dist — rode mobile/build.sh e faça o commit"; exit 1; }
+          echo "index.html: $(wc -c < mobile/dist/index.html) bytes"
+
+      - name: Preparar o Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empacotar a pasta do aplicativo
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: mobile/dist
+
+      - name: Publicar
+        id: deploy
+        uses: actions/deploy-pages@v4

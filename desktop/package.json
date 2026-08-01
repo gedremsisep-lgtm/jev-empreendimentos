@@ -1,0 +1,88 @@
+{
+  "name": "jev-empreendimentos",
+  "productName": "JeV Empreendimentos",
+  "version": "1.0.0",
+  "description": "Gestão integrada de obras, imóveis, veículos, chácara, produtos e mídia da JeV Empreendimentos",
+  "author": {
+    "name": "JeV Empreendimentos"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "publicar": "electron-builder --win --publish always"
+  },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "24.13.3"
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
+  },
+  "build": {
+    "appId": "br.com.jev.empreendimentos",
+    "productName": "JeV Empreendimentos",
+    "copyright": "© JeV Empreendimentos",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*",
+      "!**/*.map"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "jev",
+        "name": "Pacote da JeV",
+        "description": "Guias e catálogo do JeV Mobile",
+        "icon": "build/icon.ico",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "JeV-Empreendimentos-Instalador-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JeV Empreendimentos",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "displayLanguageSelector": false,
+      "installerLanguages": [
+        "pt_BR"
+      ],
+      "language": "1046"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SEU-USUARIO/jev-empreendimentos.git"
+  }
+}

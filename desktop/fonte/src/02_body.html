@@ -1,0 +1,128 @@
+<!-- ================= TOPO ================= -->
+<div class="top">
+  <div class="lgw" onclick="go('hub')" title="Início">
+    <div class="lgm"><svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg" aria-label="JeV" style="display:block"><defs><linearGradient id="ftopo" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#1C5872"/><stop offset="1" stop-color="#123B4E"/></linearGradient><linearGradient id="mtopo" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#E09659"/><stop offset="1" stop-color="#C2703D"/></linearGradient></defs><g><rect x="0.00" y="0.00" width="36" height="36" rx="8.46" fill="url(#ftopo)"/><g fill="url(#mtopo)"><path d="M9.249479999999998 8.593379999999996V17.971739999999997Q9.249479999999998 20.149559999999997 8.023229999999998 21.32676Q6.796979999999998 22.50396 4.717259999999997 22.50396Q2.539439999999997 22.50396 1.2248999999999968 21.267899999999997Q-0.08964000000000338 20.031839999999995 -0.08964000000000338 17.755919999999996H3.245759999999997Q3.245759999999997 18.619199999999996 3.598919999999997 19.060649999999995Q3.952079999999997 19.5021 4.619159999999997 19.5021Q5.2273799999999975 19.5021 5.560919999999998 19.109699999999997Q5.894459999999997 18.717299999999998 5.894459999999997 17.971739999999997V8.593379999999996Z M21.943619999999996 17.697059999999997H14.350679999999997Q14.429159999999998 18.717299999999998 15.007949999999997 19.25685Q15.586739999999997 19.7964 16.4304 19.7964Q17.686079999999997 19.7964 18.176579999999998 18.736919999999998H21.747419999999998Q21.472739999999998 19.816019999999998 20.75661 20.679299999999998Q20.04048 21.542579999999997 18.96138 22.033079999999998Q17.882279999999998 22.52358 16.548119999999997 22.52358Q14.939279999999997 22.52358 13.683599999999997 21.83688Q12.427919999999997 21.15018 11.721599999999997 19.874879999999997Q11.015279999999997 18.599579999999996 11.015279999999997 16.892639999999997Q11.015279999999997 15.185699999999997 11.711789999999997 13.910399999999996Q12.408299999999997 12.635099999999996 13.663979999999997 11.948399999999996Q14.919659999999997 11.261699999999996 16.548119999999997 11.261699999999996Q18.13734 11.261699999999996 19.373399999999997 11.928779999999996Q20.60946 12.595859999999997 21.30597 13.831919999999997Q22.00248 15.067979999999997 22.00248 16.71606Q22.00248 17.186939999999996 21.943619999999996 17.697059999999997ZM18.568979999999996 15.833159999999996Q18.568979999999996 14.969879999999996 17.980379999999997 14.459759999999996Q17.391779999999997 13.949639999999997 16.508879999999998 13.949639999999997Q15.665219999999998 13.949639999999997 15.086429999999998 14.440139999999996Q14.507639999999999 14.930639999999997 14.370299999999997 15.833159999999996Z M36.42318 8.593379999999996 31.537799999999997 22.366619999999998H27.33912L22.45374 8.593379999999996H26.02458L29.43846 18.991979999999998L32.87196 8.593379999999996Z"/><rect x="8.64" y="25.97" width="3.67" height="2.16" rx="1.08"/><rect x="13.32" y="25.97" width="5.18" height="2.16" rx="1.08"/><rect x="19.51" y="25.97" width="7.85" height="2.16" rx="1.08"/></g></g></svg></div>
+    <div class="lgt"><b>JeV Empreendimentos</b><span>Gestão integrada</span></div>
+  </div>
+  <div class="mnav" id="mnav">
+    <button id="mn-hub"  onclick="go('hub')"><i class="ti ti-layout-grid"></i>Início</button>
+    <button id="mn-fin"  onclick="go('fin')"><i class="ti ti-wallet"></i>Financeiro</button>
+    <button id="mn-neg"  onclick="menuNegocios(this)"><i class="ti ti-briefcase"></i>Negócios<i class="ti ti-chevron-down" style="font-size:14px"></i></button>
+    <button id="mn-pes"  onclick="go('pes')"><i class="ti ti-address-book"></i>Cadastros</button>
+    <button id="mn-rel"  onclick="go('rel')"><i class="ti ti-file-analytics"></i>Relatórios</button>
+    <button id="mn-cfg"  onclick="go('cfg')"><i class="ti ti-settings"></i>Configurações</button>
+  </div>
+  <button class="tbt" id="nv-status" onclick="go('nuvem')" title="Nuvem da JeV"><i class="ti ti-cloud-off"></i></button>
+  <button class="tbt" onclick="go('cel')" title="Celular da equipe — guias recebidas" style="position:relative">
+    <i class="ti ti-device-mobile"></i>
+    <span data-cel-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--gold);color:#0A2531;
+      font-size:9.5px;font-weight:900;border-radius:9px;padding:0 5px;line-height:15px">0</span></button>
+  <button class="tbt" onclick="buscaGlobal()" title="Buscar"><i class="ti ti-search"></i></button>
+  <button class="tbt" onclick="openBackup()" title="Backup e restauração"><i class="ti ti-database-export"></i></button>
+  <div class="tperfil" onclick="trocarPerfil()" title="Trocar perfil de acesso">
+    <div class="av" id="perf-av">G</div><span id="perf-nm">Gestão</span>
+  </div>
+</div>
+
+<!-- ================= BARRA DE CONTEXTO ================= -->
+<div class="ctxbar" id="ctxbar"></div>
+
+<!-- ================= MENU NEGÓCIOS (dropdown) ================= -->
+<div id="dropneg" style="position:fixed;z-index:90;display:none;background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;box-shadow:var(--sh3);padding:7px;min-width:250px"></div>
+
+<!-- ================= MAIN ================= -->
+<main class="main" id="main">
+<div class="wrap">
+  <div class="pg on" id="pg-hub"><div id="hub-root"></div></div>
+  <div class="pg" id="pg-fin"><div id="fin-root"></div></div>
+
+  <div class="pg" id="pg-obras"><div id="obras-root"></div></div>
+  <div class="pg" id="pg-orc"><div id="orc-root"></div></div>
+  <div class="pg" id="pg-crono"><div id="crono-root"></div></div>
+  <div class="pg" id="pg-proj"><div id="proj-root"></div></div>
+  <div class="pg" id="pg-mat"><div id="mat-root"></div></div>
+  <div class="pg" id="pg-mo"><div id="mo-root"></div></div>
+  <div class="pg" id="pg-rdo"><div id="rdo-root"></div></div>
+  <div class="pg" id="pg-med"><div id="med-root"></div></div>
+
+  <div class="pg" id="pg-imoveis"><div id="imoveis-root"></div></div>
+  <div class="pg" id="pg-veiculos"><div id="veiculos-root"></div></div>
+  <div class="pg" id="pg-chacara"><div id="chacara-root"></div></div>
+  <div class="pg" id="pg-produtos"><div id="produtos-root"></div></div>
+  <div class="pg" id="pg-info"><div id="info-root"></div></div>
+  <div class="pg" id="pg-midia"><div id="midia-root"></div></div>
+
+  <div class="pg" id="pg-cel"><div id="cel-root"></div></div>
+  <div class="pg" id="pg-nuvem"><div id="nuvem-root"></div></div>
+  <div class="pg" id="pg-pes"><div id="pes-root"></div></div>
+  <div class="pg" id="pg-rel"><div id="rel-root"></div></div>
+  <div class="pg" id="pg-cfg"><div id="cfg-root"></div></div>
+</div>
+</main>
+
+<!-- ================= BOTTOM NAV ================= -->
+<div class="bnav" id="bnav">
+  <button class="b on" id="bn-hub" onclick="go('hub')"><i class="ti ti-layout-grid"></i>Início</button>
+  <button class="b" id="bn-fin" onclick="go('fin')"><i class="ti ti-wallet"></i>Financeiro</button>
+  <button class="b" onclick="menuNegocios(this)"><i class="ti ti-briefcase"></i>Negócios</button>
+  <button class="b" id="bn-rel" onclick="go('rel')"><i class="ti ti-file-analytics"></i>Relatórios</button>
+  <button class="b" onclick="menuMais(this)"><i class="ti ti-dots"></i>Mais</button>
+</div>
+
+<!-- ================= MODAIS ================= -->
+<div class="mk" id="mk-form" onclick="if(event.target===this)closeModal('mk-form')">
+  <div class="mw" id="mkf-w">
+    <div class="mh"><i class="ti ti-edit" id="mkf-ic"></i><span id="mkf-title">Formulário</span><span class="sp"></span>
+      <button class="ib" onclick="closeModal('mk-form')"><i class="ti ti-x"></i></button></div>
+    <div class="mb" id="mkf-body"></div>
+    <div class="mf" id="mkf-foot"></div>
+  </div>
+</div>
+
+<div class="mk" id="mk-conf" onclick="if(event.target===this)closeModal('mk-conf')">
+  <div class="mw sm">
+    <div class="mh"><i class="ti ti-alert-triangle" style="color:var(--red)"></i><span id="mkc-title">Confirmar</span></div>
+    <div class="mb" id="mkc-body"></div>
+    <div class="mf"><button class="btn gh" onclick="closeModal('mk-conf')">Cancelar</button>
+      <button class="btn rd" id="mkc-ok">Confirmar</button></div>
+  </div>
+</div>
+
+<div class="mk" id="mk-print" onclick="if(event.target===this)closeModal('mk-print')">
+  <div class="mw lg">
+    <div class="mh no-print"><i class="ti ti-printer"></i>Pré-visualização de Impressão<span class="sp"></span>
+      <button class="btn sm" onclick="window.print()"><i class="ti ti-printer"></i>Imprimir / PDF</button>
+      <button class="ib" onclick="closeModal('mk-print')"><i class="ti ti-x"></i></button></div>
+    <div class="mb" id="mkp-body"></div>
+  </div>
+</div>
+
+<div class="mk" id="mk-bkp" onclick="if(event.target===this)closeModal('mk-bkp')">
+  <div class="mw sm">
+    <div class="mh"><i class="ti ti-database-export"></i>Backup e Restauração<span class="sp"></span>
+      <button class="ib" onclick="closeModal('mk-bkp')"><i class="ti ti-x"></i></button></div>
+    <div class="mb">
+      <div class="al ai"><i class="ti ti-info-circle"></i><div>Os dados ficam gravados <b>neste navegador</b>.
+        Baixe o backup toda semana e guarde em nuvem ou pendrive. Para usar em outro aparelho, restaure o backup lá.</div></div>
+      <div id="bkp-stat"></div>
+      <div class="brow">
+        <button class="btn gn" onclick="exportBackup()"><i class="ti ti-download"></i>Baixar backup (.json)</button>
+        <button class="btn gh" onclick="document.getElementById('bkp-file').click()"><i class="ti ti-upload"></i>Restaurar backup</button>
+        <input type="file" id="bkp-file" accept=".json" class="hide" onchange="importBackup(this)">
+      </div>
+      <div class="tt" style="margin-top:8px">Backups do sistema antigo de obras (SISEP OBRAS) também podem ser restaurados aqui — o sistema converte os dados automaticamente.</div>
+      <div class="divider"></div>
+      <button class="btn rd blk" onclick="confirmar('Apagar TODOS os dados?','Remove tudo que está gravado neste navegador: negócios, financeiro, cadastros e documentos. Não há como desfazer.',wipeAll)">
+        <i class="ti ti-trash"></i>Apagar todos os dados</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap" style="position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:300;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none"></div>
+
+<script src="XXTHREEXX"></script>
+<script src="XXQRCODEXX"></script>
+<script src="XXJSQRXX"></script>
+<script>
