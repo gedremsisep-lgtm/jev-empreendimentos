@@ -127,6 +127,9 @@ async function verIniciar(){
       if(d.fase === 'abrir-tela') return go('ver');
       if(d.fase === 'encontrada'){
         VS.achada = d.info;
+        /* com a verificação automática ligada ele já baixa sozinho, em segundo
+           plano — você não precisa fazer nada, nem parar o que está fazendo */
+        if(d.automatico){ verBaixar(true); return; }
         verFaixa(`<i class="ti ti-download" style="font-size:19px"></i>
           <span>Existe uma versão nova do sistema — <b>${esc(d.info.versao)}</b>.</span>
           <span style="flex:1"></span>
@@ -188,9 +191,10 @@ async function verIniciar(){
   /* c) tem versão baixada esperando o reinício */
   if(e.pendente){
     verFaixa(`<i class="ti ti-refresh" style="font-size:19px"></i>
-      <span>A versão <b>${esc(e.pendente.versao)}</b> está baixada. Ela entra quando o sistema reiniciar.</span>
+      <span>A versão <b>${esc(e.pendente.versao)}</b> já está baixada e conferida.
+        <b>Ela entra sozinha</b> na próxima vez que você fechar e abrir o sistema — não precisa instalar nada.</span>
       <span style="flex:1"></span>
-      <button class="btn sm" style="background:#fff;color:#123B4E" onclick="verAplicar()">Reiniciar e aplicar</button>
+      <button class="btn sm" style="background:#fff;color:#123B4E" onclick="verAplicar()">Aplicar agora (2 segundos)</button>
       <button class="ib" style="color:#fff;background:transparent;border-color:rgba(255,255,255,.45)" onclick="verFecharFaixa()"><i class="ti ti-x"></i></button>`,
       'var(--brand)');
   }
@@ -221,9 +225,9 @@ async function verProcurar(silencioso){
   if(PG === 'ver') verRender();
 }
 
-async function verBaixar(){
+async function verBaixar(discreto){
   const app = APP();
-  if(!VS.achada){ toast('Nada para baixar.','aw'); return; }
+  if(!VS.achada){ if(!discreto) toast('Nada para baixar.','aw'); return; }
   if(!app){
     /* no navegador: abre o arquivo novo para o usuário salvar por cima */
     const url = /^https?:/i.test(VS.achada.arquivo) ? VS.achada.arquivo : verFonte()+VS.achada.arquivo;
@@ -231,20 +235,21 @@ async function verBaixar(){
     toast('Baixe o arquivo e abra ele no lugar do atual. Seus dados continuam onde estão.');
     return;
   }
-  VS.ocupado = true; verRender();
+  VS.ocupado = true; if(!discreto) verRender();
   const r = await app.vsBaixar(VS.achada);
   VS.ocupado = false;
-  if(!r.ok){ toast('Não consegui baixar: '+r.erro,'ae'); verRender(); return; }
+  if(!r.ok){ if(!discreto) toast('Não consegui baixar: '+r.erro,'ae'); verRender(); return; }
   /* antes de qualquer troca: carimbo do que existe hoje e um backup completo,
      guardado na pasta do aplicativo. Vale mesmo se você só fechar e abrir. */
   await verGuardarRede(r.versao);
   VS.estado = await app.vsEstado();
-  toast('Versão '+r.versao+' baixada. Reinicie para aplicar.','ag');
-  verRender();
+  if(!discreto) toast('Versão '+r.versao+' baixada.','ag');
+  if(PG === 'ver') verRender();
   verFaixa(`<i class="ti ti-refresh" style="font-size:19px"></i>
-    <span>Versão <b>${esc(r.versao)}</b> baixada e conferida. Ela entra quando o sistema reiniciar.</span>
+    <span>Versão <b>${esc(r.versao)}</b> baixada e conferida.
+      <b>Ela entra sozinha</b> na próxima vez que você fechar e abrir o sistema — não precisa instalar nada.</span>
     <span style="flex:1"></span>
-    <button class="btn sm" style="background:#fff;color:#123B4E" onclick="verAplicar()">Reiniciar e aplicar</button>
+    <button class="btn sm" style="background:#fff;color:#123B4E" onclick="verAplicar()">Aplicar agora (2 segundos)</button>
     <button class="ib" style="color:#fff;background:transparent;border-color:rgba(255,255,255,.45)" onclick="verFecharFaixa()"><i class="ti ti-x"></i></button>`, 'var(--brand)');
 }
 
@@ -353,10 +358,12 @@ async function verRender(){
   const pendente = (e.pendente) ? `<div class="card" style="border-color:var(--brand)">
     <div class="hd" style="background:var(--brand-bg)"><i class="ti ti-clock-play"></i>
       Versão ${esc(e.pendente.versao)} baixada, esperando o reinício</div><div class="bd">
-      <div class="al ai"><i class="ti ti-info-circle"></i><div>Ao reiniciar, o sistema abre com a versão nova e faz o
-        <b>autoteste</b>: confere o banco de dados, o número de registros e abre todas as telas. Passou, vira oficial.
-        Não passou, ele volta sozinho para a ${esc(atual)}.</div></div>
-      <div class="brow"><button class="btn gn" onclick="verAplicar()"><i class="ti ti-refresh"></i>Reiniciar e aplicar agora</button></div>
+      <div class="al ai"><i class="ti ti-info-circle"></i><div>Não precisa fazer nada: da próxima vez que você
+        <b>fechar e abrir</b> o sistema, ele já abre na versão nova. Não há instalador, não há espera.<br>
+        Ao abrir, ele faz o <b>autoteste</b> — confere o banco de dados, o número de registros e todas as telas.
+        Passou, vira oficial. Não passou, ele volta sozinho para a ${esc(atual)}.</div></div>
+      <div class="brow"><button class="btn gn" onclick="verAplicar()"><i class="ti ti-refresh"></i>Aplicar agora, sem esperar</button></div>
+      <div class="tt" style="margin-top:8px">O botão acima só adianta as coisas: fecha e abre o sistema em uns 2 segundos.</div>
     </div></div>` : '';
 
   /* ---- reverter ---- */
@@ -392,10 +399,12 @@ async function verRender(){
   /* ---- como funciona + ajustes ---- */
   const ajustes = `<div class="card"><div class="hd"><i class="ti ti-settings-automation"></i>Como as atualizações chegam</div><div class="bd">
     <div style="font-size:12.5px;line-height:1.8;color:var(--text2);margin-bottom:12px">
-      O sistema inteiro é um arquivo só. Quando sai uma melhoria, o aplicativo baixa esse arquivo, guarda de lado e
-      <b>só troca no próximo reinício</b>. Ao abrir, ele confere sozinho o banco de dados, o número de registros e todas
-      as telas. Se algo estiver errado — ou se o sistema nem abrir — ele volta para a versão anterior sem você pedir.
-      A versão que sai fica guardada, e o botão de reverter acima desfaz a troca a qualquer momento.
+      O sistema inteiro é um arquivo só. Quando sai uma melhoria, o aplicativo <b>baixa sozinho, em segundo plano</b>,
+      sem atrapalhar o que você está fazendo, e guarda de lado. A troca acontece <b>na próxima vez que você fechar e
+      abrir o sistema</b> — nunca no meio do trabalho, e nunca com instalador.<br>
+      Ao abrir, ele confere sozinho o banco de dados, o número de registros e todas as telas. Se algo estiver errado —
+      ou se o sistema nem abrir — ele volta para a versão anterior sem você pedir. A versão que sai fica guardada, e o
+      botão de reverter acima desfaz a troca a qualquer momento.
     </div>
     <div class="fr2">
       <div class="fg"><label>De onde vêm as atualizações</label>
