@@ -1,17 +1,22 @@
 /* =========================================================================
    JeV Empreendimentos — aplicativo de janela (Electron)
    Abre o sistema em janela própria, com menus em português, atalhos,
-   associação com os arquivos .jev e atualização automática de versão.
+   associação com os arquivos .jev, atualização do sistema (com teste e
+   volta atrás) e atualização do próprio programa.
    ========================================================================= */
 const { app, BrowserWindow, Menu, dialog, shell, ipcMain, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
+const versoes = require('./atualizacao');
+const pacote = require('./package.json');
 
 const ehWindows = process.platform === 'win32';
 let janela = null;
 let arquivoPendente = null;      // .jev aberto com dois cliques antes de a janela existir
 let checandoManual = false;
+let caminhoSistema = path.join(__dirname, 'app', 'index.html');
+let vigia = null;                // relógio que vigia a versão em teste
 
 /* uma instância só — abrir um .jev com o app aberto usa a janela existente */
 if (!app.requestSingleInstanceLock()) {
@@ -29,6 +34,11 @@ function arquivoDaLinhaDeComando(argv) {
   return a && fs.existsSync(a) ? a : null;
 }
 
+function reiniciar() {
+  if (!process.env.JEV_SEM_RELANCAR) app.relaunch();   // desligado só nos testes
+  app.exit(0);
+}
+
 function criarJanela() {
   janela = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1024, minHeight: 640,
@@ -44,12 +54,22 @@ function criarJanela() {
     }
   });
 
-  janela.loadFile(path.join(__dirname, 'app', 'index.html'));
+  janela.loadFile(caminhoSistema);
 
   janela.once('ready-to-show', () => {
     janela.maximize();
     janela.show();
     if (arquivoPendente) { enviarArquivo(arquivoPendente); arquivoPendente = null; }
+  });
+
+  /* se a versão nova nem carrega, volta atrás sem esperar o autoteste */
+  janela.webContents.on('did-fail-load', (_e, cod, desc) => {
+    if (versoes.precisaTestar() && cod !== -3) {
+      voltarAtrasSozinho('a tela do sistema não carregou (' + desc + ')');
+    }
+  });
+  janela.webContents.on('render-process-gone', () => {
+    if (versoes.precisaTestar()) voltarAtrasSozinho('o sistema fechou sozinho ao abrir');
   });
 
   /* links externos abrem no navegador, não dentro do sistema */
@@ -78,6 +98,69 @@ function enviarArquivo(caminho) {
     else arquivoPendente = caminho;
   } catch (e) {
     dialog.showErrorBox('Não consegui abrir o arquivo', e.message);
+  }
+}
+
+/* =========================================================================
+   VERSÃO EM TESTE — vigia e volta atrás
+   ========================================================================= */
+function voltarAtrasSozinho(motivo) {
+  if (vigia) { clearTimeout(vigia); vigia = null; }
+  const r = versoes.reverter(motivo, { descartar: true });
+  if (!r.ok) return;
+  if (process.env.JEV_SEM_RELANCAR) { reiniciar(); return; }   // nos testes não abre caixa
+  dialog.showMessageBoxSync({
+    type: 'warning',
+    title: 'Atualização desfeita',
+    message: 'A versão nova não passou no teste.',
+    detail: 'Motivo: ' + motivo + '\n\nO sistema vai voltar sozinho para a versão ' +
+            r.versao + ', que já estava funcionando. Seus dados não foram tocados.',
+    buttons: ['Reabrir o sistema']
+  });
+  reiniciar();
+}
+
+function ligarVigia() {
+  if (!versoes.precisaTestar()) return;
+  /* o sistema tem 90 segundos para abrir e dizer que passou no autoteste */
+  const ms = Number(process.env.JEV_VIGIA_MS) || 90000;
+  vigia = setTimeout(() => {
+    voltarAtrasSozinho('o sistema não respondeu ao teste em ' + Math.round(ms / 1000) + ' segundos');
+  }, ms);
+}
+
+/* =========================================================================
+   ATUALIZAÇÃO DO SISTEMA (o arquivo do sistema, sem reinstalar nada)
+   ========================================================================= */
+async function procurarSistema(manual) {
+  try {
+    const r = await versoes.procurar(pacote);
+    if (!r.temNova) {
+      if (manual) {
+        dialog.showMessageBox(janela, {
+          type: 'info', title: 'Atualização do sistema',
+          message: r.jaBaixada
+            ? 'A versão ' + r.jaBaixada + ' já está baixada, esperando você reiniciar.'
+            : 'Você já está na versão mais nova.',
+          detail: 'Versão em uso: ' + r.versaoAtual,
+          buttons: ['Fechar']
+        });
+      }
+      return r;
+    }
+    if (janela) janela.webContents.send('jev-sistema', { fase: 'encontrada', info: r.info });
+    return r;
+  } catch (e) {
+    if (manual) {
+      dialog.showMessageBox(janela, {
+        type: 'info', title: 'Atualização do sistema',
+        message: 'Não consegui verificar agora.',
+        detail: 'Confira a conexão com a internet e tente de novo.\n\n' + (e.message || ''),
+        buttons: ['Fechar']
+      });
+    }
+    if (janela) janela.webContents.send('jev-sistema', { fase: 'erro', erro: String(e.message || e) });
+    throw e;
   }
 }
 
@@ -133,23 +216,31 @@ function montarMenu() {
       ]
     },
     {
-      label: 'Ajuda',
+      label: 'Atualizações',
       submenu: [
         {
-          label: 'Procurar atualização',
-          click: () => {
-            checandoManual = true;
-            autoUpdater.checkForUpdates().catch(e => {
-              checandoManual = false;
-              dialog.showMessageBox(janela, {
-                type: 'info', title: 'Atualização',
-                message: 'Não consegui verificar agora.',
-                detail: 'Confira sua conexão com a internet e tente de novo.\n\n' + (e.message || ''),
-                buttons: ['Fechar']
-              });
-            });
-          }
+          label: 'Procurar atualização do sistema',
+          click: () => { procurarSistema(true).catch(() => {}); }
         },
+        {
+          label: 'Abrir a tela de Atualizações',
+          click: () => janela && janela.webContents.send('jev-sistema', { fase: 'abrir-tela' })
+        },
+        { type: 'separator' },
+        {
+          label: 'Reverter para a versão anterior…',
+          click: () => menuReverter()
+        },
+        { type: 'separator' },
+        {
+          label: 'Procurar atualização do programa',
+          click: () => checarPrograma()
+        }
+      ]
+    },
+    {
+      label: 'Ajuda',
+      submenu: [
         {
           label: 'Onde ficam meus dados',
           click: () => dialog.showMessageBox(janela, {
@@ -157,7 +248,9 @@ function montarMenu() {
             message: 'Tudo fica gravado neste computador.',
             detail: 'O sistema não usa servidor: os dados ficam no armazenamento local do aplicativo, ' +
                     'nesta pasta:\n\n' + app.getPath('userData') +
-                    '\n\nFaça o backup pelo botão do banco de dados, no alto da tela, e guarde o arquivo ' +
+                    '\n\nAs versões do sistema e os backups automáticos de antes de cada atualização ' +
+                    'ficam nas subpastas "sistema" e "backups".\n\n' +
+                    'Faça o backup pelo botão do banco de dados, no alto da tela, e guarde o arquivo ' +
                     'em nuvem ou pendrive toda semana.',
             buttons: ['Entendi']
           })
@@ -165,15 +258,19 @@ function montarMenu() {
         { type: 'separator' },
         {
           label: 'Sobre o JeV Empreendimentos',
-          click: () => dialog.showMessageBox(janela, {
-            type: 'info', title: 'Sobre',
-            message: 'JeV Empreendimentos',
-            detail: `Versão ${app.getVersion()}\n` +
-                    `Electron ${process.versions.electron} · Chromium ${process.versions.chrome}\n\n` +
-                    'Gestão de obras, imóveis, veículos, chácara, produtos, infoprodutos e mídia.\n' +
-                    'Funciona sem internet. As guias do JeV Mobile entram em “Celular da equipe”.',
-            buttons: ['Fechar']
-          })
+          click: () => {
+            const e = versoes.estado(pacote);
+            dialog.showMessageBox(janela, {
+              type: 'info', title: 'Sobre',
+              message: 'JeV Empreendimentos',
+              detail: `Sistema: versão ${(e.atual && e.atual.versao) || app.getVersion()}\n` +
+                      `Programa: versão ${app.getVersion()}\n` +
+                      `Electron ${process.versions.electron} · Chromium ${process.versions.chrome}\n\n` +
+                      'Gestão de obras, imóveis, veículos, chácara, produtos, infoprodutos e mídia.\n' +
+                      'Funciona sem internet. As guias do JeV Mobile entram em “Celular da equipe”.',
+              buttons: ['Fechar']
+            });
+          }
         }
       ]
     }
@@ -181,9 +278,68 @@ function montarMenu() {
   Menu.setApplicationMenu(menu);
 }
 
+async function menuReverter() {
+  const e = versoes.estado(pacote);
+  if (!e.anterior) {
+    dialog.showMessageBox(janela, {
+      type: 'info', title: 'Reverter atualização',
+      message: 'Não há versão anterior guardada.',
+      detail: 'A volta atrás fica disponível a partir da primeira atualização aplicada.',
+      buttons: ['Fechar']
+    });
+    return;
+  }
+  const r = await dialog.showMessageBox(janela, {
+    type: 'question', title: 'Reverter atualização',
+    message: `Voltar para a versão ${e.anterior.versao}?`,
+    detail: `Você está usando a versão ${e.atual && e.atual.versao}. ` +
+            `O sistema volta para a ${e.anterior.versao} e reabre em alguns segundos.\n\n` +
+            'Seus dados NÃO são afetados — só o programa volta ao que era. ' +
+            'Depois dá para avançar de novo pela tela de Atualizações.',
+    buttons: ['Voltar para a ' + e.anterior.versao, 'Cancelar'],
+    defaultId: 1, cancelId: 1
+  });
+  if (r.response !== 0) return;
+  const res = versoes.reverter('pedido pelo usuário');
+  if (res.ok) reiniciar();
+}
+
 /* =========================================================================
-   ATUALIZAÇÃO AUTOMÁTICA (GitHub Releases)
+   ATUALIZAÇÃO DO PROGRAMA (o .exe, via GitHub Releases)
    ========================================================================= */
+function atualizacaoConfigurada() {
+  try {
+    const arq = path.join(process.resourcesPath, 'app-update.yml');
+    if (!fs.existsSync(arq)) return false;
+    const txt = fs.readFileSync(arq, 'utf8');
+    return !/SEU-USUARIO/i.test(txt);
+  } catch (e) { return false; }
+}
+
+function checarPrograma() {
+  if (!atualizacaoConfigurada()) {
+    dialog.showMessageBox(janela, {
+      type: 'info', title: 'Atualização do programa',
+      message: 'A atualização do programa ainda não está ligada.',
+      detail: 'Ela começa a funcionar depois que o sistema for publicado no GitHub.\n\n' +
+              'Isso é diferente da atualização do sistema, que já funciona: as melhorias ' +
+              'do dia a dia chegam por ali, sem reinstalar nada.',
+      buttons: ['Entendi']
+    });
+    return;
+  }
+  checandoManual = true;
+  autoUpdater.checkForUpdates().catch(e => {
+    checandoManual = false;
+    dialog.showMessageBox(janela, {
+      type: 'info', title: 'Atualização do programa',
+      message: 'Não consegui verificar agora.',
+      detail: 'Confira sua conexão com a internet e tente de novo.\n\n' + (e.message || ''),
+      buttons: ['Fechar']
+    });
+  });
+}
+
 function configurarAtualizacao() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -197,8 +353,8 @@ function configurarAtualizacao() {
     if (checandoManual) {
       checandoManual = false;
       dialog.showMessageBox(janela, {
-        type: 'info', title: 'Atualização',
-        message: 'Você já está na versão mais nova.',
+        type: 'info', title: 'Atualização do programa',
+        message: 'Você já está na versão mais nova do programa.',
         detail: 'Versão instalada: ' + app.getVersion(),
         buttons: ['Fechar']
       });
@@ -214,7 +370,7 @@ function configurarAtualizacao() {
     if (janela) janela.webContents.send('jev-atualizacao', { fase: 'pronta', versao: info.version });
     const r = await dialog.showMessageBox(janela, {
       type: 'question',
-      title: 'Nova versão pronta',
+      title: 'Nova versão do programa',
       message: `A versão ${info.version} do JeV Empreendimentos já foi baixada.`,
       detail: 'Quer instalar agora? O sistema fecha e abre de novo em alguns segundos. ' +
               'Seus dados não são afetados.',
@@ -229,7 +385,7 @@ function configurarAtualizacao() {
     if (checandoManual) {
       checandoManual = false;
       dialog.showMessageBox(janela, {
-        type: 'warning', title: 'Atualização',
+        type: 'warning', title: 'Atualização do programa',
         message: 'Não consegui verificar a atualização.',
         detail: String((err && err.message) || err),
         buttons: ['Fechar']
@@ -237,15 +393,14 @@ function configurarAtualizacao() {
     }
   });
 
-  // verificação silenciosa 8 segundos depois de abrir e depois a cada 6 horas
-  if (app.isPackaged) {
-    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 8000);
+  if (app.isPackaged && atualizacaoConfigurada()) {
+    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 20000);
     setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 6 * 60 * 60 * 1000);
   }
 }
 
 /* =========================================================================
-   CICLO DE VIDA
+   PONTES COM A TELA
    ========================================================================= */
 ipcMain.handle('jev-versao', () => app.getVersion());
 ipcMain.handle('jev-pasta-dados', () => app.getPath('userData'));
@@ -254,14 +409,81 @@ ipcMain.handle('jev-checar-atualizacao', () => {
   return autoUpdater.checkForUpdates().then(() => true).catch(() => false);
 });
 
+ipcMain.handle('versao-estado', () => versoes.estado(pacote));
+ipcMain.handle('versao-limpar-recado', () => versoes.limparRecado());
+ipcMain.handle('versao-configurar', (_e, cfg) => versoes.configurar(cfg || {}));
+ipcMain.handle('versao-historico', () => versoes.historico());
+ipcMain.handle('versao-backup', (_e, nome, texto) => versoes.guardarBackup(nome, texto));
+
+ipcMain.handle('versao-procurar', async () => {
+  try { return Object.assign({ ok: true }, await versoes.procurar(pacote)); }
+  catch (e) { return { ok: false, erro: String(e.message || e) }; }
+});
+
+ipcMain.handle('versao-baixar', async (_e, info) => {
+  try { return Object.assign({ ok: true }, await versoes.baixarVersao(pacote, info)); }
+  catch (e) { return { ok: false, erro: String(e.message || e) }; }
+});
+
+ipcMain.handle('versao-aplicar', () => { setTimeout(reiniciar, 300); return true; });
+
+ipcMain.handle('versao-validar', (_e, ok, detalhes) => {
+  if (vigia) { clearTimeout(vigia); vigia = null; }
+  const r = versoes.validar(ok, detalhes);
+  if (!ok && r.reverteu && r.reverteu.ok) setTimeout(reiniciar, 1200);
+  return r;
+});
+
+ipcMain.handle('versao-reverter', (_e, motivo) => {
+  const r = versoes.reverter(motivo || 'pedido pelo usuário');
+  if (r.ok) setTimeout(reiniciar, 500);
+  return r;
+});
+
+/* =========================================================================
+   CICLO DE VIDA
+   ========================================================================= */
 app.on('open-file', (e, caminho) => { e.preventDefault(); enviarArquivo(caminho); });
+
+/* pasta de dados trocada — usado pelos testes automáticos */
+if (process.env.JEV_DADOS) { try { app.setPath('userData', process.env.JEV_DADOS); } catch (e) {} }
 
 app.whenReady().then(() => {
   arquivoPendente = arquivoDaLinhaDeComando(process.argv);
+
+  /* decide qual versão do sistema abrir — e, se preciso, já volta atrás */
+  try {
+    const r = versoes.preparar({
+      pastaDados: app.getPath('userData'),
+      embutido: path.join(__dirname, 'app', 'index.html'),
+      versaoApp: app.getVersion()
+    });
+    if (r && r.caminho && fs.existsSync(r.caminho)) caminhoSistema = r.caminho;
+  } catch (e) {
+    console.error('motor de versões:', e);   // na dúvida, abre a cópia do instalador
+  }
+
+  if (process.env.JEV_FONTE) { try { versoes.configurar({ fonte: process.env.JEV_FONTE }); } catch (e) {} }
+
   configurarDownloads();
   montarMenu();
   criarJanela();
+  ligarVigia();
   configurarAtualizacao();
+
+  if (process.env.JEV_ROTEIRO) {
+    require('./teste_roteiro').rodar(process.env.JEV_ROTEIRO, janela, versoes, app)
+      .catch(e => { console.error(e); app.exit(1); });
+    return;
+  }
+
+  /* procura sistema novo 15 s depois de abrir e depois a cada 3 horas */
+  const auto = () => {
+    const e = versoes.estado(pacote);
+    if (e.automatico && e.fase === 'ok') procurarSistema(false).catch(() => {});
+  };
+  setTimeout(auto, 15000);
+  setInterval(auto, 3 * 60 * 60 * 1000);
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) criarJanela(); });
 });
