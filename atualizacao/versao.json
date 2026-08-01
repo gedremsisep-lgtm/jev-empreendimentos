@@ -1,14 +1,21 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.1",
-  "arquivo": "jev-1.0.1.html",
+  "versao": "1.0.2",
+  "arquivo": "jev-1.0.2.html",
   "data": "2026-08-01",
-  "sha256": "394d1132c662842e77dbb244dc0b299de2e68e1b5264ed579ed08e4cb85c8509",
-  "tamanho": 1514693,
+  "sha256": "26a4b84c95737cf5dc9cdd72a72854122fe3b3e3acc4597b349aa5e3e431741f",
+  "tamanho": 1515584,
   "notas": [
-    "Obras: conjunto de casas — cadastra Casa 01, Casa 02, Casa 03 de uma vez, com modelos idênticos, espelhados ou individuais.",
-    "Nova tela de Atualizações: o sistema se atualiza sozinho, confere a versão nova ao reiniciar e desfaz a troca em um botão."
+    "Correção: o aplicativo não abria — o motor de atualização tinha ficado de fora do instalador.",
+    "A versão nova passa a ser baixada sozinha, em segundo plano, e entra na próxima vez que você fechar e abrir o sistema. Sem instalador."
   ],
-  "substitui": "1.0.0",
-  "anteriores": []
+  "substitui": "1.0.1",
+  "anteriores": [
+    {
+      "versao": "1.0.1",
+      "arquivo": "jev-1.0.1.html",
+      "sha256": "394d1132c662842e77dbb244dc0b299de2e68e1b5264ed579ed08e4cb85c8509",
+      "data": "2026-08-01"
+    }
+  ]
 }
