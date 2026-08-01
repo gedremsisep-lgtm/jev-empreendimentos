@@ -2,6 +2,7 @@ name: Publicar o JeV Mobile
 
 # Publica no GitHub Pages:
 #   /            → o aplicativo do celular (PWA)
+#   /sistema     → o sistema completo, instalável pelo navegador no computador
 #   /atualizacao → as versões do sistema, como endereço reserva de atualização
 # Depois de a primeira execução terminar, o endereço aparece em
 # Settings → Pages e fica no formato:
@@ -12,6 +13,7 @@ on:
     branches: [main]
     paths:
       - 'mobile/**'
+      - 'web/**'
       - 'atualizacao/**'
       - '.github/workflows/publicar-mobile.yml'
   workflow_dispatch:
@@ -46,6 +48,11 @@ jobs:
             mkdir -p site/atualizacao
             cp -r atualizacao/. site/atualizacao/
             echo "atualização publicada: $(ls atualizacao | tr '\n' ' ')"
+          fi
+          if [ -d web/dist ]; then
+            mkdir -p site/sistema
+            cp -r web/dist/. site/sistema/
+            echo "sistema para computador: $(wc -c < site/sistema/index.html) bytes"
           fi
           echo "celular: $(wc -c < site/index.html) bytes"
 
