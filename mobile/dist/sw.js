@@ -3,7 +3,7 @@
    Guarda o aplicativo no celular para abrir sem internet e troca de versão
    sozinho quando um arquivo novo é publicado.
    ========================================================================= */
-const VERSAO = 'jev-mobile-v1.0.0';
+const VERSAO = 'jev-mobile-v1.0.1';
 const ARQUIVOS = [
   './',
   './index.html',
