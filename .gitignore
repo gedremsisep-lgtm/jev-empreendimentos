@@ -1,0 +1,11 @@
+node_modules/
+desktop/dist/
+desktop/node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# arquivos temporários dos testes
+mobile/index.html
+mobile/sw.dist.js
+mobile/versao.json
