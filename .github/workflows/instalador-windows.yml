@@ -1,0 +1,59 @@
+name: Instalador do Windows
+
+# Gera o instalador (.exe) e publica em Releases.
+# Dispara ao criar uma tag de versão (v1.0.0) ou pelo botão Run workflow.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Gerar e publicar o instalador
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Acertar o dono do repositório no package.json
+        shell: bash
+        working-directory: desktop
+        run: |
+          node -e "const fs=require('fs');const [owner,repo]=process.env.GITHUB_REPOSITORY.split('/');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.build.publish=[{provider:'github',owner:owner,repo:repo,releaseType:'release'}];p.repository={type:'git',url:'https://github.com/'+owner+'/'+repo+'.git'};fs.writeFileSync('package.json',JSON.stringify(p,null,2));console.log('publicando em',owner+'/'+repo);"
+
+      - name: Instalar as dependências
+        working-directory: desktop
+        run: npm ci
+
+      - name: Conferir se o sistema está dentro do aplicativo
+        shell: bash
+        working-directory: desktop
+        run: |
+          test -f app/index.html || { echo "Falta desktop/app/index.html"; exit 1; }
+          echo "app/index.html: $(wc -c < app/index.html) bytes"
+
+      - name: Gerar o instalador e publicar no Releases
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --x64 --publish always
+
+      - name: Guardar o instalador também como anexo do Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: instalador-windows
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/latest.yml
+          if-no-files-found: error
