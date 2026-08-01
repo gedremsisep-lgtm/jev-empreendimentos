@@ -1,0 +1,14 @@
+{
+  "sistema": "JeV Empreendimentos",
+  "versao": "1.0.1",
+  "arquivo": "jev-1.0.1.html",
+  "data": "2026-08-01",
+  "sha256": "394d1132c662842e77dbb244dc0b299de2e68e1b5264ed579ed08e4cb85c8509",
+  "tamanho": 1514693,
+  "notas": [
+    "Obras: conjunto de casas — cadastra Casa 01, Casa 02, Casa 03 de uma vez, com modelos idênticos, espelhados ou individuais.",
+    "Nova tela de Atualizações: o sistema se atualiza sozinho, confere a versão nova ao reiniciar e desfaz a troca em um botão."
+  ],
+  "substitui": "1.0.0",
+  "anteriores": []
+}
