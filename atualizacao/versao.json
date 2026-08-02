@@ -1,16 +1,24 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.6",
-  "arquivo": "jev-1.0.6.html",
+  "versao": "1.0.7",
+  "arquivo": "jev-1.0.7.html",
   "data": "2026-08-02",
-  "sha256": "18b013228da7551b6fe1437a3cf02717b74c4363a937fe26e809203a6fd7eb94",
-  "tamanho": 1538888,
+  "sha256": "926734b9adf5a2e591354adcebefb0df91a6cabaa0a6b0f14c79013d2fa89d68",
+  "tamanho": 1598234,
   "notas": [
-    "Nova obra: ao escolher um conjunto que já existe, o formulário copia os dados da última casa lançada e sugere o próximo nome — Casa 1 vira Casa 2.",
-    "O endereço acompanha a numeração e o prazo da casa anterior é repetido; o que você já digitou não é sobrescrito."
+    "Canais de Vídeo ganhou Afiliados: cadastro dos produtos que você divulga, com link, comissão e ganho por venda.",
+    "Gerar vídeo: a partir dos produtos escolhidos, o sistema monta gancho, cenas com duração, textos de tela, legenda e hashtags.",
+    "Publicar: um texto só, adaptado ao limite de cada plataforma, com copiar num clique e controle de onde já foi publicado.",
+    "Catálogo das 13 plataformas de vídeo e de 28 programas de afiliados, com requisitos e prazos de pagamento."
   ],
-  "substitui": "1.0.5",
+  "substitui": "1.0.6",
   "anteriores": [
+    {
+      "versao": "1.0.6",
+      "arquivo": "jev-1.0.6.html",
+      "sha256": "18b013228da7551b6fe1437a3cf02717b74c4363a937fe26e809203a6fd7eb94",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.5",
       "arquivo": "jev-1.0.5.html",
