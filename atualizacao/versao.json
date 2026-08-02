@@ -1,17 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.4",
-  "arquivo": "jev-1.0.4.html",
+  "versao": "1.0.5",
+  "arquivo": "jev-1.0.5.html",
   "data": "2026-08-02",
-  "sha256": "50bff9d9be2669ac39d4a1766f4294dde7e76efc089d9631735480f3c69e0cff",
-  "tamanho": 1532421,
+  "sha256": "9cebd74c500123e326643623d673a1d21d88bb4e64125f541255a4c0470e8fcf",
+  "tamanho": 1535267,
   "notas": [
-    "Obras: o conjunto agora lista as obras já cadastradas — marque quais entram, sem recriar nada.",
-    "Configurações ganhou o botão de instalar no Windows.",
-    "Tela de Atualizações no modelo de arquivo único, com os botões de backup à mão."
+    "As atualizações passam a ser procuradas a cada 10 minutos, e não mais a cada 3 horas — ritmo de desenvolvimento.",
+    "O intervalo agora fica dentro do sistema, ajustável em Atualizações, sem precisar reinstalar o programa."
   ],
-  "substitui": "1.0.2",
+  "substitui": "1.0.4",
   "anteriores": [
+    {
+      "versao": "1.0.4",
+      "arquivo": "jev-1.0.4.html",
+      "sha256": "50bff9d9be2669ac39d4a1766f4294dde7e76efc089d9631735480f3c69e0cff",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.2",
       "arquivo": "jev-1.0.2.html",
