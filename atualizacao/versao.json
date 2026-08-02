@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.5",
-  "arquivo": "jev-1.0.5.html",
+  "versao": "1.0.6",
+  "arquivo": "jev-1.0.6.html",
   "data": "2026-08-02",
-  "sha256": "9cebd74c500123e326643623d673a1d21d88bb4e64125f541255a4c0470e8fcf",
-  "tamanho": 1535267,
+  "sha256": "18b013228da7551b6fe1437a3cf02717b74c4363a937fe26e809203a6fd7eb94",
+  "tamanho": 1538888,
   "notas": [
-    "As atualizações passam a ser procuradas a cada 10 minutos, e não mais a cada 3 horas — ritmo de desenvolvimento.",
-    "O intervalo agora fica dentro do sistema, ajustável em Atualizações, sem precisar reinstalar o programa."
+    "Nova obra: ao escolher um conjunto que já existe, o formulário copia os dados da última casa lançada e sugere o próximo nome — Casa 1 vira Casa 2.",
+    "O endereço acompanha a numeração e o prazo da casa anterior é repetido; o que você já digitou não é sobrescrito."
   ],
-  "substitui": "1.0.4",
+  "substitui": "1.0.5",
   "anteriores": [
+    {
+      "versao": "1.0.5",
+      "arquivo": "jev-1.0.5.html",
+      "sha256": "9cebd74c500123e326643623d673a1d21d88bb4e64125f541255a4c0470e8fcf",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.4",
       "arquivo": "jev-1.0.4.html",
