@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.9",
-  "arquivo": "jev-1.0.9.html",
+  "versao": "1.0.10",
+  "arquivo": "jev-1.0.10.html",
   "data": "2026-08-02",
-  "sha256": "ee801a36bac4f67ec00ac5b3775bb47fa49735a4d25b750541efbb1e05e380e7",
-  "tamanho": 1629158,
+  "sha256": "65d960d1d9ead22fa2b62cfb10bc699a41b467f27c3040aca2d31537e3392118",
+  "tamanho": 1633756,
   "notas": [
-    "Garimpo de produtos: escolhe os campeões de venda e traz os links de cada loja",
-    "Nova tabela do histórico de garimpos (banco na versão 5)"
+    "Achados reais do TikTok Shop no garimpo, com link direto do produto",
+    "Novo nicho de limpeza e lavanderia"
   ],
-  "substitui": "1.0.8",
+  "substitui": "1.0.9",
   "anteriores": [
+    {
+      "versao": "1.0.9",
+      "arquivo": "jev-1.0.9.html",
+      "sha256": "ee801a36bac4f67ec00ac5b3775bb47fa49735a4d25b750541efbb1e05e380e7",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.8",
       "arquivo": "jev-1.0.8.html",
@@ -40,12 +46,6 @@
       "arquivo": "jev-1.0.4.html",
       "sha256": "50bff9d9be2669ac39d4a1766f4294dde7e76efc089d9631735480f3c69e0cff",
       "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.2",
-      "arquivo": "jev-1.0.2.html",
-      "sha256": "26a4b84c95737cf5dc9cdd72a72854122fe3b3e3acc4597b349aa5e3e431741f",
-      "data": "2026-08-01"
     }
   ]
 }
