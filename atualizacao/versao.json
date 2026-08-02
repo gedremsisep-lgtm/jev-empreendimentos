@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.10",
-  "arquivo": "jev-1.0.10.html",
+  "versao": "1.0.11",
+  "arquivo": "jev-1.0.11.html",
   "data": "2026-08-02",
-  "sha256": "65d960d1d9ead22fa2b62cfb10bc699a41b467f27c3040aca2d31537e3392118",
-  "tamanho": 1633756,
+  "sha256": "34a8faf4a29c035c6093227008ff1f61494c89676466a973fccf746c39fac133",
+  "tamanho": 1662141,
   "notas": [
-    "Achados reais do TikTok Shop no garimpo, com link direto do produto",
-    "Novo nicho de limpeza e lavanderia"
+    "Botão Gerar vídeo anúncio em cada produto garimpado",
+    "Prompt de IA em quatro estilos, com narração, legenda e prompt negativo"
   ],
-  "substitui": "1.0.9",
+  "substitui": "1.0.10",
   "anteriores": [
+    {
+      "versao": "1.0.10",
+      "arquivo": "jev-1.0.10.html",
+      "sha256": "65d960d1d9ead22fa2b62cfb10bc699a41b467f27c3040aca2d31537e3392118",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.9",
       "arquivo": "jev-1.0.9.html",
@@ -39,12 +45,6 @@
       "versao": "1.0.5",
       "arquivo": "jev-1.0.5.html",
       "sha256": "9cebd74c500123e326643623d673a1d21d88bb4e64125f541255a4c0470e8fcf",
-      "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.4",
-      "arquivo": "jev-1.0.4.html",
-      "sha256": "50bff9d9be2669ac39d4a1766f4294dde7e76efc089d9631735480f3c69e0cff",
       "data": "2026-08-02"
     }
   ]
