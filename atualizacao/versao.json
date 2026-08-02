@@ -1,16 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.2",
-  "arquivo": "jev-1.0.2.html",
-  "data": "2026-08-01",
-  "sha256": "26a4b84c95737cf5dc9cdd72a72854122fe3b3e3acc4597b349aa5e3e431741f",
-  "tamanho": 1515584,
+  "versao": "1.0.4",
+  "arquivo": "jev-1.0.4.html",
+  "data": "2026-08-02",
+  "sha256": "50bff9d9be2669ac39d4a1766f4294dde7e76efc089d9631735480f3c69e0cff",
+  "tamanho": 1532421,
   "notas": [
-    "Correção: o aplicativo não abria — o motor de atualização tinha ficado de fora do instalador.",
-    "A versão nova passa a ser baixada sozinha, em segundo plano, e entra na próxima vez que você fechar e abrir o sistema. Sem instalador."
+    "Obras: o conjunto agora lista as obras já cadastradas — marque quais entram, sem recriar nada.",
+    "Configurações ganhou o botão de instalar no Windows.",
+    "Tela de Atualizações no modelo de arquivo único, com os botões de backup à mão."
   ],
-  "substitui": "1.0.1",
+  "substitui": "1.0.2",
   "anteriores": [
+    {
+      "versao": "1.0.2",
+      "arquivo": "jev-1.0.2.html",
+      "sha256": "26a4b84c95737cf5dc9cdd72a72854122fe3b3e3acc4597b349aa5e3e431741f",
+      "data": "2026-08-01"
+    },
     {
       "versao": "1.0.1",
       "arquivo": "jev-1.0.1.html",
