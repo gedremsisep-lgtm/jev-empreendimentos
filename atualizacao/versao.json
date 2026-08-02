@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.8",
-  "arquivo": "jev-1.0.8.html",
+  "versao": "1.0.9",
+  "arquivo": "jev-1.0.9.html",
   "data": "2026-08-02",
-  "sha256": "9036de632685569a10bf6aa200deab70c2989c9d9d92cc02a4c5814bb1f6a476",
-  "tamanho": 1600762,
+  "sha256": "ee801a36bac4f67ec00ac5b3775bb47fa49735a4d25b750541efbb1e05e380e7",
+  "tamanho": 1629158,
   "notas": [
-    "Fábrica de vídeo local: monta o vídeo no seu computador, sem crédito",
-    "Correção do arquivo exportado (JSON saía com marca invisível)"
+    "Garimpo de produtos: escolhe os campeões de venda e traz os links de cada loja",
+    "Nova tabela do histórico de garimpos (banco na versão 5)"
   ],
-  "substitui": "1.0.7",
+  "substitui": "1.0.8",
   "anteriores": [
+    {
+      "versao": "1.0.8",
+      "arquivo": "jev-1.0.8.html",
+      "sha256": "9036de632685569a10bf6aa200deab70c2989c9d9d92cc02a4c5814bb1f6a476",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.7",
       "arquivo": "jev-1.0.7.html",
@@ -39,12 +45,6 @@
       "versao": "1.0.2",
       "arquivo": "jev-1.0.2.html",
       "sha256": "26a4b84c95737cf5dc9cdd72a72854122fe3b3e3acc4597b349aa5e3e431741f",
-      "data": "2026-08-01"
-    },
-    {
-      "versao": "1.0.1",
-      "arquivo": "jev-1.0.1.html",
-      "sha256": "394d1132c662842e77dbb244dc0b299de2e68e1b5264ed579ed08e4cb85c8509",
       "data": "2026-08-01"
     }
   ]
