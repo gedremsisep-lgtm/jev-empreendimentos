@@ -1,18 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.7",
-  "arquivo": "jev-1.0.7.html",
+  "versao": "1.0.8",
+  "arquivo": "jev-1.0.8.html",
   "data": "2026-08-02",
-  "sha256": "926734b9adf5a2e591354adcebefb0df91a6cabaa0a6b0f14c79013d2fa89d68",
-  "tamanho": 1598234,
+  "sha256": "9036de632685569a10bf6aa200deab70c2989c9d9d92cc02a4c5814bb1f6a476",
+  "tamanho": 1600762,
   "notas": [
-    "Canais de Vídeo ganhou Afiliados: cadastro dos produtos que você divulga, com link, comissão e ganho por venda.",
-    "Gerar vídeo: a partir dos produtos escolhidos, o sistema monta gancho, cenas com duração, textos de tela, legenda e hashtags.",
-    "Publicar: um texto só, adaptado ao limite de cada plataforma, com copiar num clique e controle de onde já foi publicado.",
-    "Catálogo das 13 plataformas de vídeo e de 28 programas de afiliados, com requisitos e prazos de pagamento."
+    "Fábrica de vídeo local: monta o vídeo no seu computador, sem crédito",
+    "Correção do arquivo exportado (JSON saía com marca invisível)"
   ],
-  "substitui": "1.0.6",
+  "substitui": "1.0.7",
   "anteriores": [
+    {
+      "versao": "1.0.7",
+      "arquivo": "jev-1.0.7.html",
+      "sha256": "926734b9adf5a2e591354adcebefb0df91a6cabaa0a6b0f14c79013d2fa89d68",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.6",
       "arquivo": "jev-1.0.6.html",
