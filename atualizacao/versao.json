@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.11",
-  "arquivo": "jev-1.0.11.html",
+  "versao": "1.0.12",
+  "arquivo": "jev-1.0.12.html",
   "data": "2026-08-02",
-  "sha256": "34a8faf4a29c035c6093227008ff1f61494c89676466a973fccf746c39fac133",
-  "tamanho": 1662141,
+  "sha256": "c4dce5f4ab5b1febf1ec71bc473f6160c32641deac330810dde8e0d85493c020",
+  "tamanho": 1674870,
   "notas": [
-    "Botão Gerar vídeo anúncio em cada produto garimpado",
-    "Prompt de IA em quatro estilos, com narração, legenda e prompt negativo"
+    "Botão Publicar em cada produto: abre todas as plataformas de uma vez",
+    "Texto cortado no limite de cada plataforma e aviso de quem paga por view"
   ],
-  "substitui": "1.0.10",
+  "substitui": "1.0.11",
   "anteriores": [
+    {
+      "versao": "1.0.11",
+      "arquivo": "jev-1.0.11.html",
+      "sha256": "34a8faf4a29c035c6093227008ff1f61494c89676466a973fccf746c39fac133",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.10",
       "arquivo": "jev-1.0.10.html",
@@ -39,12 +45,6 @@
       "versao": "1.0.6",
       "arquivo": "jev-1.0.6.html",
       "sha256": "18b013228da7551b6fe1437a3cf02717b74c4363a937fe26e809203a6fd7eb94",
-      "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.5",
-      "arquivo": "jev-1.0.5.html",
-      "sha256": "9cebd74c500123e326643623d673a1d21d88bb4e64125f541255a4c0470e8fcf",
       "data": "2026-08-02"
     }
   ]
