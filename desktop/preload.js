@@ -37,5 +37,11 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   vsLimparRecado: ()             => ipcRenderer.invoke('versao-limpar-recado'),
   vsConfigurar:   cfg            => ipcRenderer.invoke('versao-configurar', cfg),
   vsHistorico:    ()             => ipcRenderer.invoke('versao-historico'),
-  vsBackup:       (nome, texto)  => ipcRenderer.invoke('versao-backup', nome, texto)
+  vsBackup:       (nome, texto)  => ipcRenderer.invoke('versao-backup', nome, texto),
+
+  /* ---- publicador: abre a plataforma já com o vídeo e o texto ---- */
+  pubDisponivel:    ()      => ipcRenderer.invoke('pub-disponivel'),
+  pubEscolherVideo: ()      => ipcRenderer.invoke('pub-escolher-video'),
+  pubPublicar:      dados   => ipcRenderer.invoke('pub-publicar', dados),
+  pubEsquecerLogins:()      => ipcRenderer.invoke('pub-esquecer-logins')
 });

@@ -13,6 +13,15 @@ const pacote = require('./package.json');
 /* O motor de versões é um arquivo à parte. Se por qualquer motivo ele não
    estiver dentro do pacote, o sistema PRECISA abrir assim mesmo — sem
    atualização automática, mas abrindo. Nunca uma tela de erro no lugar. */
+/* O publicador também entra protegido: se faltar no pacote, o programa
+   continua abrindo e o botão apenas avisa que não está disponível. */
+let publicador = null;
+try {
+  publicador = require('./publicador');
+} catch (e) {
+  console.error('publicador indisponível:', e && e.message);
+}
+
 let versoes;
 let motorOk = true;
 try {
@@ -475,6 +484,33 @@ ipcMain.handle('versao-baixar', async (_e, info) => {
 
 ipcMain.handle('versao-aplicar', () => { setTimeout(reiniciar, 300); return true; });
 
+/* ---------------------------------------------------------- publicador */
+ipcMain.handle('pub-disponivel', () => !!publicador);
+
+ipcMain.handle('pub-escolher-video', async () => {
+  const r = await dialog.showOpenDialog(janela, {
+    title: 'Escolha o vídeo que vai ser publicado',
+    properties: ['openFile'],
+    filters: [{ name: 'Vídeo', extensions: ['mp4', 'mov', 'webm', 'mkv', 'avi'] }]
+  });
+  if (r.canceled || !r.filePaths.length) return null;
+  const caminho = r.filePaths[0];
+  let tamanho = 0;
+  try { tamanho = fs.statSync(caminho).size; } catch (e) {}
+  return { caminho, nome: path.basename(caminho), tamanho };
+});
+
+ipcMain.handle('pub-publicar', async (_e, dados) => {
+  if (!publicador) return { ok: false, motivo: 'o publicador não veio neste pacote' };
+  try { return await publicador.publicar(dados || {}); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+
+ipcMain.handle('pub-esquecer-logins', async () => {
+  if (!publicador) return false;
+  try { return await publicador.esquecerLogins(); } catch (e) { return false; }
+});
+
 ipcMain.handle('versao-validar', (_e, ok, detalhes) => {
   if (vigia) { clearTimeout(vigia); vigia = null; }
   const r = versoes.validar(ok, detalhes);
@@ -533,7 +569,10 @@ app.whenReady().then(() => {
     if (e.automatico && e.fase === 'ok') procurarSistema(false).catch(() => {});
   };
   setTimeout(auto, 15000);
-  setInterval(auto, 3 * 60 * 60 * 1000);
+  /* fase de desenvolvimento: o programa também dá uma olhada a cada 10 min.
+     O ritmo que vale no dia a dia é o do próprio sistema, que se atualiza
+     sozinho — este aqui é só uma rede de segurança.                        */
+  setInterval(auto, 10 * 60 * 1000);
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) criarJanela(); });
 });
