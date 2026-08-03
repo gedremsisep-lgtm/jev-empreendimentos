@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.12",
-  "arquivo": "jev-1.0.12.html",
-  "data": "2026-08-02",
-  "sha256": "c4dce5f4ab5b1febf1ec71bc473f6160c32641deac330810dde8e0d85493c020",
-  "tamanho": 1674870,
+  "versao": "1.0.13",
+  "arquivo": "jev-1.0.13.html",
+  "data": "2026-08-03",
+  "sha256": "48042a377796b0452b903316bfa6f28121cf9d274cb262468b91e8c01acd1663",
+  "tamanho": 1680731,
   "notas": [
-    "Botão Publicar em cada produto: abre todas as plataformas de uma vez",
-    "Texto cortado no limite de cada plataforma e aviso de quem paga por view"
+    "Publicar já preenchido: o aplicativo anexa o vídeo e escreve a legenda na plataforma",
+    "O botão de publicar só falta o seu clique final, dentro da plataforma"
   ],
-  "substitui": "1.0.11",
+  "substitui": "1.0.12",
   "anteriores": [
+    {
+      "versao": "1.0.12",
+      "arquivo": "jev-1.0.12.html",
+      "sha256": "c4dce5f4ab5b1febf1ec71bc473f6160c32641deac330810dde8e0d85493c020",
+      "data": "2026-08-02"
+    },
     {
       "versao": "1.0.11",
       "arquivo": "jev-1.0.11.html",
@@ -39,12 +45,6 @@
       "versao": "1.0.7",
       "arquivo": "jev-1.0.7.html",
       "sha256": "926734b9adf5a2e591354adcebefb0df91a6cabaa0a6b0f14c79013d2fa89d68",
-      "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.6",
-      "arquivo": "jev-1.0.6.html",
-      "sha256": "18b013228da7551b6fe1437a3cf02717b74c4363a937fe26e809203a6fd7eb94",
       "data": "2026-08-02"
     }
   ]
