@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.13",
-  "arquivo": "jev-1.0.13.html",
-  "data": "2026-08-03",
-  "sha256": "48042a377796b0452b903316bfa6f28121cf9d274cb262468b91e8c01acd1663",
-  "tamanho": 1680731,
+  "versao": "1.0.14",
+  "arquivo": "jev-1.0.14.html",
+  "data": "2026-08-09",
+  "sha256": "4fe943efae74e86941f2c2af4a3deea3fd95bfe67ee6e97802ea126dece78345",
+  "tamanho": 1693415,
   "notas": [
-    "Publicar já preenchido: o aplicativo anexa o vídeo e escreve a legenda na plataforma",
-    "O botão de publicar só falta o seu clique final, dentro da plataforma"
+    "Botão Postar em Canais: abre a plataforma já na tela de envio",
+    "Endereço exato para postar, próprio de cada canal"
   ],
-  "substitui": "1.0.12",
+  "substitui": "1.0.13",
   "anteriores": [
+    {
+      "versao": "1.0.13",
+      "arquivo": "jev-1.0.13.html",
+      "sha256": "48042a377796b0452b903316bfa6f28121cf9d274cb262468b91e8c01acd1663",
+      "data": "2026-08-03"
+    },
     {
       "versao": "1.0.12",
       "arquivo": "jev-1.0.12.html",
@@ -39,12 +45,6 @@
       "versao": "1.0.8",
       "arquivo": "jev-1.0.8.html",
       "sha256": "9036de632685569a10bf6aa200deab70c2989c9d9d92cc02a4c5814bb1f6a476",
-      "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.7",
-      "arquivo": "jev-1.0.7.html",
-      "sha256": "926734b9adf5a2e591354adcebefb0df91a6cabaa0a6b0f14c79013d2fa89d68",
       "data": "2026-08-02"
     }
   ]
