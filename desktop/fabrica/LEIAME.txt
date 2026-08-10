@@ -1,0 +1,258 @@
+============================================================
+  FÁBRICA DE VÍDEO DA JeV
+  Monta o vídeo no seu computador. Sem crédito, sem limite.
+============================================================
+
+ANTES DE MAIS NADA: TALVEZ VOCÊ NÃO PRECISE DISTO
+-------------------------------------------------
+Se você usa o APLICATIVO do JeV no Windows, esqueça esta pasta.
+Lá dentro, em Canais de Vídeo -> Gerar vídeo, existe o botão
+"Criar o vídeo agora": ele instala as ferramentas sozinho, monta o
+vídeo e toca na sua frente para você aprovar. Sem arrastar arquivo,
+sem procurar pasta, sem .bat.
+
+Esta pasta continua servindo para dois casos:
+  · quem abre o sistema pelo NAVEGADOR, e não pelo aplicativo;
+  · quem quer rodar a fábrica na mão, para conferir ou depurar.
+
+
+DUAS FÁBRICAS NA MESMA PASTA
+----------------------------
+Aqui dentro moram dois programas. Escolha pelo que você quer:
+
+  MONTAR-VIDEO.bat   monta um vídeo NOVO a partir de um roteiro
+                     e de fotos. É o que está explicado logo abaixo.
+
+  FAZER-CORTES.bat   pega um vídeo LONGO do YouTube e devolve
+                     vários cortes de um minuto, em pé e legendados.
+                     A explicação está no fim deste arquivo.
+
+Os dois usam as mesmas ferramentas da pasta "ferramentas", então o
+que um baixar serve para o outro.
+
+
+O QUE É
+-------
+Um programinha que pega o roteiro que o sistema JeV gerou e monta
+o vídeo pronto: narração em português por IA, legendas na tela,
+efeito de movimento nas fotos, trilha sonora e três formatos
+(vertical, horizontal e quadrado) — um para cada plataforma.
+
+Tudo roda na SUA máquina, usando o SEU processador e a SUA placa
+de vídeo. Não gasta crédito de nenhum site, não tem limite de
+quantos vídeos você faz e funciona sem internet depois da
+primeira vez.
+
+
+COMO USAR — PASSO A PASSO
+-------------------------
+1) No sistema JeV, vá em MÍDIA → Gerar vídeo.
+   Monte o roteiro e clique em "Baixar roteiro para a fábrica".
+   Vai baixar um arquivo .json.
+
+2) Coloque esse .json dentro da pasta "roteiros", aqui do lado.
+
+3) Coloque as fotos do produto na pasta "fotos".
+   Aceita jpg, jpeg, png e webp. O programa usa em ordem
+   alfabética, então nomeie 1.jpg, 2.jpg, 3.jpg... se quiser
+   mandar na ordem. Se tiver menos fotos que cenas, ele repete
+   as que tem.
+
+4) Se quiser música de fundo, jogue um mp3 (ou wav/m4a) na pasta
+   "trilhas". É opcional — sem música ele monta do mesmo jeito.
+   Use música livre de direitos, senão a plataforma derruba o
+   vídeo por copyright.
+
+5) Dê dois cliques em MONTAR-VIDEO.bat e espere.
+
+6) Quando terminar, a pasta "saida" abre sozinha com:
+     Nome do vídeo - vertical.mp4     (TikTok, Reels, Shorts, Kwai)
+     Nome do vídeo - horizontal.mp4   (YouTube, Facebook, Rumble)
+     Nome do vídeo - quadrado.mp4     (feed do Instagram e Facebook)
+     Nome do vídeo - legenda.txt      (título, descrição e hashtags)
+
+7) Volte no sistema, aba "Publicar", e use o texto pronto de cada
+   plataforma junto com o vídeo do formato certo.
+
+
+A PRIMEIRA VEZ DEMORA
+---------------------
+Na primeira execução ele baixa as ferramentas (cerca de 180 MB) e
+guarda tudo dentro da pasta "ferramentas", aqui do lado. Isso
+acontece UMA vez só. Depois disso é sempre rápido.
+
+Nada é instalado no Windows. Não mexe no registro, não pede
+administrador, não deixa rastro. Para desinstalar, apague a pasta
+inteira e acabou.
+
+O que ele baixa:
+  · Python portátil  — 11 MB  (roda o programa)
+  · FFmpeg           — 80 MB  (é ele que monta o vídeo)
+  · Piper            — 20 MB  (a voz de IA)
+  · Voz brasileira   — 64 MB  (pt_BR-faber-medium)
+
+Se a sua rede bloquear algum download, o programa avisa e para.
+Nesse caso me chame que eu mando as ferramentas por outro caminho.
+
+
+PLACA DE VÍDEO
+--------------
+Se você tem placa NVIDIA (GeForce / RTX), o programa detecta
+sozinha e usa ela para montar — fica bem mais rápido. Ele não
+confia só na lista do FFmpeg: faz um teste de verdade antes, e
+se o teste falhar volta para o processador automaticamente.
+Sem placa NVIDIA funciona igual, só demora um pouco mais.
+
+Referência de tempo, num vídeo de 30 segundos:
+  · com RTX      — cerca de 1 minuto
+  · só processador — cerca de 3 a 5 minutos
+
+
+QUANTO TEMPO DURA O VÍDEO
+-------------------------
+A duração sai da narração de verdade, não de estimativa: ele
+gera a voz, mede quanto ficou, e ajusta a cena para caber com
+uma sobra de respiro no fim. Por isso o vídeo final pode ficar
+alguns segundos diferente do que o sistema previu — está certo,
+é a voz real falando.
+
+
+DEU PROBLEMA?
+-------------
+"Não achei roteiro"
+   O .json não está na pasta "roteiros". Confira se você não
+   baixou para a pasta Downloads e esqueceu de mover.
+
+"Não achei foto"
+   A pasta "fotos" está vazia. Coloque pelo menos uma imagem.
+
+O vídeo saiu sem voz
+   A voz de IA não baixou. Apague a pasta "ferramentas\piper" e
+   rode de novo. Sem a voz ele monta com silêncio no lugar da
+   narração — o vídeo fica pronto, só mudo.
+
+Acentos errados na legenda
+   Baixe o roteiro de novo pelo sistema. O arquivo precisa estar
+   como o sistema exporta, sem passar por editor de texto.
+
+O Windows avisou que o arquivo é perigoso
+   É o SmartScreen, porque o .bat não tem assinatura digital paga.
+   Clique em "Mais informações" e depois "Executar assim mesmo".
+   O arquivo é texto puro — você pode abrir com o Bloco de Notas
+   e ler linha por linha o que ele faz.
+
+Travou no meio
+   Feche a janela, apague o que estiver na pasta "saida" e rode
+   de novo. Ele refaz do zero sem problema.
+
+
+PASTAS
+------
+  roteiros/     onde você põe o .json do sistema
+  fotos/        as fotos do produto
+  trilhas/      música de fundo (opcional)
+  pedidos/      onde você põe o pedido de CORTES
+  saida/        os vídeos prontos saem aqui
+  ferramentas/  baixadas na primeira vez — não mexa
+
+Se tiver mais de um roteiro na pasta, ele usa o mais recente.
+
+
+============================================================
+  A FÁBRICA DE CORTES — FAZER-CORTES.bat
+============================================================
+
+O QUE FAZ
+---------
+Você dá um vídeo longo do YouTube. Ele baixa o vídeo no seu
+computador, descobre sozinho quais são os melhores pedaços, corta,
+vira em pé (1080x1920), queima a legenda e devolve os arquivos
+prontos para subir.
+
+
+COMO ELE ESCOLHE OS MELHORES PEDAÇOS
+------------------------------------
+Não é chute. São três sinais medidos, somados com peso:
+
+  1. A CURVA DE MAIS REVISTO. O próprio YouTube publica, por baixo
+     do vídeo, o gráfico dos trechos que as pessoas voltam para
+     ver. É o sinal mais honesto que existe, porque é audiência de
+     verdade, não opinião. Nem todo vídeo tem essa curva — quando
+     não tem, ele diz na tela e usa os outros dois.
+
+  2. OS PICOS DE ÁUDIO. Risada, grito, ênfase e virada de tom
+     aparecem como pico de volume. Sozinho engana (barulho não é
+     conteúdo), mas junto com os outros acerta muito.
+
+  3. AS FRASES DE GANCHO. Da legenda ele lê o que está sendo dito
+     e procura pergunta, número, promessa e contradição.
+
+O começo de cada corte é encaixado no início de uma frase, para
+não cortar no meio de uma palavra. E dois cortes nunca se
+sobrepõem.
+
+A nota de 0 a 100 que aparece no sistema serve para comparar os
+trechos DAQUELE vídeo entre si. Não é previsão de views — quem
+disser que prevê views está vendendo alguma coisa.
+
+
+COMO USAR — PASSO A PASSO
+-------------------------
+1) No sistema JeV: Canais de Vídeo → Cortes.
+   Cole o endereço do vídeo, diga quem autorizou o corte e clique
+   em "Gerar o pedido". Baixa um arquivo pequeno.
+
+2) Coloque esse arquivo na pasta "pedidos", aqui do lado.
+
+3) Dois cliques em FAZER-CORTES.bat. Ele baixa o vídeo (essa é a
+   parte demorada), mede tudo e corta.
+
+4) Quando terminar, a pasta "saida" abre com uma pasta
+   "cortes-XXXXX" contendo os vídeos e um manifesto.json.
+
+5) Volte no sistema: Cortes → "Trazer os cortes", escolha o
+   manifesto.json. Os cortes aparecem com nota e motivo, você
+   marca quais quer e manda postar todos de uma vez.
+
+
+SOBRE DIREITO AUTORAL — LEIA
+----------------------------
+Cortar vídeo dos outros é cortar trabalho dos outros. O sistema
+exige que você registre QUEM autorizou, QUANDO e ONDE está a
+prova — e leva isso junto no arquivo. Não é burocracia: é o que
+te salva no dia em que a plataforma reclamar.
+
+Duas coisas que valem dinheiro saber:
+
+  · O YouTube trata corte de canal alheio como "conteúdo
+    reaproveitado". Mesmo com autorização do dono, se o corte for
+    o vídeo cru sem nada seu, a monetização costuma ser negada.
+    O que resolve é acrescentar algo seu — legenda, comentário,
+    recorte de tela, reação.
+
+  · Música dentro do vídeo original continua sendo da gravadora.
+    A autorização do dono do canal não cobre a trilha dele.
+
+
+DEU PROBLEMA?
+-------------
+"Nenhum pedido na pasta pedidos"
+   O arquivo ficou em Downloads. Mova para a pasta "pedidos".
+
+"NÃO CONSEGUI BAIXAR"
+   Quase sempre é o baixador desatualizado — o YouTube muda o site
+   direto. O programa já tenta se atualizar sozinho a cada
+   execução. Se insistir, apague a pasta "ferramentas\yt-dlp" e
+   rode de novo, que ele baixa a versão nova.
+
+"este vídeo não tem curva de mais revisto"
+   Normal em vídeo novo ou pouco assistido. Ele corta assim mesmo,
+   usando áudio e legenda.
+
+"legenda: 0 fala(s)"
+   O vídeo não tem legenda nem automática. Os cortes saem sem
+   legenda queimada e a escolha usa só a curva e o áudio.
+
+Demorou muito
+   Vídeo de uma hora em 1080p leva tempo para baixar e mais tempo
+   para converter. É normal passar de meia hora no total.
