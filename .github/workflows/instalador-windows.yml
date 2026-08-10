@@ -1,7 +1,9 @@
 name: Instalador do Windows
 
 # Gera o instalador (.exe) e publica em Releases.
-# Dispara ao criar uma tag de versão (v1.0.0) ou pelo botão Run workflow.
+# Dispare de dois jeitos:
+#   1) criando uma tag de versão:   git tag v1.0.1 && git push origin v1.0.1
+#   2) pela aba Actions do GitHub, no botão "Run workflow"
 
 on:
   push:
@@ -30,7 +32,15 @@ jobs:
         shell: bash
         working-directory: desktop
         run: |
-          node -e "const fs=require('fs');const [owner,repo]=process.env.GITHUB_REPOSITORY.split('/');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.build.publish=[{provider:'github',owner:owner,repo:repo,releaseType:'release'}];p.repository={type:'git',url:'https://github.com/'+owner+'/'+repo+'.git'};fs.writeFileSync('package.json',JSON.stringify(p,null,2));console.log('publicando em',owner+'/'+repo);"
+          node -e "
+            const fs=require('fs');
+            const [owner,repo]=process.env.GITHUB_REPOSITORY.split('/');
+            const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+            p.build.publish=[{provider:'github',owner,repo,releaseType:'release'}];
+            p.repository={type:'git',url:'https://github.com/'+owner+'/'+repo+'.git'};
+            fs.writeFileSync('package.json',JSON.stringify(p,null,2));
+            console.log('publicando em',owner+'/'+repo);
+          "
 
       - name: Instalar as dependências
         working-directory: desktop
@@ -42,6 +52,28 @@ jobs:
         run: |
           test -f app/index.html || { echo "Falta desktop/app/index.html"; exit 1; }
           echo "app/index.html: $(wc -c < app/index.html) bytes"
+
+      # Um instalador sem alguma destas peças abre normalmente e só falha
+      # quando o dono clica no botão — que é a pior hora de descobrir.
+      # Melhor quebrar aqui, na montagem, do que na casa dele.
+      - name: Conferir se as peças do aplicativo vieram todas
+        shell: bash
+        working-directory: desktop
+        run: |
+          falta=0
+          for a in main.js preload.js atualizacao.js publicador.js estudio.js \
+                   fabrica/fabrica.py fabrica/cortes.py; do
+            if [ -s "$a" ]; then echo "ok    $a"; else echo "FALTA $a"; falta=1; fi
+          done
+          v=$(node -p "require('./package.json').version")
+          if grep -q "SISTEMA_VERSAO = '$v'" app/index.html; then
+            echo "ok    o sistema $v está dentro do aplicativo"
+          else
+            echo "FALTA o app/index.html não é da versão $v:"
+            grep -o "SISTEMA_VERSAO = '[^']*'" app/index.html | head -1
+            falta=1
+          fi
+          exit $falta
 
       - name: Gerar o instalador e publicar no Releases
         working-directory: desktop
