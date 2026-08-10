@@ -43,5 +43,23 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   pubDisponivel:    ()      => ipcRenderer.invoke('pub-disponivel'),
   pubEscolherVideo: ()      => ipcRenderer.invoke('pub-escolher-video'),
   pubPublicar:      dados   => ipcRenderer.invoke('pub-publicar', dados),
-  pubEsquecerLogins:()      => ipcRenderer.invoke('pub-esquecer-logins')
+  pubEsquecerLogins:()      => ipcRenderer.invoke('pub-esquecer-logins'),
+
+  /* ---- estúdio: o vídeo é montado aqui dentro, no seu computador ---- */
+  estDisponivel:  ()               => ipcRenderer.invoke('est-disponivel'),
+  estEstado:      ()               => ipcRenderer.invoke('est-estado'),
+  estInstalar:    ()               => ipcRenderer.invoke('est-instalar'),
+  estCriar:       dados            => ipcRenderer.invoke('est-criar', dados),
+  estParar:       ()               => ipcRenderer.invoke('est-parar'),
+  estEscolher:    qual             => ipcRenderer.invoke('est-escolher', qual),
+  estMidiaProduto:url              => ipcRenderer.invoke('est-midia-produto', url),
+  estAbrirPasta:  caminho          => ipcRenderer.invoke('est-abrir-pasta', caminho),
+  estGuardarComo: (origem, nome)   => ipcRenderer.invoke('est-guardar-como', origem, nome),
+  estFaxina:      guardar          => ipcRenderer.invoke('est-faxina', guardar),
+  /* o andamento chega por aqui, ao vivo, enquanto o vídeo é montado */
+  aoEstudio(callback) {
+    ipcRenderer.on('estudio-passo', (_e, dados) => {
+      try { callback(dados); } catch (e) { console.error(e); }
+    });
+  }
 });

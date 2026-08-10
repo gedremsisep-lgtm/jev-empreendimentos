@@ -9,7 +9,7 @@ SetCompressor /SOLID lzma
 SetCompressorDictSize 64
 
 !define NOME       "JeV Empreendimentos"
-!define VERSAO     "1.0.13"
+!define VERSAO     "1.0.16"
 !define EMPRESA    "JeV Empreendimentos"
 !define EXE        "JeV Empreendimentos.exe"
 !define PASTA_REG  "Software\JeV Empreendimentos"
@@ -23,7 +23,7 @@ RequestExecutionLevel user
 ShowInstDetails hide
 ShowUnInstDetails hide
 
-VIProductVersion "1.0.13.0"
+VIProductVersion "1.0.16.0"
 VIAddVersionKey /LANG=1046 "ProductName"     "${NOME}"
 VIAddVersionKey /LANG=1046 "CompanyName"     "${EMPRESA}"
 VIAddVersionKey /LANG=1046 "FileDescription" "Instalador do ${NOME}"

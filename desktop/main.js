@@ -22,6 +22,16 @@ try {
   console.error('publicador indisponível:', e && e.message);
 }
 
+/* O estúdio — montar o vídeo aqui dentro — entra pela mesma porta
+   protegida: se faltar no pacote, o programa abre igual e o botão
+   apenas avisa que não está disponível. */
+let estudio = null;
+try {
+  estudio = require('./estudio');
+} catch (e) {
+  console.error('estúdio indisponível:', e && e.message);
+}
+
 let versoes;
 let motorOk = true;
 try {
@@ -509,6 +519,54 @@ ipcMain.handle('pub-publicar', async (_e, dados) => {
 ipcMain.handle('pub-esquecer-logins', async () => {
   if (!publicador) return false;
   try { return await publicador.esquecerLogins(); } catch (e) { return false; }
+});
+
+/* ------------------------------------------------------------- estúdio */
+const contaEstudio = evento => {
+  if (janela && !janela.isDestroyed()) janela.webContents.send('estudio-passo', evento);
+};
+
+ipcMain.handle('est-disponivel', () => !!estudio);
+ipcMain.handle('est-estado', () => {
+  if (!estudio) return { pronto: false, semEstudio: true };
+  try { return estudio.estado(); } catch (e) { return { pronto: false, erro: String(e && e.message) }; }
+});
+ipcMain.handle('est-instalar', async () => {
+  if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote' };
+  try { return await estudio.instalar(contaEstudio); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('est-criar', async (_e, dados) => {
+  if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote' };
+  try { return await estudio.criar(dados || {}, contaEstudio); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('est-parar', () => { try { return estudio ? estudio.parar() : false; } catch (e) { return false; } });
+ipcMain.handle('est-escolher', async (_e, qual) => {
+  if (!estudio) return [];
+  try { return await estudio.escolherArquivos(qual); } catch (e) { return []; }
+});
+ipcMain.handle('est-midia-produto', async (_e, url) => {
+  if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote', fotos: [], videos: [] };
+  try { return await estudio.midiaDoProduto(url); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
+});
+ipcMain.handle('est-abrir-pasta', (_e, caminho) => {
+  try { shell.showItemInFolder(caminho); return true; } catch (e) { return false; }
+});
+ipcMain.handle('est-guardar-como', async (_e, origem, sugestao) => {
+  try {
+    const r = await dialog.showSaveDialog(janela, {
+      title: 'Guardar o vídeo', defaultPath: sugestao || path.basename(origem),
+      filters: [{ name: 'Vídeo', extensions: ['mp4'] }]
+    });
+    if (r.canceled || !r.filePath) return '';
+    fs.copyFileSync(origem, r.filePath);
+    return r.filePath;
+  } catch (e) { return ''; }
+});
+ipcMain.handle('est-faxina', (_e, guardar) => {
+  try { return estudio ? estudio.faxina(guardar) : 0; } catch (e) { return 0; }
 });
 
 ipcMain.handle('versao-validar', (_e, ok, detalhes) => {
