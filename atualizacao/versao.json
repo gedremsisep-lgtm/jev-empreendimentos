@@ -1,17 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.15",
-  "arquivo": "jev-1.0.15.html",
+  "versao": "1.0.16",
+  "arquivo": "jev-1.0.16.html",
   "data": "2026-08-10",
-  "sha256": "0ec290ff13c475d2e711c4be3cb1655be57c0d0dbf942035aee5b1cb84a04419",
-  "tamanho": 1742868,
+  "sha256": "072a1b3dd2c537b4056b5377219e60d22fab0424dd3218a7d3f972380fc6695d",
+  "tamanho": 1762776,
   "notas": [
-    "Canal de cortes: link do YouTube vira cortes de 1 minuto dos melhores momentos",
-    "Canal de afiliado: link da Amazon montado sozinho e painel dos outros no lugar certo",
-    "Fábrica de cortes no seu computador, com legenda queimada e vídeo em pé"
+    "Criar o vídeo agora: o aplicativo monta o vídeo aqui dentro, com IA local",
+    "Traz sozinho as fotos e o vídeo do anúncio do produto",
+    "Você assiste, aprova e posta sem sair do sistema"
   ],
-  "substitui": "1.0.14",
+  "substitui": "1.0.15",
   "anteriores": [
+    {
+      "versao": "1.0.15",
+      "arquivo": "jev-1.0.15.html",
+      "sha256": "0ec290ff13c475d2e711c4be3cb1655be57c0d0dbf942035aee5b1cb84a04419",
+      "data": "2026-08-10"
+    },
     {
       "versao": "1.0.14",
       "arquivo": "jev-1.0.14.html",
@@ -40,12 +46,6 @@
       "versao": "1.0.10",
       "arquivo": "jev-1.0.10.html",
       "sha256": "65d960d1d9ead22fa2b62cfb10bc699a41b467f27c3040aca2d31537e3392118",
-      "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.9",
-      "arquivo": "jev-1.0.9.html",
-      "sha256": "ee801a36bac4f67ec00ac5b3775bb47fa49735a4d25b750541efbb1e05e380e7",
       "data": "2026-08-02"
     }
   ]
