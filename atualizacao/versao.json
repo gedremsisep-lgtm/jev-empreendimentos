@@ -1,16 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.14",
-  "arquivo": "jev-1.0.14.html",
-  "data": "2026-08-09",
-  "sha256": "4fe943efae74e86941f2c2af4a3deea3fd95bfe67ee6e97802ea126dece78345",
-  "tamanho": 1693415,
+  "versao": "1.0.15",
+  "arquivo": "jev-1.0.15.html",
+  "data": "2026-08-10",
+  "sha256": "0ec290ff13c475d2e711c4be3cb1655be57c0d0dbf942035aee5b1cb84a04419",
+  "tamanho": 1742868,
   "notas": [
-    "Botão Postar em Canais: abre a plataforma já na tela de envio",
-    "Endereço exato para postar, próprio de cada canal"
+    "Canal de cortes: link do YouTube vira cortes de 1 minuto dos melhores momentos",
+    "Canal de afiliado: link da Amazon montado sozinho e painel dos outros no lugar certo",
+    "Fábrica de cortes no seu computador, com legenda queimada e vídeo em pé"
   ],
-  "substitui": "1.0.13",
+  "substitui": "1.0.14",
   "anteriores": [
+    {
+      "versao": "1.0.14",
+      "arquivo": "jev-1.0.14.html",
+      "sha256": "4fe943efae74e86941f2c2af4a3deea3fd95bfe67ee6e97802ea126dece78345",
+      "data": "2026-08-09"
+    },
     {
       "versao": "1.0.13",
       "arquivo": "jev-1.0.13.html",
@@ -39,12 +46,6 @@
       "versao": "1.0.9",
       "arquivo": "jev-1.0.9.html",
       "sha256": "ee801a36bac4f67ec00ac5b3775bb47fa49735a4d25b750541efbb1e05e380e7",
-      "data": "2026-08-02"
-    },
-    {
-      "versao": "1.0.8",
-      "arquivo": "jev-1.0.8.html",
-      "sha256": "9036de632685569a10bf6aa200deab70c2989c9d9d92cc02a4c5814bb1f6a476",
       "data": "2026-08-02"
     }
   ]
