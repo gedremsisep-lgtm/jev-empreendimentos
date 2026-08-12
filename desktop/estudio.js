@@ -230,12 +230,19 @@ function estado(opcoes) {
   const fresco = !!(opcoes && opcoes.fresco);
   const py = acharPython(fresco);
   const ff = acharFfmpeg(fresco);
+  /* o ffprobe vem no mesmo pacote do ffmpeg e mora ao lado dele */
+  let ffp = '';
+  if (ff) {
+    const irmao = path.join(path.dirname(ff), 'ffprobe' + EXE);
+    ffp = fs.existsSync(irmao) ? irmao : (achar('ffprobe') || '');
+  }
   const piper = achar('piper');
   const voz = acharVoz();
   return {
     pasta: raiz(),
     python: py || '',
     ffmpeg: ff || '',
+    ffprobe: ffp,
     piper: piper || '',
     voz: voz || '',
     fabrica: fs.existsSync(fabricaPy()),
@@ -476,7 +483,19 @@ function montar(base, enviar) {
     if (!fs.existsSync(fabricaPy()))
       return resolve({ ok: false, motivo: 'a fábrica não veio dentro deste pacote' });
 
-    const amb = Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8' });
+    /* A fábrica mora dentro do programa (Arquivos de Programas) e as
+       ferramentas moram na pasta de dados do usuário. São dois lugares
+       diferentes, e a fábrica não teria como adivinhar o segundo. Então o
+       caminho de cada coisa vai escrito, pelo ambiente — sem procura, sem
+       depender do PATH do Windows. */
+    const amb = Object.assign({}, process.env, {
+      PYTHONIOENCODING: 'utf-8',
+      JEV_FERRAMENTAS: ferramentas(),
+      JEV_FFMPEG: e.ffmpeg || '',
+      JEV_FFPROBE: e.ffprobe || '',
+      JEV_PIPER: e.piper || '',
+      JEV_VOZ: e.voz || ''
+    });
     const p = spawn(e.python, ['-u', fabricaPy(), '--trabalho', base], { env: amb });
     rodando = p;
     let arquivos = [], registro = '', sobra = '';
