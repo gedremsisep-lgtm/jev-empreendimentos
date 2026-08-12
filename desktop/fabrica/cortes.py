@@ -255,10 +255,21 @@ def escolher(sinais, opts=None):
 #  FERRAMENTAS
 # =========================================================================
 def achar(nome):
-    for raiz, _dirs, arqs in os.walk(FERR):
-        for a in arqs:
-            if a.lower() in (nome + '.exe', nome):
-                return os.path.join(raiz, a)
+    # o aplicativo diz onde guardou as ferramentas; o .bat usa a pasta ao lado
+    bases = [FERR]
+    for p in (os.environ.get('JEV_FERRAMENTAS') or '').split(os.pathsep):
+        if p.strip():
+            bases.append(p.strip())
+    direto = os.environ.get('JEV_' + nome.replace('-', '').upper())
+    if direto and os.path.isfile(direto):
+        return direto
+    for base in bases:
+        if not os.path.isdir(base):
+            continue
+        for raiz, _dirs, arqs in os.walk(base):
+            for a in arqs:
+                if a.lower() in (nome + '.exe', nome):
+                    return os.path.join(raiz, a)
     for p in os.environ.get('PATH', '').split(os.pathsep):
         c = os.path.join(p, nome)
         if os.path.isfile(c):

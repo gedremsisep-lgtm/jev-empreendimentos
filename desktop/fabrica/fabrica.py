@@ -62,10 +62,28 @@ def achar(nome, *pastas):
     """Procura um executável nas pastas de ferramentas e depois no PATH."""
     exe = nome + ('.exe' if os.name == 'nt' else '')
     for p in pastas:
+        if not p or not os.path.isdir(p):
+            continue
         for raiz, _, arquivos in os.walk(p):
             if exe in arquivos:
                 return os.path.join(raiz, exe)
     return shutil.which(nome)
+
+
+def pastas_de_ferramentas():
+    """Onde procurar o FFmpeg e a voz.
+
+       Rodando pelo .bat, é a pasta 'ferramentas' aqui do lado. Mas quando quem
+       chama é o APLICATIVO, a fábrica mora dentro do programa (em Arquivos de
+       Programas) e as ferramentas moram na pasta de dados do usuário — dois
+       lugares completamente diferentes. Por isso o aplicativo diz, pelo
+       ambiente, exatamente onde ele guardou as coisas. Sem isso a fábrica
+       procurava no lugar errado e reclamava que faltava o FFmpeg."""
+    ps = [FERR]
+    for p in (os.environ.get('JEV_FERRAMENTAS') or '').split(os.pathsep):
+        if p.strip():
+            ps.append(p.strip())
+    return ps
 
 
 FFMPEG  = None
@@ -76,17 +94,30 @@ VOZ     = None
 
 def preparar_ferramentas():
     global FFMPEG, FFPROBE, PIPER, VOZ
-    FFMPEG  = achar('ffmpeg',  FERR)
-    FFPROBE = achar('ffprobe', FERR)
-    PIPER   = achar('piper',   FERR)
-    if os.path.isdir(FERR):
-        for raiz, _, arqs in os.walk(FERR):
-            for a in arqs:
-                if a.endswith('.onnx'):
-                    VOZ = os.path.join(raiz, a)
+    ps = pastas_de_ferramentas()
+    # o caminho que o aplicativo mandou vale mais que qualquer procura
+    FFMPEG  = os.environ.get('JEV_FFMPEG')  or achar('ffmpeg',  *ps)
+    FFPROBE = os.environ.get('JEV_FFPROBE') or achar('ffprobe', *ps)
+    PIPER   = os.environ.get('JEV_PIPER')   or achar('piper',   *ps)
+    VOZ     = os.environ.get('JEV_VOZ') or None
+    if not VOZ:
+        for base in ps:
+            if not base or not os.path.isdir(base):
+                continue
+            for raiz, _, arqs in os.walk(base):
+                for a in arqs:
+                    if a.endswith('.onnx'):
+                        VOZ = os.path.join(raiz, a)
+                        break
+                if VOZ:
                     break
+            if VOZ:
+                break
     if not FFMPEG or not FFPROBE:
-        diz('ERRO: não encontrei o FFmpeg. Rode o MONTAR-VIDEO.bat, que ele baixa sozinho.')
+        diz('ERRO: não encontrei o FFmpeg.')
+        diz('Procurei em: ' + ' · '.join(p for p in ps if p))
+        diz('Pelo aplicativo: clique em instalar as ferramentas.')
+        diz('Pelo .bat: rode o MONTAR-VIDEO.bat, que ele baixa sozinho.')
         sys.exit(1)
 
 
