@@ -50,19 +50,74 @@ function pasta(...p) {
 }
 function ferramentas() { return pasta('ferramentas'); }
 
-/* onde mora a fábrica: dentro do pacote do programa */
-function fabricaPy() {
-  const tentativas = [
-    path.join(__dirname, 'fabrica', 'fabrica.py'),
-    path.join(process.resourcesPath || '', 'fabrica', 'fabrica.py'),
-    path.join(__dirname, '..', 'fabrica', 'fabrica.py')
-  ];
-  for (const t of tentativas) if (t && fs.existsSync(t)) return t;
-  return tentativas[0];
+/* ------------------------------------------------- onde mora a fábrica
+
+   Aqui mora uma armadilha do Electron. Quando o programa é instalado, tudo
+   vira UM arquivo só: o app.asar. Para o Node, esse arquivo se comporta como
+   se fosse uma pasta — fs.existsSync diz que o fabrica.py está lá, e está
+   mesmo. Só que o Python é um programa DE FORA: ele não sabe abrir um arquivo
+   que mora dentro de outro arquivo, e responde
+
+       can't open file '...\app.asar\fabrica\fabrica.py': [Errno 2]
+
+   Foi assim que a segunda tentativa de montar vídeo morreu, logo depois de
+   consertar o Python. A saída tem duas camadas, de propósito:
+
+     1. o empacotador é instruído a deixar a pasta fabrica FORA do app.asar
+        (asarUnpack no package.json);
+     2. e, se mesmo assim ela vier presa lá dentro, o programa COPIA os
+        arquivos para a pasta de dados e roda de lá.
+
+   A segunda camada existe porque a primeira depende de uma configuração de
+   empacotamento dar certo — e configuração de empacotamento é exatamente o
+   tipo de coisa que quebra sem avisar.                                     */
+const ARQUIVOS_FABRICA = ['fabrica.py', 'cortes.py'];
+
+function ehDentroDoAsar(c) {
+  return /[\\/]app\.asar[\\/]/i.test(String(c || ''));
 }
-function cortesPy() {
-  return path.join(path.dirname(fabricaPy()), 'cortes.py');
+
+function candidatosFabrica() {
+  const res = process.resourcesPath || '';
+  return [
+    path.join(__dirname, 'fabrica'),                    // rodando do código
+    res ? path.join(res, 'app.asar.unpacked', 'fabrica') : '',  // instalado, solto
+    res ? path.join(res, 'fabrica') : '',               // instalado, ao lado
+    path.join(__dirname, '..', 'fabrica'),
+    path.join(__dirname, 'fabrica')                     // instalado, preso no asar
+  ].filter(Boolean);
 }
+
+/* copia os arquivos para fora do pacote, onde um programa de fora alcança */
+function soltarFabrica(origem) {
+  const destino = pasta('fabrica');
+  for (const nome of ARQUIVOS_FABRICA) {
+    const de = path.join(origem, nome);
+    const para = path.join(destino, nome);
+    if (!fs.existsSync(de)) continue;
+    let precisa = true;
+    try {
+      precisa = !fs.existsSync(para) || fs.statSync(para).size !== fs.statSync(de).size;
+    } catch (e) {}
+    if (precisa) {
+      try { fs.writeFileSync(para, fs.readFileSync(de)); } catch (e) {}
+    }
+  }
+  return destino;
+}
+
+function pastaDaFabrica(lista) {
+  const cands = lista || candidatosFabrica();
+  const tem = d => { try { return fs.existsSync(path.join(d, 'fabrica.py')); } catch (e) { return false; } };
+  /* o melhor caso: existe e não está preso dentro do pacote */
+  for (const d of cands) if (!ehDentroDoAsar(d) && tem(d)) return d;
+  /* só sobrou o de dentro do pacote: solta para fora e roda de lá */
+  for (const d of cands) if (tem(d)) return soltarFabrica(d);
+  return cands[0];
+}
+
+function fabricaPy() { return path.join(pastaDaFabrica(), 'fabrica.py'); }
+function cortesPy()  { return path.join(pastaDaFabrica(), 'cortes.py'); }
 
 /* --------------------------------------------------------- achar programa */
 function procurarEm(dir, nome) {
@@ -446,6 +501,11 @@ function montar(base, enviar) {
     p.on('close', code => {
       rodando = null;
       if (code !== 0 && !arquivos.length) {
+        if (/can't open file|No such file or directory/i.test(registro) && /app\.asar/i.test(registro)) {
+          return resolve({ ok: false, motivo:
+            'a fábrica ficou presa dentro do pacote do programa e o Python não alcança lá. ' +
+            'Instale a versão mais nova do aplicativo, que já vem com ela solta.' });
+        }
         if (/was not found|Microsoft Store|execution alias/i.test(registro)) {
           esquecerFerramentas();
           return resolve({ ok: false, lojaDaMicrosoft: true, motivo:
@@ -622,6 +682,7 @@ function faxina(guardar) {
 module.exports = {
   estado, instalar, limpar, criar, parar, faxina,
   acharPython, acharFfmpeg, pythonServe, esquecerFerramentas,
+  pastaDaFabrica, ehDentroDoAsar, candidatosFabrica,
   escolherArquivos, midiaDoProduto, extrairMidia,
   raiz, fabricaPy, cortesPy, baixar
 };

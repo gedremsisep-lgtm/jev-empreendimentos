@@ -1,7 +1,7 @@
 {
   "name": "jev-empreendimentos",
   "productName": "JeV Empreendimentos",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Gestão integrada de obras, imóveis, veículos, chácara, produtos e mídia da JeV Empreendimentos",
   "author": {
     "name": "JeV Empreendimentos"
@@ -86,6 +86,10 @@
         "repo": "jev-empreendimentos",
         "releaseType": "release"
       }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "fabrica/**"
     ]
   },
   "repository": {
