@@ -1,16 +1,21 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.18",
-  "arquivo": "jev-1.0.18.html",
+  "versao": "1.0.19",
+  "arquivo": "jev-1.0.19.html",
   "data": "2026-08-12",
-  "sha256": "1daf446ce27daa9ab9d36fc47c3e604541f2bf29cc146c3d888ecc143dbf200f",
+  "sha256": "d243b73210324c6bd07fc85ef005cd69261c842d8023a8742d1e2759e8872e5f",
   "tamanho": 1783408,
   "notas": [
-    "Corrigido: o Windows entregava um atalho da Loja da Microsoft no lugar do Python",
-    "As ferramentas de vídeo agora se instalam direto da pauta, num clique só"
+    "Corrigido: a fábrica ficava presa dentro do pacote e o Python não alcançava"
   ],
-  "substitui": "1.0.17",
+  "substitui": "1.0.18",
   "anteriores": [
+    {
+      "versao": "1.0.18",
+      "arquivo": "jev-1.0.18.html",
+      "sha256": "1daf446ce27daa9ab9d36fc47c3e604541f2bf29cc146c3d888ecc143dbf200f",
+      "data": "2026-08-12"
+    },
     {
       "versao": "1.0.17",
       "arquivo": "jev-1.0.17.html",
@@ -40,12 +45,6 @@
       "arquivo": "jev-1.0.13.html",
       "sha256": "48042a377796b0452b903316bfa6f28121cf9d274cb262468b91e8c01acd1663",
       "data": "2026-08-03"
-    },
-    {
-      "versao": "1.0.12",
-      "arquivo": "jev-1.0.12.html",
-      "sha256": "c4dce5f4ab5b1febf1ec71bc473f6160c32641deac330810dde8e0d85493c020",
-      "data": "2026-08-02"
     }
   ]
 }
