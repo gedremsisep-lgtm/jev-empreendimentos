@@ -81,6 +81,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --x64 --publish always
 
+      # O Python é um programa de fora: ele não consegue abrir um arquivo que
+      # esteja dentro do app.asar. Se a fábrica for parar lá, o botão de gerar
+      # vídeo quebra na casa do dono. Então se confere aqui, no que foi montado.
+      - name: Conferir se a fábrica ficou FORA do pacote
+        shell: bash
+        working-directory: desktop
+        run: |
+          solta="dist/win-unpacked/resources/app.asar.unpacked/fabrica/fabrica.py"
+          if [ -s "$solta" ]; then
+            echo "ok    a fábrica está solta em app.asar.unpacked"
+          else
+            echo "FALTA a fábrica não saiu do app.asar — o Python não vai alcançar ela"
+            ls -R dist/win-unpacked/resources 2>/dev/null | head -40
+            exit 1
+          fi
+
       - name: Guardar o instalador também como anexo do Actions
         uses: actions/upload-artifact@v4
         with:
