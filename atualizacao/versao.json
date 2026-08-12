@@ -1,15 +1,21 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.19",
-  "arquivo": "jev-1.0.19.html",
+  "versao": "1.0.20",
+  "arquivo": "jev-1.0.20.html",
   "data": "2026-08-12",
-  "sha256": "d243b73210324c6bd07fc85ef005cd69261c842d8023a8742d1e2759e8872e5f",
+  "sha256": "b1158987861448c5caf7b9f3a4468b7cb7dbfba0a0821abff0647bf35d0625a9",
   "tamanho": 1783408,
   "notas": [
-    "Corrigido: a fábrica ficava presa dentro do pacote e o Python não alcançava"
+    "Corrigido: a fábrica não achava o FFmpeg que o aplicativo tinha baixado"
   ],
-  "substitui": "1.0.18",
+  "substitui": "1.0.19",
   "anteriores": [
+    {
+      "versao": "1.0.19",
+      "arquivo": "jev-1.0.19.html",
+      "sha256": "d243b73210324c6bd07fc85ef005cd69261c842d8023a8742d1e2759e8872e5f",
+      "data": "2026-08-12"
+    },
     {
       "versao": "1.0.18",
       "arquivo": "jev-1.0.18.html",
@@ -39,12 +45,6 @@
       "arquivo": "jev-1.0.14.html",
       "sha256": "4fe943efae74e86941f2c2af4a3deea3fd95bfe67ee6e97802ea126dece78345",
       "data": "2026-08-09"
-    },
-    {
-      "versao": "1.0.13",
-      "arquivo": "jev-1.0.13.html",
-      "sha256": "48042a377796b0452b903316bfa6f28121cf9d274cb262468b91e8c01acd1663",
-      "data": "2026-08-03"
     }
   ]
 }
