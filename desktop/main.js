@@ -527,9 +527,9 @@ const contaEstudio = evento => {
 };
 
 ipcMain.handle('est-disponivel', () => !!estudio);
-ipcMain.handle('est-estado', () => {
+ipcMain.handle('est-estado', (_e, opcoes) => {
   if (!estudio) return { pronto: false, semEstudio: true };
-  try { return estudio.estado(); } catch (e) { return { pronto: false, erro: String(e && e.message) }; }
+  try { return estudio.estado(opcoes || {}); } catch (e) { return { pronto: false, erro: String(e && e.message) }; }
 });
 ipcMain.handle('est-instalar', async () => {
   if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote' };

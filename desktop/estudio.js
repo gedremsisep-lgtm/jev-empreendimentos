@@ -107,9 +107,74 @@ function acharVoz() {
   return null;
 }
 
-function estado() {
-  const py = achar('python3') || achar('python');
-  const ff = achar('ffmpeg');
+/* ------------------------------------------------- achar um Python de verdade
+
+   O Windows vem de fábrica com uma ARMADILHA: existem arquivos chamados
+   python.exe e python3.exe dentro de WindowsApps que não são o Python. São
+   atalhos para a Loja da Microsoft. Quem manda rodar um deles não recebe um
+   erro claro — recebe a frase "Python was not found; run without arguments to
+   install from the Microsoft Store".
+
+   Foi exatamente isso que aconteceu na primeira vez que este botão rodou numa
+   máquina de verdade. O programa achou o atalho, achou que estava tudo pronto,
+   e a montagem morreu com uma mensagem que não é nossa e não ajuda ninguém.
+
+   A correção não é desviar do atalho pelo nome do caminho — é PERGUNTAR ao
+   candidato se ele é Python mesmo, rodando uma linha e conferindo a resposta.
+   Assim, qualquer Python quebrado por qualquer motivo é descartado do mesmo
+   jeito, e o de dentro da nossa pasta continua tendo preferência.            */
+const CANDIDATOS_PY = ['python3', 'python', 'py'];
+let pyLembrado = null;
+
+function pythonServe(caminho) {
+  if (!caminho) return false;
+  try {
+    const r = spawnSync(caminho, ['-c', 'import sys;sys.stdout.write(str(sys.version_info[0]))'],
+                        { encoding: 'utf8', timeout: 20000 });
+    return r.status === 0 && String(r.stdout || '').trim() === '3';
+  } catch (e) { return false; }
+}
+
+function acharPython(fresco) {
+  if (!fresco && pyLembrado !== null) return pyLembrado;
+  const vistos = new Set();
+  const tentar = c => {
+    if (!c || vistos.has(c)) return false;
+    vistos.add(c);
+    return pythonServe(c);
+  };
+  /* primeiro o que nós mesmos instalamos; só depois o que a máquina já tem */
+  for (const n of CANDIDATOS_PY) {
+    const local = procurarEm(ferramentas(), n + EXE);
+    if (tentar(local)) { pyLembrado = local; return local; }
+  }
+  for (const n of CANDIDATOS_PY) {
+    const doSistema = noSistema(n);
+    if (tentar(doSistema)) { pyLembrado = doSistema; return doSistema; }
+  }
+  pyLembrado = '';
+  return '';
+}
+
+/* o FFmpeg também é conferido de verdade, e não só pela existência do arquivo */
+let ffLembrado = null;
+function acharFfmpeg(fresco) {
+  if (!fresco && ffLembrado !== null) return ffLembrado;
+  const c = achar('ffmpeg');
+  if (!c) { ffLembrado = ''; return ''; }
+  try {
+    const r = spawnSync(c, ['-hide_banner', '-version'], { encoding: 'utf8', timeout: 20000 });
+    ffLembrado = (r.status === 0 && /ffmpeg version/i.test(String(r.stdout || ''))) ? c : '';
+  } catch (e) { ffLembrado = ''; }
+  return ffLembrado;
+}
+
+function esquecerFerramentas() { pyLembrado = null; ffLembrado = null; }
+
+function estado(opcoes) {
+  const fresco = !!(opcoes && opcoes.fresco);
+  const py = acharPython(fresco);
+  const ff = acharFfmpeg(fresco);
   const piper = achar('piper');
   const voz = acharVoz();
   return {
@@ -381,6 +446,12 @@ function montar(base, enviar) {
     p.on('close', code => {
       rodando = null;
       if (code !== 0 && !arquivos.length) {
+        if (/was not found|Microsoft Store|execution alias/i.test(registro)) {
+          esquecerFerramentas();
+          return resolve({ ok: false, lojaDaMicrosoft: true, motivo:
+            'o Windows respondeu com o atalho da Loja da Microsoft no lugar do Python. ' +
+            'Clique em instalar as ferramentas: eu baixo um Python só nosso e não uso mais o do sistema.' });
+        }
         const ultima = registro.trim().split(/\r?\n/).slice(-6).join(' · ');
         return resolve({ ok: false, motivo: ultima || ('a fábrica parou com o código ' + code) });
       }
@@ -451,10 +522,10 @@ function parar() {
 const PECAS_WIN = [
   { id: 'python', nome: 'Python portátil', mb: 11, zip: true, dentro: 'python',
     url: 'https://www.python.org/ftp/python/3.13.14/python-3.13.14-embed-amd64.zip',
-    confere: () => !!achar('python') },
+    confere: () => !!acharPython(true) },
   { id: 'ffmpeg', nome: 'FFmpeg — é ele que monta o vídeo', mb: 80, zip: true, dentro: 'ffmpeg',
     url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
-    confere: () => !!achar('ffmpeg') },
+    confere: () => !!acharFfmpeg(true) },
   { id: 'piper', nome: 'Voz de IA', mb: 20, zip: true, dentro: 'piper',
     url: 'https://github.com/rhasspy/piper/releases/latest/download/piper_windows_amd64.zip',
     confere: () => !!achar('piper') },
@@ -480,10 +551,11 @@ function descompactar(zip, destino) {
 
 async function instalar(enviar) {
   const av = e => { try { if (enviar) enviar(e); } catch (x) {} };
+  esquecerFerramentas();
   if (!WIN) {
     /* fora do Windows o programa usa o que a máquina já tem — é assim que
        este arquivo consegue ser testado de verdade, e não só de mentira */
-    const e = estado();
+    const e = estado({ fresco: true });
     av({ tipo: 'passo', pct: 100, texto: e.pronto ? 'usando as ferramentas do sistema' : 'faltam ferramentas' });
     return { ok: e.pronto, estado: e,
       motivo: e.pronto ? '' : 'neste sistema, instale o python3 e o ffmpeg pelo gerenciador de pacotes' };
@@ -520,13 +592,15 @@ async function instalar(enviar) {
     feito += peca.mb;
   }
 
-  const e = estado();
+  esquecerFerramentas();
+  const e = estado({ fresco: true });
   av({ tipo: 'passo', pct: 100, texto: e.pronto ? 'ferramentas prontas' : 'faltou alguma coisa' });
   return { ok: e.pronto, estado: e, motivo: erros.join(' · ') };
 }
 
 /* apaga as ferramentas — serve para consertar instalação pela metade */
 function limpar() {
+  esquecerFerramentas();
   try { fs.rmSync(ferramentas(), { recursive: true, force: true }); return true; }
   catch (e) { return false; }
 }
@@ -547,6 +621,7 @@ function faxina(guardar) {
 
 module.exports = {
   estado, instalar, limpar, criar, parar, faxina,
+  acharPython, acharFfmpeg, pythonServe, esquecerFerramentas,
   escolherArquivos, midiaDoProduto, extrairMidia,
   raiz, fabricaPy, cortesPy, baixar
 };

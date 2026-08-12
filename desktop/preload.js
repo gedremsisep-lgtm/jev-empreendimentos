@@ -47,7 +47,7 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
 
   /* ---- estúdio: o vídeo é montado aqui dentro, no seu computador ---- */
   estDisponivel:  ()               => ipcRenderer.invoke('est-disponivel'),
-  estEstado:      ()               => ipcRenderer.invoke('est-estado'),
+  estEstado:      opcoes           => ipcRenderer.invoke('est-estado', opcoes),
   estInstalar:    ()               => ipcRenderer.invoke('est-instalar'),
   estCriar:       dados            => ipcRenderer.invoke('est-criar', dados),
   estParar:       ()               => ipcRenderer.invoke('est-parar'),
