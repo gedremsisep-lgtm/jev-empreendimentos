@@ -253,17 +253,23 @@ function estado(opcoes) {
 }
 
 /* -------------------------------------------------------------- baixar */
-function baixar(url, destino, limite, aviso) {
+function baixar(url, destino, limite, aviso, referer) {
   return new Promise((ok, erro) => {
     const mod = url.startsWith('http://') ? http : https;
-    const req = mod.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 JeV/1.0', 'Accept': '*/*' },
-      timeout: 120000
-    }, res => {
+    /* o Referer é o endereço do anúncio. Muita loja só entrega a foto para
+       quem diz de qual página veio — sem isso o servidor devolve 403 e a
+       imagem some sem explicação. */
+    const cabecalho = {
+      'User-Agent': UA_NAVEGADOR,
+      'Accept': 'image/avif,image/webp,image/apng,video/*,*/*;q=0.8',
+      'Accept-Language': 'pt-BR,pt;q=0.9'
+    };
+    if (referer) cabecalho.Referer = referer;
+    const req = mod.get(url, { headers: cabecalho, timeout: 120000 }, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
         res.resume();
         const proximo = new URL(res.headers.location, url).href;
-        return baixar(proximo, destino, limite, aviso).then(ok, erro);
+        return baixar(proximo, destino, limite, aviso, referer).then(ok, erro);
       }
       if (res.statusCode !== 200) { res.resume(); return erro(new Error('resposta ' + res.statusCode)); }
       const tamanho = Number(res.headers['content-length'] || 0);
@@ -312,6 +318,137 @@ function pegarTexto(url) {
     req.on('timeout', () => req.destroy(new Error('demorou demais')));
     req.on('error', erro);
   });
+}
+
+/* ================================ ler a página com o navegador de verdade
+
+   O pedido cru do Node não passa em loja grande. O TikTok Shop derruba a
+   conexão na cara (read ECONNRESET) porque a assinatura de quem está
+   pedindo não é a de um navegador — e, mesmo quando passa, a página chega
+   vazia, porque a vitrine é montada depois, por programa, dentro do
+   navegador.
+
+   Acontece que este aplicativo É um navegador: o Electron carrega um
+   Chromium inteiro. Então em vez de fingir ser um, a gente usa o que já
+   está aqui. A página abre numa janela escondida, roda os programas dela
+   como rodaria na sua tela, e só então a gente lê as imagens que ficaram
+   de fato desenhadas.
+
+   Duas regras que valem a pena escrever, porque é fácil escorregar nelas:
+
+   A janela NÃO clica em nada. Nem em aviso de cookie, nem em "aceitar",
+   nem em botão nenhum. Ela só olha. Aceitar termo em nome do dono não é
+   trabalho de robô.
+
+   E se a loja pedir login ou pôr um teste de "não sou robô", a gente não
+   contorna: devolve o motivo escrito e para. O caminho nesse caso é o
+   material do painel do vendedor, que é seu por direito.                  */
+const UA_NAVEGADOR =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
+function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* roda DENTRO da página. Só lê o que está desenhado na tela. */
+function coletorDaPagina() {
+  const rolar = async () => {
+    for (let i = 0; i < 6; i++) {
+      window.scrollBy(0, window.innerHeight);
+      await new Promise(r => setTimeout(r, 400));
+    }
+    window.scrollTo(0, 0);
+    await new Promise(r => setTimeout(r, 400));
+  };
+  const limpar = u => String(u || '').trim();
+  const vale = u => /^https?:\/\//i.test(u) &&
+    !/sprite|\bicon\b|logo|placeholder|avatar|1x1|blank/i.test(u);
+
+  return rolar().then(() => {
+    const fotos = [], videos = [];
+    const junta = (lista, u) => {
+      const c = limpar(u);
+      if (vale(c) && !lista.includes(c)) lista.push(c);
+    };
+
+    document.querySelectorAll('img').forEach(i => {
+      const l = i.naturalWidth || i.width || 0;
+      const a = i.naturalHeight || i.height || 0;
+      /* imagem de produto é grande; ícone e selo são pequenos */
+      if (l >= 250 && a >= 250) junta(fotos, i.currentSrc || i.src);
+    });
+
+    document.querySelectorAll('video').forEach(v => {
+      junta(videos, v.currentSrc || v.src);
+      v.querySelectorAll('source').forEach(s => junta(videos, s.src));
+      if (v.poster) junta(fotos, v.poster);
+    });
+
+    /* algumas lojas põem a foto como fundo, não como <img> */
+    document.querySelectorAll('div,span,section,a').forEach(e => {
+      const f = getComputedStyle(e).backgroundImage || '';
+      const m = f.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
+      if (m && e.clientWidth >= 250 && e.clientHeight >= 250) junta(fotos, m[1]);
+    });
+
+    const texto = (document.body.innerText || '').slice(0, 3000);
+    return {
+      fotos: fotos.slice(0, 20),
+      videos: videos.slice(0, 5),
+      /* sinais de que a loja pôs uma porta na frente */
+      barrado: /verifica(ç|c)(ã|a)o de seguran|not a robot|captcha|entrar para continuar|log in to continue|acesso negado|access denied/i.test(texto),
+      titulo: String(document.title || '')
+    };
+  });
+}
+
+async function midiaPelaJanela(url, opcoes) {
+  const o = opcoes || {};
+  let janela;
+  try {
+    janela = new BrowserWindow({
+      show: !!o.mostrar,
+      width: 1280, height: 900,
+      title: 'JeV — lendo a página do produto',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        /* sessão própria e persistente: o que a loja guardar de uma
+           tentativa para outra continua valendo, e nada disso se mistura
+           com o resto do programa */
+        partition: 'persist:jev-loja',
+        backgroundThrottling: false
+      }
+    });
+  } catch (e) {
+    return { ok: false, fotos: [], videos: [],
+             motivo: 'não consegui abrir o navegador interno: ' + (e && e.message) };
+  }
+
+  try {
+    await janela.loadURL(url, { userAgent: UA_NAVEGADOR });
+    /* tempo para a vitrine se montar sozinha */
+    await esperar(Math.max(2000, Number(o.espera) || 7000));
+    const r = await janela.webContents.executeJavaScript(
+      '(' + coletorDaPagina.toString() + ')()', true);
+
+    if (r && r.barrado)
+      return { ok: false, fotos: [], videos: [], barrado: true,
+        motivo: 'a loja pediu verificação de segurança ou login para mostrar a página. ' +
+                'Eu não passo por esse tipo de porta — e nem devo.' };
+
+    const fotos = (r && r.fotos) || [], videos = (r && r.videos) || [];
+    if (!fotos.length && !videos.length)
+      return { ok: false, fotos: [], videos: [],
+        motivo: 'abri a página no navegador, mas ela não desenhou nenhuma foto grande.' };
+
+    return { ok: true, fotos, videos, motivo: '', porJanela: true };
+  } catch (e) {
+    return { ok: false, fotos: [], videos: [],
+             motivo: 'o navegador não conseguiu abrir a página: ' + (e && e.message) };
+  } finally {
+    try { if (janela && !janela.isDestroyed()) janela.destroy(); } catch (x) {}
+  }
 }
 
 /* ------------------------------------------------ a mídia do produto
@@ -462,22 +599,51 @@ async function baixarMidias(dados, enviar) {
     return { ok: false, arquivos: midiasGuardadas(chave), avisos: [],
              motivo: 'este produto não tem o endereço do anúncio guardado' };
 
-  /* 1) descobrir o que a página publica */
-  av({ tipo: 'passo', pct: 3, texto: 'lendo a página do anúncio' });
+  /* 1) descobrir o que a página publica.
+
+     Duas tentativas, da mais barata para a mais cara. Primeiro o pedido
+     cru, que é rápido e resolve a maioria das lojas. Se a loja derrubar a
+     conexão ou entregar página vazia — que é o que o TikTok Shop faz — aí
+     sim a gente abre a página no navegador de verdade que já vem dentro
+     deste programa. Não adianta insistir no pedido cru: quem barra, barra. */
   const fotos = [], videos = [], recusas = [];
+  let usouJanela = false, barrado = false;
+
   for (const url of enderecos) {
+    av({ tipo: 'passo', pct: 3, texto: 'lendo a página do anúncio' });
     let m;
     try { m = await midiaDoProduto(url); }
     catch (e) { m = { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
-    if (!m.ok) { recusas.push(m.motivo); continue; }
+
+    if (!m.ok) {
+      av({ tipo: 'passo', pct: 4,
+           texto: 'a loja barrou o pedido — abrindo a página no navegador' });
+      let j;
+      try { j = await midiaPelaJanela(url, { espera: d.espera, mostrar: !!d.mostrar }); }
+      catch (e) { j = { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
+      if (j.ok) { m = j; usouJanela = true; }
+      else {
+        barrado = barrado || !!j.barrado;
+        recusas.push(m.motivo + ' Pelo navegador também não deu: ' + j.motivo);
+        continue;
+      }
+    }
+
     (m.fotos || []).forEach(u => { if (!fotos.includes(u)) fotos.push(u); });
     (m.videos || []).forEach(u => { if (!videos.includes(u)) videos.push(u); });
   }
 
   if (!fotos.length && !videos.length) {
-    return { ok: false, arquivos: midiasGuardadas(chave), avisos: recusas,
+    return { ok: false, arquivos: midiasGuardadas(chave), avisos: recusas, barrado,
+      /* quando a loja pôs uma porta, tentar de novo pelo mesmo caminho não
+         resolve — o certo é abrir a loja na tela, ou pegar no painel */
+      podeTentarNaTela: !d.mostrar,
       motivo: (recusas[0] || 'a página não publica as fotos de um jeito que eu consiga ler') +
-        ' Baixe o vídeo do anúncio no painel do vendedor e use "Escolher do computador".' };
+        (barrado
+          ? ' Você pode tentar de novo com a loja aberta na sua tela, para passar o aviso ' +
+            'de cookie ou entrar na conta você mesmo. Ou, mais rápido: baixe o vídeo no ' +
+            'painel do vendedor e use "Materiais do produto".'
+          : ' Baixe o vídeo do anúncio no painel do vendedor e use "Materiais do produto".') };
   }
 
   /* 2) baixar de verdade. O vídeo primeiro: é ele que mostra a pessoa. */
@@ -500,7 +666,8 @@ async function baixarMidias(dados, enviar) {
     const destino = path.join(dir, (item.video ? 'a' : 'b') +
       String(n).padStart(2, '0') + ext);
     try {
-      await baixar(item.url, destino, item.video ? MAX_VIDEO : MAX_FOTO);
+      await baixar(item.url, destino, item.video ? MAX_VIDEO : MAX_FOTO,
+                   null, enderecos[0]);
       if (fs.statSync(destino).size > 0) guardados++;
       else { try { fs.unlinkSync(destino); } catch (e) {} }
     } catch (e) {
@@ -511,12 +678,17 @@ async function baixarMidias(dados, enviar) {
 
   av({ tipo: 'passo', pct: 100, texto: guardados + ' arquivo(s) guardados' });
   const arquivos = midiasGuardadas(chave);
+  const temVideo = arquivos.some(a => a.tipo === 'video');
+  if (arquivos.length && !temVideo)
+    avisos.push('Vieram fotos, mas nenhum vídeo. O vídeo do TikTok Shop toca por um ' +
+      'caminho que não dá para salvar de fora. Para ter a pessoa usando o produto, ' +
+      'baixe o vídeo no painel do vendedor e use "Materiais do produto".');
   return {
     ok: arquivos.length > 0,
-    arquivos, avisos, pasta: dir,
+    arquivos, avisos, pasta: dir, porJanela: usouJanela, temVideo,
     motivo: arquivos.length ? '' :
       'a loja respondeu, mas nenhum arquivo chegou inteiro. ' +
-      'Baixe o material no painel do vendedor e use "Escolher do computador".'
+      'Baixe o material no painel do vendedor e use "Materiais do produto".'
   };
 }
 
@@ -943,7 +1115,7 @@ module.exports = {
   acharPython, acharFfmpeg, pythonServe, esquecerFerramentas,
   pastaDaFabrica, ehDentroDoAsar, candidatosFabrica,
   escolherArquivos, midiaDoProduto, extrairMidia,
-  baixarMidias, midiasGuardadas, limparMidias, chaveDePasta,
+  baixarMidias, midiasGuardadas, limparMidias, chaveDePasta, midiaPelaJanela,
   iaEstado, iaInstalar, iaLimpar, iaLocalPy,
   raiz, fabricaPy, cortesPy, baixar
 };

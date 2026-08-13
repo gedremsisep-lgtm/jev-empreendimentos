@@ -49,6 +49,7 @@ const LOJA = fs.mkdtempSync(path.join(os.tmpdir(), 'jev-loja-'));
 fazerFoto('0x2a6f4f', path.join(LOJA, 'a.jpg'));
 fazerFoto('0x8f3b2a', path.join(LOJA, 'b.jpg'));
 fazerFoto('0x2b3f8f', path.join(LOJA, 'c.jpg'));
+fazerFoto('0x999999', path.join(LOJA, 'logo-pequeno.jpg'));
 fazerVideo(path.join(LOJA, 'demo.mp4'), 10);
 
 let porta = 0;
@@ -67,6 +68,34 @@ const servidor = http.createServer((req, res) => {
   if (url === '/vazia') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end('<html><body>nada aqui</body></html>');
+  }
+  /* uma loja no estilo TikTok Shop: derruba o pedido cru na cara, e a
+     vitrine só existe depois que o programa da página roda no navegador */
+  if (url === '/loja-dificil') {
+    if (!/Chrome\/126/.test(String(req.headers['sec-fetch-mode'] ? 'Chrome/126' : req.headers['user-agent'] || '')) ||
+        !req.headers['sec-fetch-mode']) {
+      /* sem os sinais de navegador de verdade, a conexão morre */
+      return req.socket.destroy();
+    }
+    const b = 'http://127.0.0.1:' + porta;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end(`<!doctype html><html><head><title>Kit Coala</title></head>
+      <body><div id="vitrine">carregando…</div>
+      <script>
+        setTimeout(function(){
+          document.getElementById('vitrine').innerHTML =
+            '<img src="${b}/a.jpg" width="600" height="600">' +
+            '<img src="${b}/b.jpg" width="600" height="600">' +
+            '<img src="${b}/logo-pequeno.jpg" width="40" height="40">';
+        }, 800);
+      </script></body></html>`);
+  }
+  /* uma loja que põe porta: pede verificação em vez de mostrar o produto */
+  if (url === '/com-porta') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end('<!doctype html><html><body>' +
+      '<h1>Verificação de segurança</h1><p>Confirme que você não é um robô.</p>' +
+      '</body></html>');
   }
   if (url === '/gigante') {
     res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': String(900 * 1024 * 1024) });
@@ -396,6 +425,53 @@ app.whenReady().then(async () => {
   ok('página que não publica nada é recusada', bloqueada.ok === false ? true : bloqueada);
   ok('com o motivo escrito e o caminho da saída',
     /painel do vendedor/i.test(bloqueada.motivo || '') ? true : bloqueada.motivo);
+
+  /* ============ 6a-bis) a loja que derruba o pedido cru (o TikTok Shop)
+     Este é o caso que apareceu de verdade na casa do dono: read ECONNRESET.
+     A saída não é insistir no pedido cru — é usar o navegador que já vem
+     dentro deste programa, deixar a página se montar sozinha, e ler o que
+     ficou desenhado.                                                       */
+  console.log('\n6a-bis) a loja que derruba o pedido cru');
+  const dificil = 'http://127.0.0.1:' + porta + '/loja-dificil';
+
+  let cruExplodiu = false;
+  try {
+    const cru = await estudio.midiaDoProduto(dificil);
+    cruExplodiu = cru.ok === false;
+  } catch (e) { cruExplodiu = true; }
+  ok('o pedido cru é derrubado por essa loja, como na vida real',
+    cruExplodiu === true ? true : 'a loja de teste não barrou');
+
+  const pelaJanela = await estudio.midiaPelaJanela(dificil, { espera: 4000 });
+  ok('mas o navegador interno lê a página', pelaJanela.ok === true ? true : pelaJanela);
+  ok('e pega as fotos que só existem depois que a página roda',
+    (pelaJanela.fotos || []).length === 2 ? true : pelaJanela.fotos);
+  ok('descartando o logo pequeno, que não é foto de produto',
+    !(pelaJanela.fotos || []).some(u => /logo-pequeno/.test(u)) ? true : pelaJanela.fotos);
+
+  const salvouDificil = await estudio.baixarMidias({ chave: 'loja-dificil', urls: [dificil] });
+  ok('e o botão de baixar cai sozinho nesse caminho quando o cru falha',
+    salvouDificil.ok === true && salvouDificil.porJanela === true ? true : salvouDificil);
+  ok('guardando os arquivos de verdade no disco',
+    (salvouDificil.arquivos || []).length === 2 &&
+    salvouDificil.arquivos.every(a => fs.existsSync(a.caminho)) ? true : salvouDificil.arquivos);
+  ok('e avisando que veio foto mas não veio vídeo',
+    (salvouDificil.avisos || []).some(a => /nenhum vídeo/i.test(a)) ? true : salvouDificil.avisos);
+
+  /* a loja que põe verificação: a gente não passa por cima dela */
+  const comPorta = await estudio.midiaPelaJanela(
+    'http://127.0.0.1:' + porta + '/com-porta', { espera: 2000 });
+  ok('verificação de segurança é reconhecida', comPorta.barrado === true ? true : comPorta);
+  ok('e o programa não tenta passar por ela',
+    /não passo por esse tipo de porta/i.test(comPorta.motivo || '') ? true : comPorta.motivo);
+
+  const barradoDeVez = await estudio.baixarMidias({ chave: 'com-porta',
+    urls: ['http://127.0.0.1:' + porta + '/com-porta'] });
+  ok('o botão de baixar oferece tentar com a loja na sua tela',
+    barradoDeVez.podeTentarNaTela === true && barradoDeVez.barrado === true
+      ? true : barradoDeVez);
+
+  estudio.limparMidias('loja-dificil');
 
   const semEndereco = await estudio.baixarMidias({ chave: 'sem-endereco', urls: [] });
   ok('produto sem endereço do anúncio também é recusado sem quebrar',
