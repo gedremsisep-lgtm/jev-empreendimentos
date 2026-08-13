@@ -853,7 +853,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.23';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.24';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 7;   // v2: 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem) · v4: afiliados, roteiros e publicações · v5: garimpo de produtos · v6: cortes de vídeo · v7: vídeos montados no estúdio
 const STORES = [
@@ -15977,7 +15977,12 @@ async function pautaItemHTML(item){
       '<button class="btn xs gh" onclick="pautaCopiarPrompt(' + item.id + ')"><i class="ti ti-copy"></i>Copiar o prompt</button>' +
       (montando
         ? '<button class="btn xs rd" onclick="pautaParar()"><i class="ti ti-player-stop"></i>Parar</button>'
-        : '<button class="btn xs pu" onclick="pautaGerar(' + item.id + ')">' +
+        : /* baixar vem ANTES de gerar, porque é nessa ordem que funciona */
+          '<button class="btn xs ' + (temMidia ? 'gh' : 'bl') + '" ' +
+          'onclick="pautaBaixarMidias(' + item.id + ')">' +
+          '<i class="ti ti-download"></i>' +
+          (temMidia ? 'Baixar de novo' : 'Baixar as mídias do produto') + '</button>' +
+          '<button class="btn xs pu" onclick="pautaGerar(' + item.id + ')">' +
           '<i class="ti ti-wand"></i>' + (temVideo ? 'Gerar de novo' : 'Gerar o vídeo do produto') + '</button>') +
       (temVideo
         ? '<button class="btn xs gn" onclick="pautaPublicar(' + item.id + ')">' +
@@ -15999,10 +16004,22 @@ async function pautaItemHTML(item){
   /* o aviso que explica o vídeo com texto ANTES de você gerar e se decepcionar */
   if (estTem() && !temMidia)
     h += '<div class="al aw" style="margin-top:9px"><i class="ti ti-info-circle"></i><div>' +
-      '<b>Para o vídeo sair com uma pessoa usando o produto</b>, aponte o vídeo do anúncio ' +
-      'em <b>Materiais do produto</b>. Lojas como o TikTok Shop não deixam o sistema ler a ' +
-      'página sozinho — baixe o vídeo no painel do vendedor e escolha aqui. ' +
+      '<b>Antes de gerar, traga as mídias do produto.</b> Clique em ' +
+      '<b>Baixar as mídias do produto</b>: eu busco as fotos e o vídeo na própria página de ' +
+      'onde ele foi garimpado e guardo no seu computador. ' +
+      'Se a loja não deixar (o TikTok Shop não deixa), baixe o vídeo do anúncio no painel do ' +
+      'vendedor e use <b>Materiais do produto</b>. ' +
       'Sem material, as cenas saem em fundo liso com o texto por cima.</div></div>';
+
+  if (temMidia)
+    h += '<div class="al ag" style="margin-top:9px"><i class="ti ti-folder"></i><div>' +
+      '<b>' + pautaContaMidia(midia) + '</b> guardados no seu computador. ' +
+      'É com esses arquivos que o vídeo vai ser montado — o vídeo do vendedor entra primeiro, ' +
+      'porque é nele que aparece a pessoa usando o produto.' +
+      (item.midiaPasta
+        ? ' <button class="btn xs gh" onclick="pautaAbrirPasta(' + item.id + ')">' +
+          '<i class="ti ti-folder-open"></i>Ver os arquivos</button>' : '') +
+      '</div></div>';
 
   if (montando) h += pautaBarraHTML();
   if (PAUTA.erro[item.id])
@@ -16172,8 +16189,9 @@ async function pautaGerar(id){
     }catch(e){}
     if (!qtdArq && !fotos.length && !videos.length){
       PAUTA.erro[id] = 'O vídeo ficou pronto, mas saiu em fundo liso: nenhuma foto ou ' +
-        'vídeo do produto chegou até a fábrica. Clique em "Materiais do produto", aponte ' +
-        'o vídeo que você baixou no painel do vendedor e gere de novo.';
+        'vídeo do produto chegou até a fábrica. Clique em "Baixar as mídias do produto" — ' +
+        'e, se a loja não deixar, use "Materiais do produto" com o arquivo baixado no ' +
+        'painel do vendedor. Depois gere de novo.';
       toast('Vídeo pronto, mas sem imagem do produto.', 'aw');
     } else {
       toast('Vídeo pronto. Assista antes de publicar.', 'ag');
@@ -16194,6 +16212,53 @@ async function pautaGerar(id){
    dá, o caminho honesto fica aqui do lado: você baixa o vídeo no painel do
    vendedor (que é o que já mostra uma pessoa usando o produto) e aponta o
    arquivo. Uma vez por produto; fica guardado.                            */
+/* Baixa as fotos e o vídeo do próprio anúncio de onde o produto foi
+   garimpado, e guarda no computador. Depois disso, gerar o vídeo usa esses
+   arquivos — não sai mais nada em fundo liso enquanto houver material.
+   É um passo separado de propósito: você vê o que veio antes de esperar a
+   montagem inteira para descobrir que não veio nada. */
+async function pautaBaixarMidias(id){
+  const d = (typeof estApp === 'function') ? estApp() : null;
+  if (!d || !d.estMidiaBaixar){
+    toast('Baixar as mídias só no aplicativo do Windows.', 'aw');
+    return;
+  }
+  const item = await dbGet('videos', id);
+  if (!item || !item.produto) return;
+
+  const urls = (item.produto.links || []).map(l => l.url).filter(Boolean);
+  if (!urls.length){
+    PAUTA.erro[id] = 'Este produto não guardou o endereço do anúncio. Use ' +
+      '"Materiais do produto" e aponte os arquivos na mão.';
+    midiaRender();
+    return;
+  }
+
+  PAUTA.erro[id] = '';
+  PAUTA.montando = id; PAUTA.pct = 0;
+  PAUTA.recado = 'baixando as mídias do anúncio';
+  estOuvir(); midiaRender();
+
+  let r;
+  try { r = await d.estMidiaBaixar({ chave: 'p' + item.id + '-' + (item.produto.n || ''),
+                                     nome: item.produto.n, urls: urls }); }
+  catch (e) { r = { ok:false, arquivos:[], motivo:String((e && e.message) || e) }; }
+
+  PAUTA.montando = null;
+  const atual = await dbGet('videos', id);
+  if (r && r.ok){
+    /* entra na MESMA lista dos arquivos escolhidos na mão: daí para frente
+       a montagem usa esses arquivos sem precisar saber de onde vieram */
+    const caminhos = r.arquivos.map(a => a.caminho);
+    await dbPut('videos', { ...atual, midia: caminhos, midiaPasta: r.pasta });
+    toast('Baixei ' + pautaContaMidia(caminhos) + ' deste produto.', 'ag');
+  }else{
+    PAUTA.erro[id] = (r && r.motivo) || 'não consegui baixar as mídias deste anúncio';
+    toast('Não deu para baixar sozinho.', 'aw');
+  }
+  midiaRender();
+}
+
 async function pautaMateriais(id){
   const d = (typeof estApp === 'function') ? estApp() : null;
   if (!d || !d.estEscolher){
@@ -16227,9 +16292,24 @@ function pautaContaMidia(lista){
 async function pautaLimparMateriais(id){
   const item = await dbGet('videos', id);
   if (!item) return;
-  await dbPut('videos', { ...item, midia: [] });
-  toast('Materiais soltos. O sistema volta a tentar buscar sozinho.', 'aw');
+  const d = (typeof estApp === 'function') ? estApp() : null;
+  /* apaga também o que foi baixado: senão o disco vai enchendo com anúncio
+     de produto que você já tirou da pauta */
+  if (d && d.estMidiaLimpar && item.midiaPasta){
+    try { await d.estMidiaLimpar('p' + item.id + '-' + (item.produto ? item.produto.n : '')); }
+    catch (e) {}
+  }
+  await dbPut('videos', { ...item, midia: [], midiaPasta: '' });
+  toast('Materiais soltos. Pode baixar de novo quando quiser.', 'aw');
   midiaRender();
+}
+
+async function pautaAbrirPasta(id){
+  const item = await dbGet('videos', id);
+  const d = (typeof estApp === 'function') ? estApp() : null;
+  if (!item || !item.midiaPasta || !d || !d.estAbrirPasta) return;
+  const primeiro = (item.midia || [])[0] || item.midiaPasta;
+  try { await d.estAbrirPasta(primeiro); } catch (e) {}
 }
 
 /* reinstala as ferramentas do zero — a saída quando o Windows entregou o
