@@ -262,26 +262,121 @@ def ler_midia(pasta):
     return fontes
 
 
+def animar_com_ia(fontes):
+    """Quando o dono liga a IA de vídeo do PC dele, cada FOTO vira um clipe
+       curto com movimento. A foto continua sendo o primeiro quadro, então o
+       produto não muda de cara — a IA só inventa os quadros seguintes.
+
+       Se a IA não estiver ligada, ou não couber na máquina, esta função não
+       faz nada e devolve as fontes como estavam. Ela nunca derruba a
+       montagem: um vídeo com foto parada é melhor que nenhum vídeo."""
+    if os.environ.get('JEV_IA') not in ('1', 'sim', 'true'):
+        return fontes
+
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import ia_local
+    except Exception as erro:
+        diz('   AVISO: não consegui carregar a IA local (%s). Sigo sem ela.' % erro)
+        return fontes
+
+    e = ia_local.estado()
+    if not e.get('pronto'):
+        diz('   AVISO: a IA de vídeo local não está pronta. %s' % e.get('motivo', ''))
+        diz('   O vídeo sai do mesmo jeito, com as fotos paradas e o movimento de câmera.')
+        return fontes
+
+    fotos = [f for f in fontes if f['tipo'] == 'foto']
+    if not fotos:
+        return fontes
+
+    diz('\n   IA de vídeo local: animando %d foto(s) na placa %s'
+        % (len(fotos), e.get('placa', '')))
+    if e.get('apertado'):
+        diz('   (a memória da placa está apertada — vai funcionar, mas devagar)')
+
+    saida = os.path.join(TEMP, 'ia')
+    os.makedirs(saida, exist_ok=True)
+    novas, animadas = [], 0
+    for i, f in enumerate(fontes):
+        if f['tipo'] != 'foto':
+            novas.append(f)
+            continue
+        destino = os.path.join(saida, 'ia_%02d.mp4' % i)
+        passo(3 + 4.0 * (i + 1) / max(1, len(fontes)),
+              'IA animando a foto %d de %d' % (animadas + 1, len(fotos)))
+        try:
+            r = ia_local.animar(f['caminho'], destino, 4.0)
+        except Exception as erro:
+            r = {'ok': False, 'motivo': str(erro)}
+        if r.get('ok') and os.path.isfile(destino):
+            d = duracao(destino)
+            if d > 0.5:
+                novas.append({'tipo': 'video', 'caminho': destino, 'dur': d})
+                animadas += 1
+                diz('   foto %d virou clipe de %.1fs' % (i + 1, d))
+                continue
+        diz('   foto %d não animou (%s) — entra parada mesmo'
+            % (i + 1, r.get('motivo', 'sem motivo')))
+        novas.append(f)
+
+    diz('   %d de %d foto(s) viraram clipe.' % (animadas, len(fotos)))
+    return novas
+
+
 def plano_de_cenas(fontes, cenas):
-    """Decide a fonte de cada cena antes de montar nada. Quando a mesma
-       fonte é um vídeo usado mais de uma vez, os recortes são espalhados
-       ao longo dele — assim duas cenas não mostram o mesmo pedaço."""
+    """Decide a fonte de cada cena antes de montar nada.
+
+       O vídeo do vendedor vem na frente, sempre. Ele é o único material que
+       já mostra uma PESSOA usando o produto: a foto mostra o produto parado
+       em cima da mesa e o fundo liso não mostra nada. Então as cenas são
+       preenchidas nesta ordem — recortes do vídeo enquanto houver pedaço
+       novo para mostrar, depois as fotos, e o fundo liso só quando não
+       chegou material nenhum aqui.
+
+       Quando a mesma fonte é um vídeo usado mais de uma vez, os recortes são
+       espalhados ao longo dele, assim duas cenas não mostram o mesmo pedaço."""
     if not fontes:
         return [{'tipo': 'carta'} for _ in cenas]
 
-    plano = []
-    for i, _c in enumerate(cenas):
-        plano.append(dict(fontes[i % len(fontes)]))
+    videos = [f for f in fontes if f['tipo'] == 'video']
+    fotos = [f for f in fontes if f['tipo'] == 'foto']
 
-    for f in fontes:
-        if f['tipo'] != 'video':
-            continue
+    segs = [float(c.get('dur') or 5) for c in cenas]
+    media = max(1.0, sum(segs) / max(1, len(segs)))
+
+    # quantos recortes DIFERENTES cada vídeo consegue dar sem repetir pedaço
+    sobra = {}
+    for k, f in enumerate(videos):
+        sobra[k] = max(1, int(float(f.get('dur') or 0) // media))
+
+    # reveza entre os vídeos: um clipe longo não pode engolir o outro
+    vagas = []
+    while len(vagas) < len(cenas) and any(sobra[k] > 0 for k in sobra):
+        for k, f in enumerate(videos):
+            if sobra[k] > 0 and len(vagas) < len(cenas):
+                vagas.append(f)
+                sobra[k] -= 1
+
+    plano = []
+    for i in range(len(cenas)):
+        if i < len(vagas):
+            plano.append(dict(vagas[i]))
+        elif fotos:
+            plano.append(dict(fotos[(i - len(vagas)) % len(fotos)]))
+        elif videos:
+            # sem foto nenhuma: repetir o vídeo ainda é melhor que fundo liso
+            plano.append(dict(videos[i % len(videos)]))
+        else:
+            plano.append({'tipo': 'carta'})
+
+    for f in videos:
         usos = [i for i, p in enumerate(plano) if p.get('caminho') == f['caminho']]
         for k, i in enumerate(usos):
             seg = float(cenas[i].get('dur') or 5)
-            sobra = max(0.0, f['dur'] - seg)
-            plano[i]['ini'] = round(sobra * (k / (len(usos) - 1)), 2) if len(usos) > 1 \
-                else round(sobra / 2.0, 2)
+            folga = max(0.0, f['dur'] - seg)
+            plano[i]['ini'] = round(folga * (k / (len(usos) - 1)), 2) if len(usos) > 1 \
+                else round(folga / 2.0, 2)
     return plano
 
 
@@ -361,8 +456,18 @@ def montar(roteiro, fontes, trilha, formatos, nvenc):
     quantos = {'foto': 0, 'video': 0, 'carta': 0}
     for p in plano:
         quantos[p['tipo']] = quantos.get(p['tipo'], 0) + 1
-    diz('   cenas por foto: %d · por recorte de vídeo: %d · em fundo liso: %d'
-        % (quantos['foto'], quantos['video'], quantos['carta']))
+    diz('   cenas por recorte de vídeo: %d · por foto: %d · em fundo liso: %d'
+        % (quantos['video'], quantos['foto'], quantos['carta']))
+    if quantos['carta'] == len(plano):
+        diz('   AVISO: nenhuma foto ou vídeo do produto chegou até aqui, então o')
+        diz('   vídeo sai só com texto no fundo. Lojas como o TikTok Shop não')
+        diz('   deixam a gente ler a página sozinho. No sistema, use o botão')
+        diz('   "Materiais do produto" e aponte o vídeo que você baixou no painel')
+        diz('   do vendedor — é ele que mostra a pessoa usando o produto.')
+    elif not quantos['video']:
+        diz('   AVISO: veio foto, mas nenhum vídeo. Foto mostra o produto parado;')
+        diz('   quem mostra a pessoa usando é o vídeo do anúncio. Baixe o vídeo no')
+        diz('   painel do vendedor e aponte em "Materiais do produto".')
 
     saidas = []
     # a barra anda de 10 a 95: cada formato tem a sua faixa, e dentro dela
@@ -457,6 +562,7 @@ def principal():
     diz('\nRoteiro: %s' % roteiro.get('titulo', '(sem título)'))
 
     fontes = ler_midia(FOTOS)
+    fontes = animar_com_ia(fontes)
     fotos = [f for f in fontes if f['tipo'] == 'foto']
     videos = [f for f in fontes if f['tipo'] == 'video']
     if not fontes and not trabalho:
