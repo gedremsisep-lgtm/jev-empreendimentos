@@ -39,6 +39,20 @@ node -e "
   fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
 "
 sed -i "s/const APP_VER = '[^']*'/const APP_VER = '$NOVA'/" mobile/src/03_core.js
+
+# trava de segurança: o package.json do aplicativo precisa continuar completo.
+# Se a seção "build" sumir, o instalador sai sem o motor de atualização.
+node -e "
+  const j = require('./desktop/package.json');
+  const f = (j.build && j.build.files) || [];
+  const falta = ['main.js','atualizacao.js','preload.js','publicador.js','estudio.js','fabrica/**/*'].filter(x=>!f.includes(x));
+  if(!j.build || falta.length){
+    console.error('ERRO: desktop/package.json perdeu a seção build' + (falta.length?' — falta: '+falta.join(', '):''));
+    console.error('Restaure com: curl -s -o desktop/package.json https://raw.githubusercontent.com/gedremsisep-lgtm/jev-empreendimentos/main/desktop/package.json');
+    process.exit(1);
+  }
+  console.log('  package.json do aplicativo: completo');
+" 
 sed -i "s/^!define VERSAO     \".*\"/!define VERSAO     \"$NOVA\"/" desktop/instalador.nsi 2>/dev/null || true
 sed -i "s/^VIProductVersion \".*\"/VIProductVersion \"$NOVA.0\"/"   desktop/instalador.nsi 2>/dev/null || true
 
@@ -49,6 +63,15 @@ echo "→ espalhando o arquivo"
 cp "$FONTE/jev_empreendimentos.html" desktop/app/index.html
 cp "$FONTE"/src/*.js "$FONTE"/src/*.html desktop/fonte/src/
 cp "$FONTE/build.sh" "$FONTE/embed.py" desktop/fonte/ 2>/dev/null || true
+
+# A fábrica vai DENTRO do aplicativo: é ela que monta o vídeo quando você
+# clica em "Criar o vídeo agora". Sem isto, o botão existe e não funciona.
+mkdir -p desktop/fabrica
+cp fabrica/fabrica.py fabrica/cortes.py fabrica/ia_local.py fabrica/LEIAME.txt desktop/fabrica/
+for f in fabrica.py cortes.py ia_local.py; do
+  test -s "desktop/fabrica/$f" || { echo "ERRO: desktop/fabrica/$f não foi copiado"; exit 1; }
+done
+
 bash mobile/build.sh >/dev/null 2>&1 || echo "  (o aplicativo do celular não foi remontado)"
 
 mkdir -p atualizacao
@@ -97,3 +120,19 @@ echo "  git add -A && git commit -m \"sistema $NOVA\" && git push"
 echo
 echo "Quem estiver com o sistema aberto recebe o aviso em até 3 horas — ou na hora,"
 echo "pelo menu Atualizações → Procurar atualização do sistema."
+echo
+
+# ---- conferência final: o canal publicado está mesmo nesta versão? ----
+PUB=$(curl -s --max-time 25 \
+  "https://raw.githubusercontent.com/gedremsisep-lgtm/jev-empreendimentos/main/atualizacao/versao.json?x=$RANDOM" \
+  | grep -o '"versao": "[^"]*"' | head -1 | cut -d'"' -f4)
+if [ "$PUB" = "$NOVA" ]; then
+  echo "Canal publicado: $PUB — em dia."
+else
+  echo "############################################################"
+  echo "#  ATENÇÃO: o canal ainda está na versão ${PUB:-desconhecida}."
+  echo "#  Enquanto a pasta atualizacao/ não subir para o GitHub,"
+  echo "#  NENHUM aplicativo instalado vai receber a $NOVA sozinho."
+  echo "#  Não considere a versão entregue antes de publicar."
+  echo "############################################################"
+fi
