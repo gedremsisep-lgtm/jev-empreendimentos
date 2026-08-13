@@ -71,7 +71,7 @@ function ferramentas() { return pasta('ferramentas'); }
    A segunda camada existe porque a primeira depende de uma configuração de
    empacotamento dar certo — e configuração de empacotamento é exatamente o
    tipo de coisa que quebra sem avisar.                                     */
-const ARQUIVOS_FABRICA = ['fabrica.py', 'cortes.py'];
+const ARQUIVOS_FABRICA = ['fabrica.py', 'cortes.py', 'ia_local.py'];
 
 function ehDentroDoAsar(c) {
   return /[\\/]app\.asar[\\/]/i.test(String(c || ''));
@@ -475,7 +475,7 @@ async function preparar(dados, enviar) {
 /* roda a fábrica e vai contando o que está acontecendo */
 let rodando = null;
 
-function montar(base, enviar) {
+function montar(base, enviar, opcoes) {
   return new Promise(resolve => {
     const e = estado();
     if (!e.python || !e.ffmpeg)
@@ -494,7 +494,11 @@ function montar(base, enviar) {
       JEV_FFMPEG: e.ffmpeg || '',
       JEV_FFPROBE: e.ffprobe || '',
       JEV_PIPER: e.piper || '',
-      JEV_VOZ: e.voz || ''
+      JEV_VOZ: e.voz || '',
+      /* a IA de vídeo local só entra quando o dono pede. Ela é lenta e come a
+         placa inteira: ninguém pode ser surpreendido por ela. */
+      JEV_IA: (opcoes && opcoes.ia) ? '1' : '',
+      JEV_IA_MODELOS: pasta('ferramentas', 'ia-modelos')
     });
     const p = spawn(e.python, ['-u', fabricaPy(), '--trabalho', base], { env: amb });
     rodando = p;
@@ -582,7 +586,7 @@ async function criar(dados, enviar) {
         ? prep.midias + ' arquivo(s) de mídia prontos'
         : 'sem foto e sem vídeo — as cenas saem em fundo liso' });
 
-  const r = await montar(prep.base, naMontagem);
+  const r = await montar(prep.base, naMontagem, { ia: !!(dados && dados.ia) });
   r.avisos = prep.avisos;
   r.trabalho = prep.base;
   return r;
@@ -677,6 +681,124 @@ async function instalar(enviar) {
   return { ok: e.pronto, estado: e, motivo: erros.join(' · ') };
 }
 
+/* =========================================================================
+   IA DE VÍDEO NO COMPUTADOR DO DONO
+
+   Isto aqui é caro em disco (uns 8 GB) e só roda em placa NVIDIA. Por isso
+   nada acontece sozinho: o programa primeiro EXAMINA a máquina e conta o que
+   viu, e só baixa quando o dono manda, sabendo o tamanho.
+
+   E é bom repetir o que essa IA faz, porque a expectativa costuma ser outra:
+   ela NÃO inventa uma pessoa segurando o produto. Ela pega a foto real do
+   anúncio e põe aquela foto em movimento. O produto continua sendo o produto
+   porque o primeiro quadro é a foto de verdade.
+   ========================================================================= */
+const IA_PACOTES = [
+  /* o torch com CUDA é o pedaço gordo: uns 2,5 GB só ele */
+  { nome: 'torch', args: ['torch', '--index-url', 'https://download.pytorch.org/whl/cu124'] },
+  { nome: 'diffusers e companhia',
+    args: ['diffusers', 'transformers', 'accelerate', 'imageio', 'imageio-ffmpeg', 'sentencepiece'] }
+];
+
+function iaLocalPy() { return path.join(pastaDaFabrica(), 'ia_local.py'); }
+
+/* pergunta à peça de IA o que ela vê nesta máquina */
+function iaEstado() {
+  const e = estado();
+  const py = e.python;
+  const arq = iaLocalPy();
+  if (!py)
+    return { pronto: false, pode_instalar: false, placa: '', vram_gb: 0,
+             motivo: 'as ferramentas de vídeo ainda não foram instaladas' };
+  if (!fs.existsSync(arq))
+    return { pronto: false, pode_instalar: false, placa: '', vram_gb: 0,
+             motivo: 'a peça de IA não veio dentro deste pacote — instale a versão mais nova do aplicativo' };
+
+  const amb = Object.assign({}, process.env, {
+    PYTHONIOENCODING: 'utf-8',
+    JEV_FERRAMENTAS: ferramentas(),
+    JEV_IA_MODELOS: pasta('ferramentas', 'ia-modelos')
+  });
+  const r = spawnSync(py, ['-u', arq, '--estado'], { env: amb, encoding: 'utf8', timeout: 60000 });
+  const linha = String(r.stdout || '').trim().split(/\r?\n/).pop();
+  try { return JSON.parse(linha); }
+  catch (x) {
+    return { pronto: false, pode_instalar: false, placa: '', vram_gb: 0,
+             motivo: 'não consegui examinar a placa de vídeo: ' +
+                     (String(r.stderr || '').trim().split(/\r?\n/).pop() || 'sem resposta') };
+  }
+}
+
+/* baixa o que falta para a IA de vídeo local. Só roda depois do dono mandar. */
+function iaInstalar(enviar) {
+  return new Promise(resolve => {
+    const av = e => { try { if (enviar) enviar(e); } catch (x) {} };
+    const antes = iaEstado();
+    if (antes.pronto) { av({ tipo: 'passo', pct: 100, texto: 'a IA de vídeo já estava pronta' });
+      return resolve({ ok: true, estado: antes, motivo: '' }); }
+    if (!antes.pode_instalar)
+      return resolve({ ok: false, estado: antes, motivo: antes.motivo });
+
+    const py = estado().python;
+    const amb = Object.assign({}, process.env, {
+      PYTHONIOENCODING: 'utf-8',
+      JEV_FERRAMENTAS: ferramentas(),
+      JEV_IA_MODELOS: pasta('ferramentas', 'ia-modelos')
+    });
+
+    /* um passo de cada vez, contando qual é — um download de 8 GB sem recado
+       na tela é indistinguível de um programa travado */
+    const passos = IA_PACOTES.map((p, i) => ({
+      texto: 'instalando ' + p.nome + ' (' + (i + 1) + ' de ' + (IA_PACOTES.length + 1) + ')',
+      args: ['-m', 'pip', 'install', '--no-input', ...p.args]
+    }));
+    passos.push({
+      texto: 'baixando o modelo de vídeo — uns 8 GB, uma vez só',
+      args: ['-c',
+        'import sys;from huggingface_hub import snapshot_download;' +
+        'snapshot_download(sys.argv[1], local_dir=sys.argv[2]);print("baixado")',
+        'Lightricks/LTX-Video', pasta('ferramentas', 'ia-modelos')]
+    });
+
+    let i = 0;
+    const erros = [];
+    const seguir = () => {
+      if (i >= passos.length) {
+        rodando = null;
+        const depois = iaEstado();
+        av({ tipo: 'passo', pct: 100,
+             texto: depois.pronto ? 'IA de vídeo pronta' : 'faltou alguma coisa' });
+        return resolve({ ok: !!depois.pronto, estado: depois,
+                         motivo: depois.pronto ? '' : (erros.join(' · ') || depois.motivo) });
+      }
+      const passo = passos[i];
+      av({ tipo: 'passo', pct: Math.round(i / passos.length * 100), texto: passo.texto });
+      const p = spawn(py, passo.args, { env: amb });
+      rodando = p;
+      let ultimo = '';
+      const olhar = d => {
+        const t = String(d).trim();
+        if (t) { ultimo = t.split(/\r?\n/).pop(); av({ tipo: 'linha', texto: ultimo }); }
+      };
+      p.stdout.on('data', olhar);
+      p.stderr.on('data', olhar);
+      p.on('error', err => { erros.push(passo.texto + ': ' + (err && err.message)); i++; seguir(); });
+      p.on('close', code => {
+        if (code !== 0) erros.push(passo.texto + ' falhou: ' + (ultimo || 'código ' + code));
+        i++; seguir();
+      });
+    };
+    seguir();
+  });
+}
+
+/* apaga só os pesos da IA — são gigabytes, e às vezes é isso que o dono quer
+   de volta no disco, sem perder o resto das ferramentas */
+function iaLimpar() {
+  try { fs.rmSync(pasta('ferramentas', 'ia-modelos'), { recursive: true, force: true }); return true; }
+  catch (e) { return false; }
+}
+
 /* apaga as ferramentas — serve para consertar instalação pela metade */
 function limpar() {
   esquecerFerramentas();
@@ -703,5 +825,6 @@ module.exports = {
   acharPython, acharFfmpeg, pythonServe, esquecerFerramentas,
   pastaDaFabrica, ehDentroDoAsar, candidatosFabrica,
   escolherArquivos, midiaDoProduto, extrairMidia,
+  iaEstado, iaInstalar, iaLimpar, iaLocalPy,
   raiz, fabricaPy, cortesPy, baixar
 };

@@ -551,6 +551,21 @@ ipcMain.handle('est-midia-produto', async (_e, url) => {
   try { return await estudio.midiaDoProduto(url); }
   catch (e) { return { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
 });
+/* a IA de vídeo do computador do dono: examinar, instalar e apagar os pesos */
+ipcMain.handle('est-ia-estado', () => {
+  if (!estudio) return { pronto: false, pode_instalar: false, motivo: 'o estúdio não veio neste pacote' };
+  try { return estudio.iaEstado(); }
+  catch (e) { return { pronto: false, pode_instalar: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('est-ia-instalar', async () => {
+  if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote' };
+  try { return await estudio.iaInstalar(contaEstudio); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('est-ia-limpar', () => {
+  try { return estudio ? estudio.iaLimpar() : false; } catch (e) { return false; }
+});
+
 ipcMain.handle('est-abrir-pasta', (_e, caminho) => {
   try { shell.showItemInFolder(caminho); return true; } catch (e) { return false; }
 });
