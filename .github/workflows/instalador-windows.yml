@@ -62,7 +62,7 @@ jobs:
         run: |
           falta=0
           for a in main.js preload.js atualizacao.js publicador.js estudio.js \
-                   fabrica/fabrica.py fabrica/cortes.py; do
+                   fabrica/fabrica.py fabrica/cortes.py fabrica/ia_local.py; do
             if [ -s "$a" ]; then echo "ok    $a"; else echo "FALTA $a"; falta=1; fi
           done
           v=$(node -p "require('./package.json').version")
