@@ -356,6 +356,55 @@ app.whenReady().then(async () => {
     janela.destroy();
   }
 
+  /* ================= 6a) baixar a mídia do anúncio e guardar no produto
+     Aqui é o passo que o dono pediu: um botão que traz as fotos e o vídeo
+     da página de onde o produto foi garimpado, guarda no computador, e daí
+     em diante o vídeo é montado com ESSES arquivos.                       */
+  console.log('\n6a) baixar a mídia do anúncio para a pasta do produto');
+  const alvo = 'http://127.0.0.1:' + porta + '/produto';
+  const bx = await estudio.baixarMidias({ chave: 'p7 Pano/multi:uso', nome: 'Pano', urls: [alvo] });
+  ok('baixou o material do anúncio', bx.ok === true ? true : bx);
+  ok('e trouxe as três fotos e o vídeo do vendedor',
+    bx.arquivos.length === 4 ? true : bx.arquivos.map(a => a.nome));
+  ok('o vídeo do vendedor encabeça a lista',
+    bx.arquivos[0] && bx.arquivos[0].tipo === 'video' ? true : bx.arquivos.map(a => a.tipo));
+  ok('os arquivos existem mesmo no disco, com tamanho',
+    bx.arquivos.every(a => fs.existsSync(a.caminho) && a.tamanho > 0) ? true : bx.arquivos);
+  ok('e a pasta não herda barra nem dois-pontos do nome do produto',
+    !/[\\/:]/.test(path.basename(bx.pasta)) ? true : bx.pasta);
+
+  const guardadas = estudio.midiasGuardadas('p7 Pano/multi:uso');
+  ok('perguntar de novo devolve o que já está guardado',
+    guardadas.length === 4 ? true : guardadas.length);
+
+  /* o teste que importa: o vídeo montado com o que foi baixado */
+  const comBaixado = await estudio.criar({
+    roteiro: { titulo: 'Com o material baixado',
+               cenas: [{ fala: 'primeira' }, { fala: 'segunda' }, { fala: 'terceira' }] },
+    arquivos: guardadas.map(a => a.caminho)
+  });
+  ok('o vídeo é montado com o material baixado', comBaixado.ok === true ? true : comBaixado);
+  if (comBaixado.ok) {
+    const vert = comBaixado.arquivos.find(a => a.formato === '9:16');
+    ok('e sai em pé, no tamanho das plataformas',
+      ffprobe(vert.caminho, 'stream=width') === '1080' &&
+      ffprobe(vert.caminho, 'stream=height') === '1920' ? true : vert);
+  }
+
+  const bloqueada = await estudio.baixarMidias({ chave: 'bloqueada', urls: [
+    'http://127.0.0.1:' + porta + '/vazia'] });
+  ok('página que não publica nada é recusada', bloqueada.ok === false ? true : bloqueada);
+  ok('com o motivo escrito e o caminho da saída',
+    /painel do vendedor/i.test(bloqueada.motivo || '') ? true : bloqueada.motivo);
+
+  const semEndereco = await estudio.baixarMidias({ chave: 'sem-endereco', urls: [] });
+  ok('produto sem endereço do anúncio também é recusado sem quebrar',
+    semEndereco.ok === false && !!semEndereco.motivo ? true : semEndereco);
+
+  ok('apagar o material baixado libera a pasta',
+    estudio.limparMidias('p7 Pano/multi:uso') === true &&
+    estudio.midiasGuardadas('p7 Pano/multi:uso').length === 0 ? true : 'não apagou');
+
   /* ====================== 6b) a IA de vídeo local, examinada de verdade
      Esta máquina de teste não tem placa NVIDIA — que é exatamente o caso
      mais comum na casa de quem vai usar o programa. O que precisa ser

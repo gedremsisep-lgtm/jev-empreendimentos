@@ -53,6 +53,10 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estParar:       ()               => ipcRenderer.invoke('est-parar'),
   estEscolher:    qual             => ipcRenderer.invoke('est-escolher', qual),
   estMidiaProduto:url              => ipcRenderer.invoke('est-midia-produto', url),
+  /* ---- baixar a mídia do anúncio e guardar na pasta do produto ---- */
+  estMidiaBaixar: dados            => ipcRenderer.invoke('est-midia-baixar', dados),
+  estMidiaGuardada:chave           => ipcRenderer.invoke('est-midia-guardada', chave),
+  estMidiaLimpar: chave            => ipcRenderer.invoke('est-midia-limpar', chave),
   /* ---- IA de vídeo rodando no seu PC (só NVIDIA, e só quando você manda) ---- */
   estIaEstado:    ()               => ipcRenderer.invoke('est-ia-estado'),
   estIaInstalar:  ()               => ipcRenderer.invoke('est-ia-instalar'),

@@ -551,6 +551,20 @@ ipcMain.handle('est-midia-produto', async (_e, url) => {
   try { return await estudio.midiaDoProduto(url); }
   catch (e) { return { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
 });
+/* baixar a mídia do anúncio e guardar na pasta do produto */
+ipcMain.handle('est-midia-baixar', async (_e, dados) => {
+  if (!estudio) return { ok: false, arquivos: [], motivo: 'o estúdio não veio neste pacote' };
+  try { return await estudio.baixarMidias(dados || {}, contaEstudio); }
+  catch (e) { return { ok: false, arquivos: [], motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('est-midia-guardada', (_e, chave) => {
+  if (!estudio) return [];
+  try { return estudio.midiasGuardadas(chave); } catch (e) { return []; }
+});
+ipcMain.handle('est-midia-limpar', (_e, chave) => {
+  try { return estudio ? estudio.limparMidias(chave) : false; } catch (e) { return false; }
+});
+
 /* a IA de vídeo do computador do dono: examinar, instalar e apagar os pesos */
 ipcMain.handle('est-ia-estado', () => {
   if (!estudio) return { pronto: false, pode_instalar: false, motivo: 'o estúdio não veio neste pacote' };

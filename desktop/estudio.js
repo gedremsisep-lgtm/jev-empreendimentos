@@ -411,6 +411,124 @@ async function escolherArquivos(qual) {
   }));
 }
 
+/* ============================================ baixar a mídia do produto
+
+   Isto é diferente de "montar o vídeo". Aqui os arquivos do anúncio — as
+   fotos e o vídeo do vendedor — são BAIXADOS e ficam guardados numa pasta
+   do produto, no computador do dono. Três razões para isso ser um passo
+   separado, com botão próprio:
+
+     1. você vê o que veio ANTES de gastar minutos montando, em vez de
+        descobrir no fim que não veio nada;
+     2. o material fica guardado: gerar de novo não baixa tudo outra vez,
+        e se a loja tirar o anúncio do ar o material continua seu;
+     3. o que foi baixado entra na mesma lista dos arquivos escolhidos na
+        mão — então a montagem usa esses arquivos sem precisar saber de
+        onde vieram.
+
+   Quando a loja não deixa ler a página (o TikTok Shop é assim), nada é
+   inventado: volta um não com o motivo escrito.                          */
+function chaveDePasta(t) {
+  const limpo = String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 50);
+  return limpo || 'produto';
+}
+
+function tipoDeArquivo(c) {
+  return /\.(mp4|mov|m4v|webm|mkv)$/i.test(String(c)) ? 'video' : 'foto';
+}
+
+/* o que já está guardado deste produto */
+function midiasGuardadas(chave) {
+  const dir = path.join(raiz(), 'produtos', chaveDePasta(chave));
+  let nomes;
+  try { nomes = fs.readdirSync(dir); } catch (e) { return []; }
+  return nomes.filter(a => !a.startsWith('.')).sort().map(a => {
+    const c = path.join(dir, a);
+    let t = 0;
+    try { t = fs.statSync(c).size; } catch (e) {}
+    return { caminho: c, nome: a, tamanho: t, tipo: tipoDeArquivo(a) };
+  }).filter(x => x.tamanho > 0);
+}
+
+async function baixarMidias(dados, enviar) {
+  const d = dados || {};
+  const chave = chaveDePasta(d.chave || d.nome);
+  const av = e => { try { if (enviar) enviar(e); } catch (x) {} };
+
+  const enderecos = (Array.isArray(d.urls) ? d.urls : [d.urls])
+    .map(u => String(u || '').trim()).filter(u => /^https?:\/\//i.test(u));
+  if (!enderecos.length)
+    return { ok: false, arquivos: midiasGuardadas(chave), avisos: [],
+             motivo: 'este produto não tem o endereço do anúncio guardado' };
+
+  /* 1) descobrir o que a página publica */
+  av({ tipo: 'passo', pct: 3, texto: 'lendo a página do anúncio' });
+  const fotos = [], videos = [], recusas = [];
+  for (const url of enderecos) {
+    let m;
+    try { m = await midiaDoProduto(url); }
+    catch (e) { m = { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
+    if (!m.ok) { recusas.push(m.motivo); continue; }
+    (m.fotos || []).forEach(u => { if (!fotos.includes(u)) fotos.push(u); });
+    (m.videos || []).forEach(u => { if (!videos.includes(u)) videos.push(u); });
+  }
+
+  if (!fotos.length && !videos.length) {
+    return { ok: false, arquivos: midiasGuardadas(chave), avisos: recusas,
+      motivo: (recusas[0] || 'a página não publica as fotos de um jeito que eu consiga ler') +
+        ' Baixe o vídeo do anúncio no painel do vendedor e use "Escolher do computador".' };
+  }
+
+  /* 2) baixar de verdade. O vídeo primeiro: é ele que mostra a pessoa. */
+  const dir = path.join(raiz(), 'produtos', chave);
+  fs.mkdirSync(dir, { recursive: true });
+  const fila = [].concat(
+    videos.slice(0, 3).map(u => ({ url: u, video: true })),
+    fotos.slice(0, MAX_ITENS).map(u => ({ url: u, video: false })));
+
+  const avisos = recusas.slice();
+  let n = 0, guardados = 0;
+  for (const item of fila) {
+    n++;
+    const rotulo = item.video ? 'vídeo' : 'foto';
+    av({ tipo: 'passo', pct: 5 + Math.round(n / fila.length * 90),
+         texto: 'baixando ' + rotulo + ' ' + n + ' de ' + fila.length });
+    let ext = (path.extname(item.url).split('?')[0] || '').toLowerCase();
+    if (!/^\.[a-z0-9]{2,4}$/.test(ext)) ext = item.video ? '.mp4' : '.jpg';
+    /* o vídeo vai com nome que ordena antes: assim ele encabeça a lista */
+    const destino = path.join(dir, (item.video ? 'a' : 'b') +
+      String(n).padStart(2, '0') + ext);
+    try {
+      await baixar(item.url, destino, item.video ? MAX_VIDEO : MAX_FOTO);
+      if (fs.statSync(destino).size > 0) guardados++;
+      else { try { fs.unlinkSync(destino); } catch (e) {} }
+    } catch (e) {
+      try { fs.unlinkSync(destino); } catch (x) {}
+      avisos.push('não veio ' + item.url.slice(0, 60) + ' (' + (e && e.message) + ')');
+    }
+  }
+
+  av({ tipo: 'passo', pct: 100, texto: guardados + ' arquivo(s) guardados' });
+  const arquivos = midiasGuardadas(chave);
+  return {
+    ok: arquivos.length > 0,
+    arquivos, avisos, pasta: dir,
+    motivo: arquivos.length ? '' :
+      'a loja respondeu, mas nenhum arquivo chegou inteiro. ' +
+      'Baixe o material no painel do vendedor e use "Escolher do computador".'
+  };
+}
+
+/* apaga o que foi baixado deste produto — libera espaço e força baixar de novo */
+function limparMidias(chave) {
+  try {
+    fs.rmSync(path.join(raiz(), 'produtos', chaveDePasta(chave)),
+              { recursive: true, force: true });
+    return true;
+  } catch (e) { return false; }
+}
+
 /* ------------------------------------------------------------ o trabalho */
 function nomeSeguro(t, n) {
   const limpo = String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -825,6 +943,7 @@ module.exports = {
   acharPython, acharFfmpeg, pythonServe, esquecerFerramentas,
   pastaDaFabrica, ehDentroDoAsar, candidatosFabrica,
   escolherArquivos, midiaDoProduto, extrairMidia,
+  baixarMidias, midiasGuardadas, limparMidias, chaveDePasta,
   iaEstado, iaInstalar, iaLimpar, iaLocalPy,
   raiz, fabricaPy, cortesPy, baixar
 };
