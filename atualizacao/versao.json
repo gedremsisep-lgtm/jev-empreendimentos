@@ -1,15 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.20",
-  "arquivo": "jev-1.0.20.html",
-  "data": "2026-08-12",
-  "sha256": "b1158987861448c5caf7b9f3a4468b7cb7dbfba0a0821abff0647bf35d0625a9",
-  "tamanho": 1783408,
+  "versao": "1.0.21",
+  "arquivo": "jev-1.0.21.html",
+  "data": "2026-08-13",
+  "sha256": "2227ef2b55fdd9036665ab71afd957cacf1214efe8cd79eac955e378b6f1e5dd",
+  "tamanho": 1788932,
   "notas": [
-    "Corrigido: a fábrica não achava o FFmpeg que o aplicativo tinha baixado"
+    "O vídeo agora usa o vídeo do vendedor, onde aparece a pessoa usando o produto",
+    "Botão Materiais do produto na pauta, para apontar o material baixado no painel do vendedor",
+    "Aviso claro quando nenhuma imagem do produto chegou, em vez de entregar vídeo só com texto"
   ],
-  "substitui": "1.0.19",
+  "substitui": "1.0.20",
   "anteriores": [
+    {
+      "versao": "1.0.20",
+      "arquivo": "jev-1.0.20.html",
+      "sha256": "b1158987861448c5caf7b9f3a4468b7cb7dbfba0a0821abff0647bf35d0625a9",
+      "data": "2026-08-12"
+    },
     {
       "versao": "1.0.19",
       "arquivo": "jev-1.0.19.html",
@@ -39,12 +47,6 @@
       "arquivo": "jev-1.0.15.html",
       "sha256": "0ec290ff13c475d2e711c4be3cb1655be57c0d0dbf942035aee5b1cb84a04419",
       "data": "2026-08-10"
-    },
-    {
-      "versao": "1.0.14",
-      "arquivo": "jev-1.0.14.html",
-      "sha256": "4fe943efae74e86941f2c2af4a3deea3fd95bfe67ee6e97802ea126dece78345",
-      "data": "2026-08-09"
     }
   ]
 }
