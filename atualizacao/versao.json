@@ -1,17 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.24",
-  "arquivo": "jev-1.0.24.html",
+  "versao": "1.0.25",
+  "arquivo": "jev-1.0.25.html",
   "data": "2026-08-13",
-  "sha256": "8a073539356626855af5272ba62a159ef37fb151ce2b9656641d96018b6ed245",
-  "tamanho": 1799863,
+  "sha256": "b96351a4136613cd9ebbbcbccc48afc17378c6247d2e8b3afb0f915dfa76421f",
+  "tamanho": 1801479,
   "notas": [
-    "Botão Baixar as mídias do produto, na frente de Gerar o vídeo",
-    "As fotos e o vídeo do anúncio são baixados e guardados numa pasta do produto no seu computador",
-    "O vídeo passa a ser montado com esses arquivos baixados, com o vídeo do vendedor na frente"
+    "Quando a loja derruba o pedido (read ECONNRESET), o aplicativo abre a pagina no navegador que ja vem dentro dele e le as fotos de la",
+    "Botao para abrir a loja na sua tela quando ela pede aviso de cookie ou login",
+    "As fotos passam a ser baixadas dizendo de qual pagina vieram, que e o que muita loja exige"
   ],
-  "substitui": "1.0.23",
+  "substitui": "1.0.24",
   "anteriores": [
+    {
+      "versao": "1.0.24",
+      "arquivo": "jev-1.0.24.html",
+      "sha256": "8a073539356626855af5272ba62a159ef37fb151ce2b9656641d96018b6ed245",
+      "data": "2026-08-13"
+    },
     {
       "versao": "1.0.23",
       "arquivo": "jev-1.0.23.html",
@@ -40,12 +46,6 @@
       "versao": "1.0.19",
       "arquivo": "jev-1.0.19.html",
       "sha256": "d243b73210324c6bd07fc85ef005cd69261c842d8023a8742d1e2759e8872e5f",
-      "data": "2026-08-12"
-    },
-    {
-      "versao": "1.0.18",
-      "arquivo": "jev-1.0.18.html",
-      "sha256": "1daf446ce27daa9ab9d36fc47c3e604541f2bf29cc146c3d888ecc143dbf200f",
       "data": "2026-08-12"
     }
   ]
