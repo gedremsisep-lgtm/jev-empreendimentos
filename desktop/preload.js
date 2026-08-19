@@ -53,6 +53,11 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estParar:       ()               => ipcRenderer.invoke('est-parar'),
   estEscolher:    qual             => ipcRenderer.invoke('est-escolher', qual),
   estMidiaProduto:url              => ipcRenderer.invoke('est-midia-produto', url),
+  /* ---- garimpo pelo Kalodata (você entra na conta uma vez) ---- */
+  kaloEstado:     ()               => ipcRenderer.invoke('kalo-estado'),
+  kaloEntrar:     ()               => ipcRenderer.invoke('kalo-entrar'),
+  kaloFechar:     ()               => ipcRenderer.invoke('kalo-fechar'),
+  kaloGarimpar:   opcoes           => ipcRenderer.invoke('kalo-garimpar', opcoes),
   /* ---- baixar a mídia do anúncio e guardar na pasta do produto ---- */
   estMidiaBaixar: dados            => ipcRenderer.invoke('est-midia-baixar', dados),
   estMidiaGuardada:chave           => ipcRenderer.invoke('est-midia-guardada', chave),

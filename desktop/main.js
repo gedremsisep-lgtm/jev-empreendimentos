@@ -32,6 +32,14 @@ try {
   console.error('estúdio indisponível:', e && e.message);
 }
 
+/* O garimpo pelo Kalodata — mesma porta protegida. */
+let kalodata = null;
+try {
+  kalodata = require('./kalodata');
+} catch (e) {
+  console.error('kalodata indisponível:', e && e.message);
+}
+
 let versoes;
 let motorOk = true;
 try {
@@ -551,6 +559,28 @@ ipcMain.handle('est-midia-produto', async (_e, url) => {
   try { return await estudio.midiaDoProduto(url); }
   catch (e) { return { ok: false, motivo: String((e && e.message) || e), fotos: [], videos: [] }; }
 });
+/* garimpo pelo Kalodata: entrar na conta, ver o estado, buscar produtos */
+ipcMain.handle('kalo-estado', async () => {
+  if (!kalodata) return { conectado: false, motivo: 'o garimpo do Kalodata não veio neste pacote' };
+  try { return await kalodata.estado(); }
+  catch (e) { return { conectado: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('kalo-entrar', async () => {
+  if (!kalodata) return { ok: false, motivo: 'o garimpo do Kalodata não veio neste pacote' };
+  try {
+    /* a janela abre NA TELA e o dono entra na conta dele. Nada de senha
+       passa por aqui: quem digita é ele, no site oficial. */
+    await kalodata.abrir(true);
+    return { ok: true };
+  } catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('kalo-fechar', () => { try { return kalodata ? kalodata.fechar() : false; } catch (e) { return false; } });
+ipcMain.handle('kalo-garimpar', async (_e, opcoes) => {
+  if (!kalodata) return { ok: false, achados: [], motivo: 'o garimpo do Kalodata não veio neste pacote' };
+  try { return await kalodata.garimpar(opcoes || {}); }
+  catch (e) { return { ok: false, achados: [], motivo: String((e && e.message) || e) }; }
+});
+
 /* baixar a mídia do anúncio e guardar na pasta do produto */
 ipcMain.handle('est-midia-baixar', async (_e, dados) => {
   if (!estudio) return { ok: false, arquivos: [], motivo: 'o estúdio não veio neste pacote' };

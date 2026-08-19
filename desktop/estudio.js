@@ -444,8 +444,11 @@ async function midiaPelaJanela(url, opcoes) {
 
     return { ok: true, fotos, videos, motivo: '', porJanela: true };
   } catch (e) {
-    return { ok: false, fotos: [], videos: [],
-             motivo: 'o navegador não conseguiu abrir a página: ' + (e && e.message) };
+    const detalhe = detalharErro(e);
+    return { ok: false, fotos: [], videos: [], inalcancavel: ehInalcancavel(detalhe),
+             motivo: ehInalcancavel(detalhe)
+               ? recadoDeRede(url, detalhe)
+               : 'o navegador não conseguiu abrir a página: ' + detalhe };
   } finally {
     try { if (janela && !janela.isDestroyed()) janela.destroy(); } catch (x) {}
   }
@@ -514,14 +517,58 @@ function extrairMidia(html, base) {
   return { fotos: fotos.slice(0, 12), videos: videos.slice(0, 3) };
 }
 
+/* ------------------------------------------- barrado ou inalcançável?
+
+   Essa diferença parece detalhe e não é: ela decide para onde a pessoa vai
+   procurar solução.
+
+   BARRADO é a loja te vendo e dizendo não — resposta 403, pedido de login,
+   verificação de robô. Aí a saída é pegar o material no painel do vendedor.
+
+   INALCANÇÁVEL é a conexão morrendo antes de qualquer conversa: connection
+   reset, endereço que não resolve, tempo esgotado. Aí a loja nem soube que
+   alguém bateu na porta. A causa está no caminho — antivírus com filtro de
+   rede, DNS do provedor, bloqueio do roteador, arquivo hosts do Windows. E
+   nesse caso NENHUMA mudança no programa resolve, porque o problema não é
+   com o programa.
+
+   Uma versão anterior deste arquivo dizia "a loja não deixou eu ler" para
+   os dois casos. Isso mandou o dono caçar solução no lugar errado.        */
+const SINAIS_INALCANCAVEL =
+  /ECONNRESET|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|CONNECTION_RESET|CONNECTION_REFUSED|CONNECTION_CLOSED|NAME_NOT_RESOLVED|NETWORK_CHANGED|EMPTY_RESPONSE|CONNECTION_FAILED|socket hang up|demorou demais/i;
+
+function ehInalcancavel(msg) { return SINAIS_INALCANCAVEL.test(String(msg || '')); }
+
+/* o Node guarda o motivo bom em .code (ECONNRESET) e um texto vago em
+   .message ("socket hang up"). Os dois juntos é o que o dono precisa ver. */
+function detalharErro(e) {
+  const codigo = e && e.code ? String(e.code) : '';
+  const texto = String((e && e.message) || e || '');
+  if (codigo && texto.indexOf(codigo) < 0) return codigo + ' — ' + texto;
+  return texto;
+}
+
+function recadoDeRede(url, detalhe) {
+  let dominio = url;
+  try { dominio = new URL(url).hostname; } catch (e) {}
+  return 'Este computador não conseguiu nem alcançar ' + dominio + ' (' + detalhe + '). ' +
+    'A loja não chegou a responder — a conexão foi cortada no caminho. ' +
+    'Confira abrindo https://' + dominio + ' no seu navegador: se também não abrir lá, ' +
+    'o bloqueio é da internet deste computador (antivírus com filtro de rede, DNS do ' +
+    'provedor, roteador ou o arquivo hosts do Windows), e não do aplicativo.';
+}
+
 async function midiaDoProduto(url) {
   if (!/^https?:\/\//i.test(String(url || '')))
     return { ok: false, motivo: 'Isso não é um endereço de página.', fotos: [], videos: [] };
   let html;
   try { html = await pegarTexto(url); }
   catch (e) {
-    return { ok: false, fotos: [], videos: [],
-      motivo: 'A loja não deixou eu ler a página (' + (e && e.message) + ').' };
+    const detalhe = detalharErro(e);
+    return { ok: false, fotos: [], videos: [], inalcancavel: ehInalcancavel(detalhe),
+      motivo: ehInalcancavel(detalhe)
+        ? recadoDeRede(url, detalhe)
+        : 'A loja não deixou eu ler a página (' + detalhe + ').' };
   }
   const r = extrairMidia(html, url);
   if (!r.fotos.length && !r.videos.length)
@@ -595,7 +642,9 @@ async function baixarMidias(dados, enviar) {
 
   const enderecos = (Array.isArray(d.urls) ? d.urls : [d.urls])
     .map(u => String(u || '').trim()).filter(u => /^https?:\/\//i.test(u));
-  if (!enderecos.length)
+  const temDireta = (Array.isArray(d.imagens) ? d.imagens : [])
+    .some(u => /^https?:\/\//i.test(String(u || '')));
+  if (!enderecos.length && !temDireta)
     return { ok: false, arquivos: midiasGuardadas(chave), avisos: [],
              motivo: 'este produto não tem o endereço do anúncio guardado' };
 
@@ -607,9 +656,16 @@ async function baixarMidias(dados, enviar) {
      sim a gente abre a página no navegador de verdade que já vem dentro
      deste programa. Não adianta insistir no pedido cru: quem barra, barra. */
   const fotos = [], videos = [], recusas = [];
-  let usouJanela = false, barrado = false;
+  let usouJanela = false, barrado = false, inalcancavel = false;
 
-  for (const url of enderecos) {
+  /* Atalho: quando o garimpo já sabe o endereço EXATO da foto — é o caso do
+     Kalodata, que guarda a capa no CDN dele — não há página para ler nem
+     loja para negociar. Baixa direto e pronto. */
+  const diretas = (Array.isArray(d.imagens) ? d.imagens : [])
+    .map(u => String(u || '').trim()).filter(u => /^https?:\/\//i.test(u));
+  diretas.forEach(u => { if (!fotos.includes(u)) fotos.push(u); });
+
+  for (const url of (diretas.length ? [] : enderecos)) {
     av({ tipo: 'passo', pct: 3, texto: 'lendo a página do anúncio' });
     let m;
     try { m = await midiaDoProduto(url); }
@@ -624,7 +680,14 @@ async function baixarMidias(dados, enviar) {
       if (j.ok) { m = j; usouJanela = true; }
       else {
         barrado = barrado || !!j.barrado;
-        recusas.push(m.motivo + ' Pelo navegador também não deu: ' + j.motivo);
+        /* os dois caminhos morreram na rede: então não é a loja barrando,
+           é este computador não chegando lá. Isso muda o recado inteiro. */
+        if (m.inalcancavel && j.inalcancavel) {
+          inalcancavel = true;
+          recusas.push(j.motivo);
+        } else {
+          recusas.push(m.motivo + ' Pelo navegador também não deu: ' + j.motivo);
+        }
         continue;
       }
     }
@@ -634,6 +697,14 @@ async function baixarMidias(dados, enviar) {
   }
 
   if (!fotos.length && !videos.length) {
+    /* loja inalcançável não tem plano B dentro do programa: nem o painel do
+       vendedor vai abrir, porque ele mora no mesmo endereço bloqueado.
+       Abrir a janela de novo só faria a pessoa perder mais tempo. */
+    if (inalcancavel)
+      return { ok: false, arquivos: midiasGuardadas(chave), avisos: recusas,
+        inalcancavel: true, podeTentarNaTela: false,
+        motivo: recusas[0] };
+
     return { ok: false, arquivos: midiasGuardadas(chave), avisos: recusas, barrado,
       /* quando a loja pôs uma porta, tentar de novo pelo mesmo caminho não
          resolve — o certo é abrir a loja na tela, ou pegar no painel */
@@ -667,7 +738,7 @@ async function baixarMidias(dados, enviar) {
       String(n).padStart(2, '0') + ext);
     try {
       await baixar(item.url, destino, item.video ? MAX_VIDEO : MAX_FOTO,
-                   null, enderecos[0]);
+                   null, enderecos[0] || undefined);
       if (fs.statSync(destino).size > 0) guardados++;
       else { try { fs.unlinkSync(destino); } catch (e) {} }
     } catch (e) {
