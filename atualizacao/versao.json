@@ -1,17 +1,29 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.25",
-  "arquivo": "jev-1.0.25.html",
-  "data": "2026-08-13",
-  "sha256": "b96351a4136613cd9ebbbcbccc48afc17378c6247d2e8b3afb0f915dfa76421f",
-  "tamanho": 1801479,
+  "versao": "1.0.27",
+  "arquivo": "jev-1.0.27.html",
+  "data": "2026-08-19",
+  "sha256": "42e9cab74d6e6beca0b7451e420da78cd6ed240a603440b2ff56a6130df19414",
+  "tamanho": 1815154,
   "notas": [
-    "Quando a loja derruba o pedido (read ECONNRESET), o aplicativo abre a pagina no navegador que ja vem dentro dele e le as fotos de la",
-    "Botao para abrir a loja na sua tela quando ela pede aviso de cookie ou login",
-    "As fotos passam a ser baixadas dizendo de qual pagina vieram, que e o que muita loja exige"
+    "Garimpo pelo Kalodata: os campeoes de venda do TikTok Shop, com a foto que baixa mesmo com o TikTok bloqueado",
+    "Nota de afiliado de 0 a 100 com a conta aberta: quanto rende por venda, saida, comissao, avaliacao e concorrencia",
+    "Cenas de numero no video: quando o produto so tem uma foto, a repeticao vira cartela com a prova real de vendas"
   ],
-  "substitui": "1.0.24",
+  "substitui": "1.0.26",
   "anteriores": [
+    {
+      "versao": "1.0.26",
+      "arquivo": "jev-1.0.26.html",
+      "sha256": "97ee6d168c457b960d8e7c39ff33c0a5df0a76121a85505c3f325128791afaf4",
+      "data": "2026-08-14"
+    },
+    {
+      "versao": "1.0.25",
+      "arquivo": "jev-1.0.25.html",
+      "sha256": "b96351a4136613cd9ebbbcbccc48afc17378c6247d2e8b3afb0f915dfa76421f",
+      "data": "2026-08-13"
+    },
     {
       "versao": "1.0.24",
       "arquivo": "jev-1.0.24.html",
@@ -35,18 +47,6 @@
       "arquivo": "jev-1.0.21.html",
       "sha256": "2227ef2b55fdd9036665ab71afd957cacf1214efe8cd79eac955e378b6f1e5dd",
       "data": "2026-08-13"
-    },
-    {
-      "versao": "1.0.20",
-      "arquivo": "jev-1.0.20.html",
-      "sha256": "b1158987861448c5caf7b9f3a4468b7cb7dbfba0a0821abff0647bf35d0625a9",
-      "data": "2026-08-12"
-    },
-    {
-      "versao": "1.0.19",
-      "arquivo": "jev-1.0.19.html",
-      "sha256": "d243b73210324c6bd07fc85ef005cd69261c842d8023a8742d1e2759e8872e5f",
-      "data": "2026-08-12"
     }
   ]
 }
