@@ -78,11 +78,18 @@ fs.writeFileSync(EMBUTIDO,
 
   /* as peças novas desta versão têm que estar dentro do arquivo que chegou */
   console.log('\n5) o que essa versão prometeu veio dentro dela');
-  ok('o botão de materiais do produto veio', html.includes('Materiais do produto') ? true : 'não veio');
+  ok('o garimpo pelo Kalodata veio', html.includes('Kalodata') ? true : 'não veio');
   ok('a função que guarda os materiais veio',
     html.includes('function pautaMateriais') ? true : 'não veio');
-  ok('e o aviso sobre a pessoa usando o produto veio',
-    /pessoa usando o produto/i.test(html) ? true : 'não veio');
+  ok('o prompt de pessoa usando o produto veio',
+    html.includes('function pessPromptTexto') ? true : 'não veio');
+  ok('e a tabela de tipos de produto veio junto',
+    html.includes('PESS_FAMILIAS') && html.includes('function pessFamiliaId') ? true : 'não veio');
+  ok('o manuseio certo de cada produto veio escrito',
+    html.includes('spreads it in slow upward circles until it disappears')
+    && html.includes('cracks an egg straight onto the dry surface with no oil') ? true : 'não veio');
+  ok('e as cinco cenas da pessoa vieram',
+    html.includes('A pessoa e o problema') && html.includes('Ela recomenda') ? true : 'não veio');
 
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
