@@ -61,7 +61,7 @@ jobs:
         working-directory: desktop
         run: |
           falta=0
-          for a in main.js preload.js atualizacao.js publicador.js estudio.js \
+          for a in main.js preload.js atualizacao.js publicador.js estudio.js kalodata.js \
                    fabrica/fabrica.py fabrica/cortes.py fabrica/ia_local.py; do
             if [ -s "$a" ]; then echo "ok    $a"; else echo "FALTA $a"; falta=1; fi
           done
