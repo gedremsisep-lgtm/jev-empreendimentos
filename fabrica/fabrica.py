@@ -377,6 +377,22 @@ def plano_de_cenas(fontes, cenas):
             folga = max(0.0, f['dur'] - seg)
             plano[i]['ini'] = round(folga * (k / (len(usos) - 1)), 2) if len(usos) > 1 \
                 else round(folga / 2.0, 2)
+
+    # ---- a troca que salva o vídeo de uma foto só ----
+    # Repetir a MESMA foto em três cenas cansa em segundos. Quando o roteiro
+    # traz um número de prova para a cena (vendidos, nota, comissão), essa
+    # repetição vira cartela: o número prende mais do que a foto repetida.
+    # A primeira aparição de cada foto é sempre preservada — a pessoa precisa
+    # ver o produto.
+    ja_vistos = set()
+    for i, p in enumerate(plano):
+        if p['tipo'] == 'foto':
+            if p.get('caminho') in ja_vistos and (cenas[i].get('dado') or {}).get('numero'):
+                d = cenas[i]['dado']
+                plano[i] = {'tipo': 'dado', 'numero': d.get('numero'),
+                            'rotulo': d.get('rotulo', '')}
+            else:
+                ja_vistos.add(p.get('caminho'))
     return plano
 
 
@@ -391,6 +407,57 @@ def render_cena_video(fonte, audio, seg, larg, alt, destino, nvenc):
            '-t', '%.3f' % seg, '-map', '0:v:0', '-map', '1:a:0',
            *codec(nvenc), '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k',
            '-ar', '44100', '-ac', '2', destino])
+
+
+def render_cena_dado(numero, rotulo, audio, seg, larg, alt, destino, nvenc):
+    """A cena de PROVA. Quando o produto só tem uma foto, encher o vídeo de
+       foto repetida cansa em três segundos. O que segura o dedo de quem
+       assiste não é a foto bonita — é o número:
+
+           54 MIL
+           vendidos nos últimos 30 dias
+
+       Esse número vem do Kalodata, é real, e é a coisa mais persuasiva que
+       a gente tem para mostrar. Ele entra grande, no meio da tela, sobre o
+       verde da JeV, e a narração fala por cima.
+
+       O texto é desenhado pelo próprio ffmpeg (drawtext), sem depender de
+       fonte instalada na máquina: usa a fonte que o ffmpeg achar, e se não
+       achar nenhuma, cai no fundo liso em vez de quebrar a montagem."""
+    grande = str(numero or '').strip()
+    pequeno = str(rotulo or '').strip()
+    if not grande:
+        return render_cena_carta(audio, seg, larg, alt, destino, nvenc)
+
+    def limpo(t):
+        # o drawtext trata : ' \ % como comando; escapar evita filtro inválido
+        return (t.replace('\\', '').replace(':', ' ').replace("'", '')
+                 .replace('%', ' por cento').replace(',', '\\,'))
+
+    tam_g = int(alt * 0.135)
+    tam_p = int(alt * 0.040)
+    partes = [
+        "drawtext=text='%s':fontcolor=white:fontsize=%d:"
+        "x=(w-tw)/2:y=(h-th)/2-%d:box=0" % (limpo(grande), tam_g, int(alt * 0.02))
+    ]
+    if pequeno:
+        partes.append(
+            "drawtext=text='%s':fontcolor=0xBFE8D4:fontsize=%d:"
+            "x=(w-tw)/2:y=(h/2)+%d" % (limpo(pequeno), tam_p, int(alt * 0.075)))
+    vf = ','.join(partes) + ',format=yuv420p'
+
+    args = [FFMPEG, '-y', '-f', 'lavfi', '-i',
+            'color=c=0x0E2A20:s=%dx%d:r=30' % (larg, alt),
+            '-i', audio, '-vf', vf, '-af', 'apad', '-t', '%.3f' % seg,
+            *codec(nvenc), '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k',
+            '-ar', '44100', '-ac', '2', destino]
+    try:
+        rodar(args)
+    except Exception:
+        # sem fonte disponível o drawtext falha: melhor um fundo liso que um
+        # vídeo que não sai
+        diz('   (o texto grande não pôde ser desenhado nesta máquina)')
+        render_cena_carta(audio, seg, larg, alt, destino, nvenc)
 
 
 def render_cena_carta(audio, seg, larg, alt, destino, nvenc):
@@ -453,9 +520,11 @@ def montar(roteiro, fontes, trilha, formatos, nvenc):
         diz('   AVISO: a voz de IA não estava disponível — o vídeo sai mudo, com os tempos certos.')
 
     plano = plano_de_cenas(fontes, cenas)
-    quantos = {'foto': 0, 'video': 0, 'carta': 0}
+    quantos = {'foto': 0, 'video': 0, 'carta': 0, 'dado': 0}
     for p in plano:
         quantos[p['tipo']] = quantos.get(p['tipo'], 0) + 1
+    if quantos['dado']:
+        diz('   cenas de número (prova social): %d' % quantos['dado'])
     diz('   cenas por recorte de vídeo: %d · por foto: %d · em fundo liso: %d'
         % (quantos['video'], quantos['foto'], quantos['carta']))
     if quantos['carta'] == len(plano):
@@ -486,6 +555,9 @@ def montar(roteiro, fontes, trilha, formatos, nvenc):
                     render_cena_video(fonte, c['wav'], c['dur'], larg, alt, dest, nvenc)
                 elif fonte['tipo'] == 'foto':
                     render_cena(fonte['caminho'], c['wav'], c['dur'], larg, alt, dest, nvenc, i)
+                elif fonte['tipo'] == 'dado':
+                    render_cena_dado(fonte.get('numero'), fonte.get('rotulo'),
+                                     c['wav'], c['dur'], larg, alt, dest, nvenc)
                 else:
                     render_cena_carta(c['wav'], c['dur'], larg, alt, dest, nvenc)
                 f.write("file '%s'\n" % dest.replace('\\', '/').replace("'", "'\\''"))
