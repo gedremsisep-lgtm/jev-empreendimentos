@@ -1,17 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.28",
-  "arquivo": "jev-1.0.28.html",
+  "versao": "1.0.29",
+  "arquivo": "jev-1.0.29.html",
   "data": "2026-08-19",
-  "sha256": "163f97fd44addd4e50d7e345f45ea16aa4319b38404e7c2a5afb2c86a3074f57",
-  "tamanho": 1815154,
+  "sha256": "129eba3d3b7a490d4a74f3b69ea4028be58fb00797ef634df84ae2531888d43b",
+  "tamanho": 1842147,
   "notas": [
-    "Conserto do download da capa: o CDN do Kalodata recusa quando vai o endereco do produto junto, e agora ele nao vai",
-    "Quando um arquivo nao baixa, o sistema tenta a regra oposta antes de desistir",
-    "O erro passa a mostrar o que o servidor respondeu, em vez de so dizer que nao chegou"
+    "Prompt novo: pessoa pegando, usando e reagindo ao produto, em cinco cenas, em vez de mostrar so um pedaco do produto",
+    "O sistema reconhece o tipo do produto pelo nome e usa o manuseio certo: espalhar o protetor, quebrar o ovo na panela, pedalar, tomar a capsula",
+    "Os beneficios entram escritos no prompt e falados na narracao, com a prova de vendas em numero redondo"
   ],
-  "substitui": "1.0.27",
+  "substitui": "1.0.28",
   "anteriores": [
+    {
+      "versao": "1.0.28",
+      "arquivo": "jev-1.0.28.html",
+      "sha256": "163f97fd44addd4e50d7e345f45ea16aa4319b38404e7c2a5afb2c86a3074f57",
+      "data": "2026-08-19"
+    },
     {
       "versao": "1.0.27",
       "arquivo": "jev-1.0.27.html",
@@ -40,12 +46,6 @@
       "versao": "1.0.23",
       "arquivo": "jev-1.0.23.html",
       "sha256": "11ac6f2ecc2b092655e107bcdc1a53015765f3575099a2f03651204e5b479a12",
-      "data": "2026-08-13"
-    },
-    {
-      "versao": "1.0.22",
-      "arquivo": "jev-1.0.22.html",
-      "sha256": "1acc95552f92ef5bbce366aecde96f5b64aa56e3b583da707f6ae6b6c451d757",
       "data": "2026-08-13"
     }
   ]
