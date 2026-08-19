@@ -720,9 +720,25 @@ async function baixarMidias(dados, enviar) {
   /* 2) baixar de verdade. O vídeo primeiro: é ele que mostra a pessoa. */
   const dir = path.join(raiz(), 'produtos', chave);
   fs.mkdirSync(dir, { recursive: true });
+  /* De onde veio o endereço decide se mandamos Referer — e isso NÃO é
+     detalhe.
+
+     Foto raspada da página de uma loja: o servidor dela costuma exigir
+     saber de qual página a imagem foi pedida, senão devolve 403. Aí o
+     Referer é obrigatório.
+
+     Foto de endereço DIRETO (o garimpo do Kalodata sabe o endereço exato da
+     capa): o CDN faz o contrário. Ele tem trava contra hotlink — recusa
+     quando o Referer é de um domínio estranho e aceita quando não há
+     Referer nenhum. Foi conferido no navegador: com Referer de outro site a
+     imagem falha; sem Referer, carrega 800px.
+
+     Mandar o Referer do TikTok numa capa do Kalodata juntava o pior dos
+     dois mundos, e foi exatamente o que fez o download voltar vazio com
+     "nenhum arquivo chegou inteiro". */
   const fila = [].concat(
-    videos.slice(0, 3).map(u => ({ url: u, video: true })),
-    fotos.slice(0, MAX_ITENS).map(u => ({ url: u, video: false })));
+    videos.slice(0, 3).map(u => ({ url: u, video: true, direta: diretas.includes(u) })),
+    fotos.slice(0, MAX_ITENS).map(u => ({ url: u, video: false, direta: diretas.includes(u) })));
 
   const avisos = recusas.slice();
   let n = 0, guardados = 0;
@@ -737,13 +753,24 @@ async function baixarMidias(dados, enviar) {
     const destino = path.join(dir, (item.video ? 'a' : 'b') +
       String(n).padStart(2, '0') + ext);
     try {
-      await baixar(item.url, destino, item.video ? MAX_VIDEO : MAX_FOTO,
-                   null, enderecos[0] || undefined);
+      const limite = item.video ? MAX_VIDEO : MAX_FOTO;
+      const deOnde = item.direta ? undefined : (enderecos[0] || undefined);
+      try {
+        await baixar(item.url, destino, limite, null, deOnde);
+      } catch (primeiro) {
+        /* Segunda chance com a regra trocada. Um servidor recusa sem
+           Referer, o outro recusa COM — e a gente não tem como saber de
+           antemão qual é qual. Tentar dos dois jeitos custa um segundo e
+           evita voltar de mãos vazias. */
+        const outro = deOnde ? undefined : (enderecos[0] || undefined);
+        if (deOnde === outro) throw primeiro;
+        await baixar(item.url, destino, limite, null, outro);
+      }
       if (fs.statSync(destino).size > 0) guardados++;
       else { try { fs.unlinkSync(destino); } catch (e) {} }
     } catch (e) {
       try { fs.unlinkSync(destino); } catch (x) {}
-      avisos.push('não veio ' + item.url.slice(0, 60) + ' (' + (e && e.message) + ')');
+      avisos.push('não veio ' + item.url.slice(0, 60) + ' (' + detalharErro(e) + ')');
     }
   }
 
@@ -757,9 +784,13 @@ async function baixarMidias(dados, enviar) {
   return {
     ok: arquivos.length > 0,
     arquivos, avisos, pasta: dir, porJanela: usouJanela, temVideo,
+    /* O motivo tem que dizer O QUE deu errado no arquivo, não só que deu.
+       "nenhum arquivo chegou inteiro" sem o erro do servidor deixou o dono
+       (e a mim) caçando no escuro por um dia inteiro. */
     motivo: arquivos.length ? '' :
-      'a loja respondeu, mas nenhum arquivo chegou inteiro. ' +
-      'Baixe o material no painel do vendedor e use "Materiais do produto".'
+      'tentei baixar ' + fila.length + ' arquivo(s) e nenhum chegou inteiro' +
+      (avisos.length ? '. O servidor respondeu: ' + avisos[0] : '') +
+      '. Baixe o material no painel do vendedor e use "Materiais do produto".'
   };
 }
 

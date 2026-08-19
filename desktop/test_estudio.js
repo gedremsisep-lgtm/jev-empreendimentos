@@ -90,6 +90,30 @@ const servidor = http.createServer((req, res) => {
         }, 800);
       </script></body></html>`);
   }
+  /* O CDN COM TRAVA DE HOTLINK — o caso real do img.kalocdn.com.
+     Ele recusa quando o Referer é de um domínio estranho e entrega quando
+     não vem Referer nenhum. Foi isso que fez o download da capa do Kalodata
+     voltar vazio, porque o programa mandava o Referer do TikTok junto. */
+  if (url === '/cdn-sem-referer.jpg') {
+    if (req.headers.referer) { res.writeHead(403); return res.end('hotlink'); }
+    const b = fs.readFileSync(path.join(LOJA, 'a.jpg'));
+    res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+    return res.end(b);
+  }
+  /* e o contrário: a loja que SÓ entrega para quem diz de onde veio */
+  if (url === '/cdn-com-referer.jpg') {
+    if (!req.headers.referer) { res.writeHead(403); return res.end('sem referer'); }
+    const b = fs.readFileSync(path.join(LOJA, 'b.jpg'));
+    res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+    return res.end(b);
+  }
+
+  /* a loja que não responde de jeito nenhum: a conexão morre antes de
+     qualquer conversa, dos DOIS jeitos. Foi o que aconteceu de verdade com
+     o TikTok bloqueado na internet do dono. */
+  if (url === '/sem-rede') {
+    return req.socket.destroy();
+  }
   /* uma loja que põe porta: pede verificação em vez de mostrar o produto */
   if (url === '/com-porta') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -470,6 +494,67 @@ app.whenReady().then(async () => {
   ok('o botão de baixar oferece tentar com a loja na sua tela',
     barradoDeVez.podeTentarNaTela === true && barradoDeVez.barrado === true
       ? true : barradoDeVez);
+
+  /* ---------- a capa de endereço direto, com trava de hotlink
+     O garimpo do Kalodata sabe o endereço exato da capa. Baixar isso não
+     precisa ler página nenhuma — mas precisa NÃO mandar o Referer do
+     produto, senão o CDN recusa. Este bloco prova as duas regras. */
+  console.log('\n6a-quater) a capa de endereço direto');
+  const diretaOk = await estudio.baixarMidias({
+    chave: 'capa-direta', nome: 'Produto do Kalodata',
+    urls: ['https://shop.tiktok.com/view/product/123'],   /* endereço inalcançável, de propósito */
+    imagens: ['http://127.0.0.1:' + porta + '/cdn-sem-referer.jpg']
+  });
+  ok('a capa baixa mesmo com o endereço do produto inalcançável',
+    diretaOk.ok === true ? true : diretaOk);
+  ok('e o arquivo existe no disco com tamanho',
+    (diretaOk.arquivos || []).length === 1 &&
+    fs.statSync(diretaOk.arquivos[0].caminho).size > 0 ? true : diretaOk.arquivos);
+  ok('sem ler página nenhuma da loja', diretaOk.porJanela !== true ? true : 'foi ler a página à toa');
+
+  /* e a regra oposta continua valendo para foto raspada de página */
+  const precisaReferer = await estudio.baixarMidias({
+    chave: 'precisa-referer', urls: ['http://127.0.0.1:' + porta + '/produto'],
+    imagens: ['http://127.0.0.1:' + porta + '/cdn-com-referer.jpg']
+  });
+  ok('e a foto que EXIGE Referer também baixa, na segunda tentativa',
+    precisaReferer.ok === true && (precisaReferer.arquivos || []).length === 1
+      ? true : precisaReferer);
+
+  estudio.limparMidias('capa-direta');
+  estudio.limparMidias('precisa-referer');
+
+  /* ------- a loja inalcançável: o programa não pode culpar a loja
+     Quando a conexão morre nos dois caminhos, quem está bloqueando é a
+     internet deste computador — antivírus, DNS, roteador. Dizer "a loja não
+     deixou" nessa hora manda o dono caçar solução no lugar errado, e foi
+     exatamente o que aconteceu com o TikTok bloqueado na casa dele.       */
+  console.log('\n6a-ter) a loja que este computador não alcança');
+  const semRede = 'http://127.0.0.1:' + porta + '/sem-rede';
+
+  const cruSemRede = await estudio.midiaDoProduto(semRede);
+  ok('o pedido cru reconhece que não foi barrado, foi cortado',
+    cruSemRede.inalcancavel === true ? true : cruSemRede);
+
+  const naoAlcancou = await estudio.baixarMidias({ chave: 'sem-rede', urls: [semRede] });
+  ok('o botão de baixar marca o caso como inalcançável',
+    naoAlcancou.inalcancavel === true ? true : naoAlcancou);
+  ok('e NÃO diz que a loja não deixou ler',
+    !/a loja não deixou/i.test(naoAlcancou.motivo || '') ? true : naoAlcancou.motivo);
+  ok('diz que foi este computador que não alcançou',
+    /não conseguiu nem alcançar/i.test(naoAlcancou.motivo || '') ? true : naoAlcancou.motivo);
+  ok('e manda conferir abrindo o endereço no navegador',
+    /no seu navegador/i.test(naoAlcancou.motivo || '') ? true : naoAlcancou.motivo);
+  ok('citando as causas de verdade: antivírus, DNS, roteador, hosts',
+    /antivírus|DNS|roteador|hosts/i.test(naoAlcancou.motivo || '') ? true : naoAlcancou.motivo);
+  ok('e não oferece abrir a loja na tela, que também não abriria',
+    naoAlcancou.podeTentarNaTela === false ? true : naoAlcancou);
+
+  /* e o contrário continua valendo: loja que responde 403 é barrada, não
+     inalcançável — aí o painel do vendedor ainda é caminho */
+  ok('página vazia não é confundida com falta de rede',
+    (await estudio.midiaDoProduto('http://127.0.0.1:' + porta + '/vazia')).inalcancavel !== true
+      ? true : 'confundiu');
 
   estudio.limparMidias('loja-dificil');
 
