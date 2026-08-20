@@ -91,6 +91,22 @@ fs.writeFileSync(EMBUTIDO,
   ok('e as cinco cenas da pessoa vieram',
     html.includes('A pessoa e o problema') && html.includes('Ela recomenda') ? true : 'não veio');
 
+  /* 1.0.30: a pessoa em toda cena, e nada cortado nas bordas */
+  ok('a regra de que TEM que aparecer uma pessoa veio',
+    html.includes('A real person must be visible and present in this shot') ? true : 'não veio');
+  ok('e a proibição de cena só com produto',
+    html.includes('never a product-only shot') ? true : 'não veio');
+  ok('a trava do enquadramento veio',
+    html.includes('product must be FULLY inside the frame at all times') ? true : 'não veio');
+  ok('e o aviso da faixa de botões do aplicativo no 9:16',
+    html.includes('right-hand strip and the bottom fifth') ? true : 'não veio');
+  ok('a cena de apresentar, com rosto e produto no mesmo quadro',
+    html.includes('her face and the ENTIRE product are both clearly visible') ? true : 'não veio');
+  ok('o aviso de vídeo sem pessoa veio',
+    html.includes('function pautaTemVideo') && html.includes('function pautaVerPrompt') ? true : 'não veio');
+  ok('e o negativo passou a proibir produto sozinho e produto cortado',
+    html.includes('product alone without a person') && html.includes('cropped product') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();
