@@ -129,6 +129,20 @@ fs.writeFileSync(EMBUTIDO,
   ok('e o cartão do produto ganhou âncora, para o botão levar até ele',
     html.includes("id=\"pauta-' + item.id + '\"") || html.includes('pauta-') ? true : 'não veio');
 
+  /* 1.0.33: o preparo automático do anúncio em todas as plataformas */
+  ok('o preparo automático veio',
+    html.includes('function prepAoGarimpar') && html.includes('function prepSalvarFichas') ? true : 'não veio');
+  ok('a legenda de cada plataforma veio',
+    html.includes('function prepLegendas') && html.includes('function prepTexto') ? true : 'não veio');
+  ok('o botão de preparar todos veio',
+    html.includes('function prepPrepararTudo') && html.includes('Preparar o anúncio de todos') ? true : 'não veio');
+  ok('e o de abrir todas para publicar',
+    html.includes('function prepAbrirTodas') && html.includes('Abrir todas para publicar') ? true : 'não veio');
+  ok('o aviso de publicidade entra em toda legenda — é exigência, não enfeite',
+    html.includes('Publicidade — ganho comissão por venda.') ? true : 'não veio');
+  ok('e a tela avisa quando falta o link de afiliado',
+    html.includes('não ganha comissão') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();

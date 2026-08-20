@@ -1121,6 +1121,97 @@ function iaEstado() {
   }
 }
 
+/* ------------------------------------------------- preparar o Python
+
+   O DEFEITO QUE ISTO CONSERTA, e por que ele é traiçoeiro.
+
+   O Python que este programa baixa é o "embeddable" do Windows — o pacote
+   pequeno, de 11 MB, feito para ser embutido dentro de outro programa. Ele
+   roda a fábrica de vídeo muito bem, mas vem de propósito com duas amarras
+   que ninguém avisa:
+
+     1. NÃO tem pip. Qualquer "python -m pip install" morre dizendo
+        "No module named pip".
+     2. Vem com um arquivo pythonNNN._pth em que a linha "import site" está
+        comentada, o que desliga a pasta site-packages inteira. Mesmo
+        instalando o pip na marra, nada que ele instalasse seria encontrado.
+
+   Era exatamente isso na tela do dono: as três etapas da IA falhando em
+   sequência, duas com "No module named pip" e a última com
+   "No module named 'huggingface_hub'" — a mesma doença, dois passos depois.
+
+   O conserto é o caminho oficial: destravar o ._pth e rodar o get-pip.py uma
+   vez. Depois disso o pip existe, o site-packages funciona, e o resto da
+   instalação segue como sempre deveria ter seguido.                        */
+function pastaDoPython(py) {
+  try { return path.dirname(py); } catch (e) { return ''; }
+}
+
+function destravarPth(dir) {
+  /* devolve o que foi feito, para o teste conferir e para o recado da tela
+     poder dizer a verdade em vez de um "pronto" genérico */
+  let nomes;
+  try { nomes = fs.readdirSync(dir); }
+  catch (e) { return { ok: false, motivo: 'não achei a pasta do Python' }; }
+  const pth = nomes.find(n => /^python\d*\._pth$/i.test(n));
+  if (!pth) return { ok: true, mexeu: false, motivo: 'este Python não usa ._pth' };
+
+  const alvo = path.join(dir, pth);
+  let txt;
+  try { txt = fs.readFileSync(alvo, 'utf8'); }
+  catch (e) { return { ok: false, motivo: String(e.message) }; }
+
+  let novo = txt.replace(/^[ \t]*#[ \t]*import[ \t]+site[ \t]*$/mi, 'import site');
+  if (!/^[ \t]*import[ \t]+site[ \t]*$/mi.test(novo)) novo += '\nimport site\n';
+  if (!/Lib[\\/]site-packages/i.test(novo)) novo = novo.replace(/\n?$/, '\nLib\\site-packages\n');
+
+  if (novo === txt) return { ok: true, mexeu: false, motivo: 'o ._pth já estava destravado' };
+  try { fs.writeFileSync(alvo, novo); }
+  catch (e) { return { ok: false, motivo: String(e.message) }; }
+  return { ok: true, mexeu: true, arquivo: pth };
+}
+
+function temPip(py) {
+  try {
+    const r = spawnSync(py, ['-m', 'pip', '--version'], { encoding: 'utf8', timeout: 30000 });
+    return r.status === 0 && /pip\s+\d/.test(String(r.stdout || ''));
+  } catch (e) { return false; }
+}
+
+async function prepararPython(py, av) {
+  const aviso = typeof av === 'function' ? av : function () {};
+  const dir = pastaDoPython(py);
+  if (!dir) return { ok: false, motivo: 'não achei onde o Python foi instalado' };
+
+  const destravou = destravarPth(dir);
+  if (!destravou.ok)
+    return { ok: false, motivo: 'não consegui destravar o Python: ' + destravou.motivo };
+  if (destravou.mexeu) aviso({ tipo: 'linha', texto: 'destravei o ' + destravou.arquivo });
+
+  if (temPip(py)) return { ok: true, jaTinha: true };
+
+  aviso({ tipo: 'linha', texto: 'o Python veio sem pip — instalando o pip primeiro' });
+  const getpip = path.join(dir, 'get-pip.py');
+  try {
+    await baixar(process.env.JEV_GETPIP || 'https://bootstrap.pypa.io/get-pip.py',
+                 getpip, 8 * 1024 * 1024);
+  } catch (e) {
+    return { ok: false, motivo: 'não consegui baixar o instalador do pip (' +
+      String((e && e.message) || e) + '). Sem internet, a IA local não tem como ser instalada.' };
+  }
+
+  const r = spawnSync(py, [getpip, '--no-warn-script-location'],
+    { encoding: 'utf8', timeout: 300000,
+      env: Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8' }) });
+  try { fs.unlinkSync(getpip); } catch (e) {}
+
+  if (!temPip(py)) {
+    const fim = String((r && (r.stderr || r.stdout)) || '').trim().split(/\r?\n/).pop() || 'sem resposta';
+    return { ok: false, motivo: 'o pip não quis instalar: ' + fim };
+  }
+  return { ok: true, jaTinha: false };
+}
+
 /* baixa o que falta para a IA de vídeo local. Só roda depois do dono mandar. */
 function iaInstalar(enviar) {
   return new Promise(resolve => {
@@ -1154,6 +1245,27 @@ function iaInstalar(enviar) {
 
     let i = 0;
     const erros = [];
+
+    /* O PASSO ZERO. Sem ele, os três de baixo falham em sequência e o dono
+       vê três erros que parecem três problemas — quando é um só. */
+    const comecar = () => {
+      av({ tipo: 'passo', pct: 2, texto: 'preparando o Python (pip e site-packages)' });
+      prepararPython(py, av).then(pr => {
+        if (!pr.ok) {
+          rodando = null;
+          av({ tipo: 'passo', pct: 100, texto: 'não deu para preparar o Python' });
+          return resolve({ ok: false, estado: iaEstado(),
+            motivo: pr.motivo + ' — sem o pip, nada do resto tem como ser instalado.' });
+        }
+        if (!pr.jaTinha) av({ tipo: 'linha', texto: 'pip instalado' });
+        seguir();
+      }).catch(e => {
+        rodando = null;
+        resolve({ ok: false, estado: iaEstado(),
+          motivo: 'não deu para preparar o Python: ' + String((e && e.message) || e) });
+      });
+    };
+
     const seguir = () => {
       if (i >= passos.length) {
         rodando = null;
@@ -1180,7 +1292,7 @@ function iaInstalar(enviar) {
         i++; seguir();
       });
     };
-    seguir();
+    comecar();
   });
 }
 
@@ -1219,5 +1331,6 @@ module.exports = {
   escolherArquivos, midiaDoProduto, extrairMidia,
   baixarMidias, midiasGuardadas, limparMidias, chaveDePasta, midiaPelaJanela,
   iaEstado, iaInstalar, iaLimpar, iaLocalPy,
+  destravarPth, temPip, prepararPython, pastaDoPython,
   raiz, fabricaPy, cortesPy, baixar
 };
