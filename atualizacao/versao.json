@@ -1,17 +1,24 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.32",
-  "arquivo": "jev-1.0.32.html",
+  "versao": "1.0.33",
+  "arquivo": "jev-1.0.33.html",
   "data": "2026-08-20",
-  "sha256": "cd86852f7f640a1581428e2e7624963653d8409a7d95f990b96d0c74e26dab4a",
-  "tamanho": 1870338,
+  "sha256": "cd0ba9eb13269a21d3fabf9b01c6ec124e2fb068e86043b486c53554035968ed",
+  "tamanho": 1887442,
   "notas": [
-    "Botao Criar video no Higgsfield no alto da aba Videos e pauta",
-    "Ele pergunta o produto, mostra o custo e so gera depois da confirmacao: clicar nao gasta nada",
-    "Sem chave ele ensina a criar a chave; sem produto ele aponta o Garimpo; pelo navegador ele avisa"
+    "A IA de video local volta a instalar: o Python embutido vinha sem pip e com o site-packages desligado, e agora e destravado antes",
+    "O botao Criar video no Higgsfield subiu para o alto da aba, junto da chave",
+    "Ao garimpar, cada produto ja vira ficha de afiliado e ganha a legenda de cada plataforma, cortada no limite dela",
+    "Abrir todas para publicar: abre cada plataforma com a legenda pronta. O botao de publicar continua sendo seu"
   ],
-  "substitui": "1.0.31",
+  "substitui": "1.0.32",
   "anteriores": [
+    {
+      "versao": "1.0.32",
+      "arquivo": "jev-1.0.32.html",
+      "sha256": "cd86852f7f640a1581428e2e7624963653d8409a7d95f990b96d0c74e26dab4a",
+      "data": "2026-08-20"
+    },
     {
       "versao": "1.0.31",
       "arquivo": "jev-1.0.31.html",
@@ -41,12 +48,6 @@
       "arquivo": "jev-1.0.27.html",
       "sha256": "42e9cab74d6e6beca0b7451e420da78cd6ed240a603440b2ff56a6130df19414",
       "data": "2026-08-19"
-    },
-    {
-      "versao": "1.0.26",
-      "arquivo": "jev-1.0.26.html",
-      "sha256": "97ee6d168c457b960d8e7c39ff33c0a5df0a76121a85505c3f325128791afaf4",
-      "data": "2026-08-14"
     }
   ]
 }
