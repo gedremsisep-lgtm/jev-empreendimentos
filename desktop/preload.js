@@ -69,6 +69,21 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estAbrirPasta:  caminho          => ipcRenderer.invoke('est-abrir-pasta', caminho),
   estGuardarComo: (origem, nome)   => ipcRenderer.invoke('est-guardar-como', origem, nome),
   estFaxina:      guardar          => ipcRenderer.invoke('est-faxina', guardar),
+  /* ---- a IA da nuvem que põe uma PESSOA apresentando o produto ----
+     hgGuardarChave é de mão única: a tela empurra a chave para o disco e
+     não existe caminho de volta. hgEstado devolve só o rabinho dela. */
+  hgDisponivel:    ()               => ipcRenderer.invoke('hg-disponivel'),
+  hgEstado:        ()               => ipcRenderer.invoke('hg-estado'),
+  hgGuardarChave:  (id, segredo)    => ipcRenderer.invoke('hg-guardar-chave', id, segredo),
+  hgEsquecerChave: ()               => ipcRenderer.invoke('hg-esquecer-chave'),
+  hgOrcar:         (cenas, opcoes)  => ipcRenderer.invoke('hg-orcar', cenas, opcoes),
+  hgGerar:         (cenas, opcoes)  => ipcRenderer.invoke('hg-gerar', cenas, opcoes),
+  hgAoAndar(callback) {
+    ipcRenderer.on('higgs-passo', (_e, dados) => {
+      try { callback(dados); } catch (e) { console.error(e); }
+    });
+  },
+
   /* o andamento chega por aqui, ao vivo, enquanto o vídeo é montado */
   aoEstudio(callback) {
     ipcRenderer.on('estudio-passo', (_e, dados) => {

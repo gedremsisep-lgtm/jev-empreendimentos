@@ -107,6 +107,20 @@ fs.writeFileSync(EMBUTIDO,
   ok('e o negativo passou a proibir produto sozinho e produto cortado',
     html.includes('product alone without a person') && html.includes('cropped product') ? true : 'não veio');
 
+  /* 1.0.31: a IA da nuvem que põe uma pessoa apresentando */
+  ok('a tela da IA com pessoa veio',
+    html.includes('function hggSecaoHTML') && html.includes('function hggCartaoHTML') ? true : 'não veio');
+  ok('o orçamento antes de gastar veio',
+    html.includes('function hggOrcar') && html.includes('function hggConfirmarGerar') ? true : 'não veio');
+  ok('o botão de confirmar mostra o preço, não só "gerar"',
+    html.includes('Pode gerar por ') ? true : 'não veio');
+  ok('a tela avisa que cena barrada não é cobrada',
+    html.includes('não é cobrada') ? true : 'não veio');
+  ok('o campo do segredo é senha, não texto à vista',
+    html.includes('id="hgg-seg" type="password"') ? true : 'não veio');
+  ok('e o pedido completo, que serve para qualquer IA',
+    html.includes('function hggPedidoTexto') && html.includes('PEDIDO DE VÍDEO') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();

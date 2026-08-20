@@ -40,6 +40,16 @@ try {
   console.error('kalodata indisponível:', e && e.message);
 }
 
+/* A IA que põe uma PESSOA apresentando o produto. Mesma porta protegida:
+   se a peça faltar no pacote, o programa abre igual e o botão avisa, em vez
+   de sumir sem explicação. */
+let higgsfield = null;
+try {
+  higgsfield = require('./higgsfield');
+} catch (e) {
+  console.error('higgsfield indisponível:', e && e.message);
+}
+
 let versoes;
 let motorOk = true;
 try {
@@ -550,6 +560,43 @@ ipcMain.handle('est-criar', async (_e, dados) => {
   catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
 });
 ipcMain.handle('est-parar', () => { try { return estudio ? estudio.parar() : false; } catch (e) { return false; } });
+
+/* ------------------------------------------------- a IA que põe a pessoa
+
+   Regra desta porta: a chave é do dono e nunca volta inteira para a tela.
+   O 'hg-estado' devolve só o rabinho dela; o segredo fica no disco.      */
+const contaHiggs = evento => {
+  if (janela && !janela.isDestroyed()) janela.webContents.send('higgs-passo', evento);
+};
+const semHiggs = { ok: false, motivo: 'a IA de vídeo não veio neste pacote' };
+
+ipcMain.handle('hg-disponivel', () => !!higgsfield);
+ipcMain.handle('hg-estado', async () => {
+  if (!higgsfield) return { ok: false, temChave: false, pronto: false, motivo: semHiggs.motivo };
+  try { return await higgsfield.estado(); }
+  catch (e) { return { ok: false, temChave: false, pronto: false, recado: String(e && e.message) }; }
+});
+ipcMain.handle('hg-guardar-chave', (_e, id, segredo) => {
+  if (!higgsfield) return semHiggs;
+  try { return higgsfield.guardarChave(id, segredo); }
+  catch (e) { return { ok: false, motivo: String(e && e.message) }; }
+});
+ipcMain.handle('hg-esquecer-chave', () => {
+  if (!higgsfield) return semHiggs;
+  try { return higgsfield.esquecerChave(); } catch (e) { return { ok: false }; }
+});
+ipcMain.handle('hg-orcar', async (_e, cenas, opcoes) => {
+  if (!higgsfield) return semHiggs;
+  try { return await higgsfield.orcar(cenas || [], opcoes || {}); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('hg-gerar', async (_e, cenas, opcoes) => {
+  if (!higgsfield) return semHiggs;
+  try {
+    return await higgsfield.gerarPedido(cenas || [],
+      Object.assign({}, opcoes || {}, { aoAndar: contaHiggs }));
+  } catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
 ipcMain.handle('est-escolher', async (_e, qual) => {
   if (!estudio) return [];
   try { return await estudio.escolherArquivos(qual); } catch (e) { return []; }
