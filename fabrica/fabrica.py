@@ -396,15 +396,53 @@ def plano_de_cenas(fontes, cenas):
     return plano
 
 
+def caixa_interna(larg, alt):
+    """A área onde a foto do produto pode viver, com margem de respiro.
+
+       A margem não é estética: no 9:16 o TikTok e o Reels desenham botões
+       na direita e legenda embaixo, por cima do vídeo. Produto colado na
+       borda fica atrás do dedo de curtir."""
+    return int(larg * 0.94) // 2 * 2, int(alt * 0.90) // 2 * 2
+
+
+def encaixe(larg, alt, frames=None):
+    """O ENQUADRAMENTO. Antes daqui, a foto entrava assim:
+
+           scale=...:force_original_aspect_ratio=increase,crop=...
+
+       que é "aumenta até cobrir a tela inteira e corta o que sobrar". Numa
+       capa quadrada de 800x800 indo para 1080x1920, isso amputa 44% da
+       LARGURA do produto — as laterais somem, e o que sobra é um pedaço do
+       meio. Foi por isso que os vídeos saíam com o produto cortado.
+
+       Agora é o contrário: a foto entra INTEIRA, reduzida até caber, e o
+       vazio que sobra é preenchido com uma cópia ampliada e desfocada dela
+       mesma. Nenhum pixel do produto se perde, e não fica tarja preta.
+
+       O movimento fica por conta do fundo desfocado, que respira devagar.
+       A foto do produto não se mexe — é o único jeito de garantir que ela
+       nunca encoste na borda e volte a ser cortada."""
+    li, ai = caixa_interna(larg, alt)
+    sigma = max(12, int(min(larg, alt) / 26))
+    fundo = ('scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,'
+             'gblur=sigma=%d,eq=brightness=-0.12:saturation=1.20'
+             % (larg, alt, larg, alt, sigma))
+    if frames:
+        fundo += ",zoompan=z='min(zoom+0.00025,1.14)':d=%d:s=%dx%d:fps=30" % (frames, larg, alt)
+    return ('[0:v]' + fundo + '[bg];'
+            '[0:v]scale=%d:%d:force_original_aspect_ratio=decrease[fg];'
+            '[bg][fg]overlay=(W-w)/2:(H-h)/2,fps=30,format=yuv420p[v]'
+            % (li, ai))
+
+
 def render_cena_video(fonte, audio, seg, larg, alt, destino, nvenc):
-    """Recorta um pedaço do vídeo do produto e encaixa na cena."""
-    vf = ('scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,'
-          'fps=30,format=yuv420p' % (larg, alt, larg, alt))
+    """Encaixa um pedaço do vídeo do produto na cena, inteiro."""
     entrada = ['-ss', '%.2f' % float(fonte.get('ini') or 0), '-i', fonte['caminho']] \
         if float(fonte.get('dur') or 0) >= seg \
         else ['-stream_loop', '-1', '-i', fonte['caminho']]
-    rodar([FFMPEG, '-y', *entrada, '-i', audio, '-vf', vf, '-af', 'apad',
-           '-t', '%.3f' % seg, '-map', '0:v:0', '-map', '1:a:0',
+    rodar([FFMPEG, '-y', *entrada, '-i', audio,
+           '-filter_complex', encaixe(larg, alt),
+           '-af', 'apad', '-t', '%.3f' % seg, '-map', '[v]', '-map', '1:a:0',
            *codec(nvenc), '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k',
            '-ar', '44100', '-ac', '2', destino])
 
@@ -472,20 +510,20 @@ def render_cena_carta(audio, seg, larg, alt, destino, nvenc):
 
 # --------------------------------------------------------------- montagem
 def render_cena(foto, audio, seg, larg, alt, destino, nvenc, indice):
+    """A foto do produto, INTEIRA, sobre o fundo desfocado dela mesma.
+
+       O zoom lento que existia aqui cortava a foto duas vezes: uma no
+       enquadramento e outra no próprio zoom. Agora quem se mexe é só o
+       fundo — o produto fica parado e completo do primeiro ao último
+       quadro."""
     frames = max(2, int(seg * 30))
-    zoom_in = (indice % 2 == 0)
-    z = ("min(zoom+0.0004,1.10)" if zoom_in else "if(lte(zoom,1.0),1.10,max(1.001,zoom-0.0004))")
-    vf = (
-        "scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,"
-        "zoompan=z='%s':d=%d:s=%dx%d:fps=30,format=yuv420p"
-        % (larg, alt, larg, alt, z, frames, larg, alt)
-    )
     cod = ['-c:v', 'h264_nvenc', '-preset', 'p4', '-cq', '23'] if nvenc \
         else ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21']
     # apad completa o áudio até o fim da cena: é o respiro entre uma fala e outra.
     # Sem isso, o -t seria cortado pelo áudio mais curto e o vídeo encolheria.
     rodar([FFMPEG, '-y', '-loop', '1', '-framerate', '30', '-i', foto,
-           '-i', audio, '-vf', vf, '-af', 'apad', '-t', '%.3f' % seg,
+           '-i', audio, '-filter_complex', encaixe(larg, alt, frames),
+           '-af', 'apad', '-t', '%.3f' % seg, '-map', '[v]', '-map', '1:a:0',
            *cod, '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k',
            '-ar', '44100', '-ac', '2', destino])
 
