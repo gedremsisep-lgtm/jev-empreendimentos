@@ -861,7 +861,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.31';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.32';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 7;   // v2: 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem) · v4: afiliados, roteiros e publicações · v5: garimpo de produtos · v6: cortes de vídeo · v7: vídeos montados no estúdio
 const STORES = [
@@ -8211,7 +8211,9 @@ async function midTabVideos(canais,videos){
     /* sem canal ainda dá para garimpar, ver o prompt e montar o vídeo —
        o canal só faz falta na hora de publicar */
     body.innerHTML = await pautaSecaoHTML() +
-      `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-video-off"></i>
+      `<div class="card"><div class="hd"><i class="ti ti-video"></i>Pauta e vídeos<span class="sp"></span>
+      <button class="btn sm gh" onclick="hggCriarVideo()"><i class="ti ti-user-check"></i>Criar vídeo no Higgsfield</button>
+      </div><div class="bd"><div class="empty"><i class="ti ti-video-off"></i>
       <b>Cadastre um canal para publicar</b>O vídeo você já pode montar aqui. O canal é
       necessário só na hora de subir para a plataforma.
       <div class="brow" style="justify-content:center;margin-top:14px">
@@ -8222,6 +8224,7 @@ async function midTabVideos(canais,videos){
   /* os produtos garimpados vêm primeiro: é neles que o trabalho acontece */
   let h = await pautaSecaoHTML();
   h += `<div class="card"><div class="hd"><i class="ti ti-video"></i>Pauta e vídeos<span class="sp"></span>
+      <button class="btn sm gh" onclick="hggCriarVideo()"><i class="ti ti-user-check"></i>Criar vídeo no Higgsfield</button>
       <button class="btn sm rd" onclick="videoForm()"><i class="ti ti-plus"></i>Novo vídeo</button></div><div class="bd">
       <div class="chips">${fases.map(f=>{
         const n = videos.filter(v=>v.status===f).length;
@@ -16004,7 +16007,9 @@ async function pautaItemHTML(item){
   const midia = item.midia || [];
   const temMidia = midia.length > 0;
 
-  let h = '<div class="card tw" style="margin-bottom:10px;border-color:' +
+  /* o id serve de âncora: quem chega pelo botão "Criar vídeo no Higgsfield"
+     é levado direto ao cartão certo, em vez de ter que caçar na lista */
+  let h = '<div class="card tw" id="pauta-' + item.id + '" style="margin-bottom:10px;border-color:' +
     (temVideo ? 'var(--green)' : 'var(--bg3)') + '"><div class="bd">' +
 
     '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +
@@ -17596,6 +17601,92 @@ function hggCartaoHTML(item){
 }
 
 function hggQualidade(v){ HGG.qualidade = v === 'bom' ? 'bom' : 'barato'; midiaRender(); }
+
+/* =============================== O BOTÃO "CRIAR VÍDEO NO HIGGSFIELD"
+
+   Ele vive no alto da aba Vídeos e pauta, junto com "Novo vídeo", porque é
+   ali que o dono chega quando quer um vídeo — e não dentro do cartão de um
+   produto, que ele só encontra depois de rolar a tela.
+
+   O botão não gera nada sozinho. Ele pergunta PARA QUAL produto, e cai no
+   mesmo caminho de sempre: orçamento na tela, confirmação dele, e só então
+   a geração. Um botão que gastasse dinheiro no primeiro clique seria uma
+   armadilha, por mais bonito que fosse.                                   */
+async function hggCriarVideo(){
+  if (!hggTem()){
+    modal('Criar vídeo no Higgsfield', 'ti-user-check',
+      '<div class="tt">A IA de vídeo com pessoa só funciona no aplicativo instalado no ' +
+      'computador. Pelo navegador, abra o produto na pauta e use <b>Copiar o pedido ' +
+      'completo</b> — ele leva tudo pronto para a IA da sua preferência.</div>');
+    return;
+  }
+
+  if (!HGG.estado) await hggVerEstado();
+  const e = HGG.estado || {};
+
+  if (e.semPeca){
+    modal('Criar vídeo no Higgsfield', 'ti-user-check',
+      '<div class="al aw"><i class="ti ti-info-circle"></i><div>Esta peça não veio no ' +
+      'pacote instalado. Atualize o programa pelo menu Atualizações.</div></div>');
+    return;
+  }
+
+  if (!e.temChave || !e.pronto){
+    /* sem chave não adianta listar produto: o caminho é a chave primeiro */
+    modal('Criar vídeo no Higgsfield', 'ti-key',
+      '<div class="tt">' + esc(e.recado || 'A chave ainda não está configurada.') + '</div>' +
+      '<div class="tt" style="margin-top:8px">Entre em <b>cloud.higgsfield.ai</b>, crie uma ' +
+      'chave e cole o ID e o segredo na aba Vídeos e pauta. Ela fica só neste computador.</div>',
+      '<button class="btn gn" onclick="closeModal(\'mk-form\'); midStab(\'videos\'); ' +
+        'setTimeout(hggAbrirChave, 150)"><i class="ti ti-key"></i>Ir colar a chave</button>' +
+      '<button class="btn gh" onclick="closeModal(\'mk-form\')">Fechar</button>');
+    return;
+  }
+
+  const todos = await dbGetAll('videos');
+  const itens = todos.filter(function(v){ return v.origem === 'garimpo' && v.produto; })
+                     .sort(function(a, b){ return Number(b.id) - Number(a.id); });
+
+  if (!itens.length){
+    modal('Criar vídeo no Higgsfield', 'ti-user-check',
+      '<div class="tt">Não há produto na pauta ainda. Vá no <b>Garimpo</b>, escolha um ' +
+      'produto e ele cai aqui com o prompt pronto.</div>',
+      '<button class="btn gn" onclick="closeModal(\'mk-form\'); midStab(\'gar\')">' +
+        '<i class="ti ti-pick"></i>Ir para o Garimpo</button>' +
+      '<button class="btn gh" onclick="closeModal(\'mk-form\')">Fechar</button>');
+    return;
+  }
+
+  const linhas = itens.map(function(it){
+    const nome = (it.produto && (it.produto.n || it.produto.nome)) || it.titulo || 'sem nome';
+    const jaTem = (it.midia || []).some(function(m){
+      return m && (m.tipo === 'video' || /\.mp4$/i.test(String(m.caminho || m.nome || '')));
+    });
+    return '<button class="btn" style="width:100%;justify-content:flex-start;text-align:left;' +
+      'margin-bottom:6px" onclick="hggEscolherProduto(' + it.id + ')">' +
+      '<i class="ti ti-user-check"></i><span><b>' + esc(nome) + '</b>' +
+      (jaTem ? '<br><span class="tt">já tem cena com pessoa — gerar de novo cria outras</span>'
+             : '') + '</span></button>';
+  }).join('');
+
+  modal('Criar vídeo no Higgsfield', 'ti-user-check',
+    '<div class="tt" style="margin-bottom:10px">Escolha o produto. Eu monto as cinco cenas ' +
+    'com uma pessoa apresentando, mostro <b>quanto vai custar</b> e só gero depois que ' +
+    'você confirmar.</div>' + linhas,
+    '<button class="btn gh" onclick="closeModal(\'mk-form\')">Fechar</button>', 'lg');
+}
+
+async function hggEscolherProduto(id){
+  closeModal('mk-form');
+  midStab('videos');
+  /* abre a ficha do produto para o orçamento aparecer onde ele está olhando */
+  if (typeof PAUTA !== 'undefined' && PAUTA.abertos) PAUTA.abertos[id] = true;
+  await hggOrcar(id);
+  setTimeout(function(){
+    const alvo = document.getElementById('pauta-' + id);
+    if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 250);
+}
 
 /* ================================================== O PEDIDO, NUM CLIQUE
 
