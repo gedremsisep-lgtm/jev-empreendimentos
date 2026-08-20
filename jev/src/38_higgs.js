@@ -209,16 +209,25 @@ function hggSecaoHTML(){
 
   if (!e.temChave){
     h += '<div class="tt">' + esc(e.recado || '') + '</div>';
+    /* o botão principal fica AQUI, no alto, junto da chave. Antes ele vivia
+       lá embaixo, depois de todos os produtos garimpados — o dono rolou a
+       tela inteira e não achou. Botão que precisa ser procurado não existe. */
     h += HGG.abrindoChave ? hggFormChaveHTML()
-      : '<div style="margin-top:8px"><button class="btn gn" onclick="hggAbrirChave()">' +
-        '<i class="ti ti-key"></i>Colar a minha chave</button></div>';
+      : '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn gn" onclick="hggAbrirChave()">' +
+          '<i class="ti ti-key"></i>Colar a minha chave</button>' +
+        '<button class="btn gh" onclick="hggCriarVideo()">' +
+          '<i class="ti ti-user-check"></i>Criar vídeo no Higgsfield</button>' +
+        '</div>';
     return h;
   }
 
   h += '<div class="tt">' +
     (e.pronto ? '<b style="color:var(--green)">Ligada</b>' : '<b style="color:var(--amber)">Com problema</b>') +
     ' &nbsp;·&nbsp; chave ' + esc(e.chave || '') + '<br>' + esc(e.recado || '') + '</div>';
-  h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+  h += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+    '<button class="btn gn" onclick="hggCriarVideo()">' +
+      '<i class="ti ti-user-check"></i>Criar vídeo no Higgsfield</button>' +
     '<button class="btn xs" onclick="hggAbrirChave()"><i class="ti ti-refresh"></i>Trocar a chave</button>' +
     '<button class="btn xs" onclick="hggEsquecerChave()"><i class="ti ti-trash"></i>Tirar a chave deste PC</button>' +
     '</div>';

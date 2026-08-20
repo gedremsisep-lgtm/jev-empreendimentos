@@ -40,7 +40,29 @@ async function pautaDoGarimpo(achados){
     if (existe){ await dbPut('videos', { ...existe, ...dados }); atualizados++; }
     else { await dbAdd('videos', { ...dados, views:0, likes:0, receita:0, custo:0 }); novos++; }
   }
-  return { novos, atualizados };
+
+  /* PREPARO AUTOMÁTICO. Este é o funil por onde TODO garimpo passa — o do
+     Kalodata e o antigo. Ligando aqui, o dono nunca mais preenche ficha de
+     afiliado na mão: garimpou, a ficha existe e a legenda de cada plataforma
+     está escrita. Só o link continua sendo dele, porque só ele consegue
+     gerar. Se o preparo falhar, o garimpo não pode falhar junto: o produto
+     na pauta vale mais que o anúncio pronto. */
+  let fichas = { novas: 0, jaTinha: 0 };
+  try {
+    if (typeof prepAoGarimpar === 'function') fichas = await prepAoGarimpar(lista);
+    if (typeof prepDoItem === 'function'){
+      const agora = await dbGetAll('videos');
+      for (const p of lista){
+        const chave = pautaChave(p);
+        const item = agora.find(v => v.origem === 'garimpo' && pautaChave(v.produto) === chave);
+        if (!item || item.anuncio) continue;
+        const anuncio = await prepDoItem(item);
+        if (anuncio) await dbPut('videos', { ...item, anuncio });
+      }
+    }
+  } catch (e) { /* o anúncio é bônus; a pauta é o essencial */ }
+
+  return { novos, atualizados, fichas };
 }
 
 /* ------------------------------------------------------------ o prompt pronto */
@@ -136,6 +158,20 @@ async function pautaSecaoHTML(){
 
   if (typeof hggSecaoHTML === 'function') h += hggSecaoHTML();
 
+  /* o preparo em lote: um clique resolve os sete de uma vez */
+  const semAnuncio = itens.filter(i => !i.anuncio).length;
+  h += '<div class="sh" style="margin-top:12px"><i class="ti ti-checks"></i>' +
+    'Anúncio pronto para todas as plataformas</div>' +
+    '<div class="tt">Ao garimpar, cada produto já vira uma ficha em Afiliados e ganha a ' +
+    'legenda de cada plataforma, cortada no limite dela. O que fica faltando é só o ' +
+    '<b>seu link de afiliado</b> — esse só você consegue gerar no painel da plataforma.</div>' +
+    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+      '<button class="btn gn" onclick="prepPrepararTudo()"><i class="ti ti-wand"></i>' +
+        'Preparar o anúncio de todos</button>' +
+      (semAnuncio ? '<span class="tt">' + semAnuncio + ' ainda sem anúncio</span>'
+                  : '<span class="tt">todos preparados</span>') +
+    '</div>';
+
   for (const item of itens) h += await pautaItemHTML(item);
   h += '</div></div>';
   return h;
@@ -228,6 +264,8 @@ async function pautaItemHTML(item){
   /* o caminho da IA que põe uma pessoa apresentando — vem antes do aviso,
      porque é a solução dele */
   if (typeof hggCartaoHTML === 'function') h += hggCartaoHTML(item);
+  /* e o anúncio já preparado para todas as plataformas */
+  if (typeof prepCartaoHTML === 'function') h += prepCartaoHTML(item);
   /* aviso não é erro: o vídeo ficou pronto e prestável, só saiu sem gente.
      Por isso é âmbar e vem com os dois caminhos para resolver, não vermelho */
   if (PAUTA.aviso[item.id])
