@@ -1,18 +1,24 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.30",
-  "arquivo": "jev-1.0.30.html",
+  "versao": "1.0.31",
+  "arquivo": "jev-1.0.31.html",
   "data": "2026-08-20",
-  "sha256": "12bf060ccc7c75e589ccad25b4bfe87f7889deeda3a44c14b2a73de08e8b9c79",
-  "tamanho": 1848453,
+  "sha256": "716b0da6ca4718b664cee407e888d16e706e6cec6c9dda1ae75b76ac6ad994f0",
+  "tamanho": 1865509,
   "notas": [
-    "As fotos do produto entram inteiras no video: antes o enquadramento cortava 44% da largura de uma capa quadrada",
-    "O vazio agora e preenchido com o fundo desfocado da propria foto, sem tarja preta",
-    "O prompt exige uma pessoa apresentando o produto em TODAS as cinco cenas, e o produto inteiro no quadro",
-    "Quando o video sai so com fotos, a tela avisa que nao ha pessoa e mostra os dois caminhos"
+    "Plugin do Higgsfield dentro do programa: botao Gerar com uma pessoa, que desenha alguem apresentando o produto e poe em movimento",
+    "A chave e do dono, guardada so no computador dele, e a tela nunca devolve o segredo",
+    "O preco aparece antes: o botao de confirmar diz quantos creditos custa, e cena barrada nao e cobrada",
+    "Copiar o pedido completo: leva produto, foto, as cinco cenas e a narracao para qualquer outra IA"
   ],
-  "substitui": "1.0.29",
+  "substitui": "1.0.30",
   "anteriores": [
+    {
+      "versao": "1.0.30",
+      "arquivo": "jev-1.0.30.html",
+      "sha256": "12bf060ccc7c75e589ccad25b4bfe87f7889deeda3a44c14b2a73de08e8b9c79",
+      "data": "2026-08-20"
+    },
     {
       "versao": "1.0.29",
       "arquivo": "jev-1.0.29.html",
@@ -41,12 +47,6 @@
       "versao": "1.0.25",
       "arquivo": "jev-1.0.25.html",
       "sha256": "b96351a4136613cd9ebbbcbccc48afc17378c6247d2e8b3afb0f915dfa76421f",
-      "data": "2026-08-13"
-    },
-    {
-      "versao": "1.0.24",
-      "arquivo": "jev-1.0.24.html",
-      "sha256": "8a073539356626855af5272ba62a159ef37fb151ce2b9656641d96018b6ed245",
       "data": "2026-08-13"
     }
   ]
