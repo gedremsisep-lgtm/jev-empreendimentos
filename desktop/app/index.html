@@ -859,7 +859,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.29';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.30';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 7;   // v2: 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem) · v4: afiliados, roteiros e publicações · v5: garimpo de produtos · v6: cortes de vídeo · v7: vídeos montados no estúdio
 const STORES = [
@@ -15932,11 +15932,27 @@ function pautaPromptTexto(pac, produto){
 
 /* ---------------------------------------------------------------- a tela */
 const PAUTA = { abertos: {}, montando: null, pct: 0, recado: '', erro: {},
-                reinstalar: {}, naTela: {}, semRede: {} };
+                aviso: {}, reinstalar: {}, naTela: {}, semRede: {} };
 
 function pautaAbrir(id){
   PAUTA.abertos[id] = !PAUTA.abertos[id];
   midiaRender();
+}
+
+/* O botão "Prompt da IA" do aviso: abre a ficha, que é onde o prompt mora.
+   Se já estiver aberta, não fecha na cara de quem clicou pedindo para ver. */
+function pautaVerPrompt(id){
+  PAUTA.abertos[id] = true;
+  midiaRender();
+}
+
+/* Um arquivo escolhido na mão é vídeo? É por aqui que o sistema sabe se o
+   material que chegou tem chance de ter gente dentro. */
+function pautaTemVideo(arquivos){
+  return (arquivos || []).some(function(a){
+    const c = String((a && (a.caminho || a.nome)) || a || '');
+    return /\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(c);
+  });
 }
 
 async function pautaSecaoHTML(){
@@ -16051,6 +16067,16 @@ async function pautaItemHTML(item){
       '</div></div>';
 
   if (montando) h += pautaBarraHTML();
+  /* aviso não é erro: o vídeo ficou pronto e prestável, só saiu sem gente.
+     Por isso é âmbar e vem com os dois caminhos para resolver, não vermelho */
+  if (PAUTA.aviso[item.id])
+    h += '<div class="al aw" style="margin-top:9px"><i class="ti ti-user-off"></i><div>' +
+         esc(PAUTA.aviso[item.id]) +
+         ' <button class="btn xs" onclick="pautaBaixarMidias(' + item.id + ')">' +
+         '<i class="ti ti-download"></i>Baixar as mídias do produto</button>' +
+         ' <button class="btn xs" onclick="pautaVerPrompt(' + item.id + ')">' +
+         '<i class="ti ti-sparkles"></i>Prompt da IA</button>' +
+         '</div></div>';
   if (PAUTA.erro[item.id])
     h += '<div class="al ae" style="margin-top:9px"><i class="ti ti-alert-circle"></i><div>' +
          esc(PAUTA.erro[item.id]) +
@@ -16165,7 +16191,7 @@ function pautaRoteiro(item){
 async function pautaGerar(id){
   const item = await dbGet('videos', id);
   if (!item || !item.produto) return;
-  PAUTA.erro[id] = '';
+  PAUTA.erro[id] = ''; PAUTA.aviso[id] = '';
 
   const roteiro = pautaRoteiro(item);
   const idRot = await dbAdd('roteiros', { ...roteiro, criadoEm: new Date().toISOString() });
@@ -16254,6 +16280,21 @@ async function pautaGerar(id){
         'e, se a loja não deixar, use "Materiais do produto" com o arquivo baixado no ' +
         'painel do vendedor. Depois gere de novo.';
       toast('Vídeo pronto, mas sem imagem do produto.', 'aw');
+    } else if (!videos.length && !pautaTemVideo(arquivos)){
+      /* A CONVERSA HONESTA SOBRE A PESSOA.
+         Esta fábrica monta o vídeo com as fotos REAIS do produto. Ela não
+         inventa gente — e não deveria mesmo, porque pessoa inventada em cima
+         de produto real é propaganda enganosa. Quando só chegou foto, o vídeo
+         sai bonito e sem ninguém, e o dono fica achando que quebrou. Não
+         quebrou: falta material com gente. Ou ele baixa o vídeo do vendedor
+         (onde quase sempre tem alguém usando), ou ele leva o prompt de pessoa
+         para uma IA de vídeo, que é exatamente para isso que ele existe.    */
+      PAUTA.aviso[id] = 'Este vídeo saiu só com as fotos do produto, sem ninguém aparecendo — ' +
+        'a fábrica daqui monta com o material real e não inventa pessoa. Para ter alguém ' +
+        'apresentando: baixe o vídeo do vendedor em "Baixar as mídias do produto" (quase ' +
+        'sempre tem gente usando), ou copie o prompt em "Prompt da IA" e gere as cenas numa ' +
+        'IA de vídeo.';
+      toast('Vídeo pronto — só com as fotos, sem pessoa. Veja o aviso.', 'aw');
     } else {
       toast('Vídeo pronto. Assista antes de publicar.', 'ag');
     }
@@ -17061,32 +17102,75 @@ function pessProdutoEN(nome){
      3. ela USA de verdade, e eu vejo como se usa
      4. o benefício aparece na imagem, não na legenda
      5. ela olha na câmera e recomenda — só agora, quando já provou       */
+/* ------------------------------------------------- ENQUADRAMENTO E PESSOA
+
+   Dois defeitos que apareceram nos vídeos prontos, e o conserto de cada um.
+
+   1) O PRODUTO SAÍA CORTADO. A IA enche a tela com o produto e as bordas
+      dele ficam de fora do quadro. Além disso, no 9:16 o TikTok desenha os
+      botões de curtir na direita e a legenda embaixo, POR CIMA do vídeo —
+      produto encostado ali fica atrás do dedo de quem assiste. Por isso o
+      enquadramento agora manda, com todas as letras, que o produto apareça
+      inteiro, com folga nas quatro bordas, e que nada importante entre na
+      faixa da direita nem no rodapé.
+
+   2) NÃO APARECIA PESSOA NENHUMA. As IAs de vídeo tendem a escorregar para
+      "vitrine de produto" quando o texto da cena fala muito do objeto: sai
+      um belo giro do produto sobre um fundo, sem ninguém. O conserto é uma
+      regra global, repetida em TODA cena: tem que haver uma pessoa visível,
+      de corpo presente, apresentando. Produto sozinho no quadro é erro.   */
+var PESS_SEMPRE =
+  'A real person must be visible and present in this shot, on camera, ' +
+  'presenting the product to the viewer — never a product-only shot, never ' +
+  'an empty room, never a floating object.';
+
+function pessEnquadre(formato){
+  const seguro = formato === '16:9 (horizontal)'
+    ? 'Horizontal 16:9 framing. Keep the person and the product inside the ' +
+      'middle of the frame, away from the four edges.'
+    : formato === '1:1 (quadrado)'
+    ? 'Square 1:1 framing. Keep the person and the product inside the middle ' +
+      'of the frame, away from the four edges.'
+    : 'Vertical 9:16 framing, the person in the upper two thirds of the frame. ' +
+      'Leave the right-hand strip and the bottom fifth of the frame clear of ' +
+      'anything important — the app draws its buttons and captions there.';
+  return seguro + ' The product must be FULLY inside the frame at all times, ' +
+    'complete, with breathing room on all four sides — never cropped, never ' +
+    'touching or running past an edge, never cut in half. The person\'s head ' +
+    'must be fully in frame, never cut off at the top.';
+}
+
 function pessCenas(produto, formato){
   const nome = (produto && (produto.n || produto.nome)) || '';
   const f = pessFamilia(nome);
   const gente = PESS_GENTE[f.gente] || PESS_GENTE.f30;
   const prod = pessProdutoEN(nome);
   const curto = pessNomeCurto(nome);
-  const enq = formato === '16:9 (horizontal)' ? 'Horizontal 16:9 framing.'
-            : formato === '1:1 (quadrado)'    ? 'Square 1:1 framing.'
-            : 'Vertical 9:16 framing, the person in the upper two thirds of the frame.';
-  const base = enq + ' ' + f.onde + '.';
+  const enq = pessEnquadre(formato);
+  const base = enq + ' ' + PESS_SEMPRE + ' ' + f.onde + '.';
 
   return [
     { papel: 'A pessoa e o problema',
-      en: base + ' Medium shot of ' + gente + '. She is dealing with the everyday problem ' +
-          'this product solves, visibly a little annoyed by it, before the product appears. ' +
-          'She is real and unposed, not looking at the camera. ' + f.luz + '. ' +
+      en: base + ' Medium shot of ' + gente + ', head and shoulders fully in frame. ' +
+          'She starts by looking straight into the camera lens and speaking directly to ' +
+          'the viewer, like a friend opening a video, then turns to show the everyday ' +
+          'problem this product solves, visibly a little annoyed by it. ' +
+          'She is real and unposed, never a model pose. ' + f.luz + '. ' +
           'Handheld, small natural movements, one continuous shot.',
-      pt: 'Plano médio da pessoa lidando com o problema do dia a dia, antes do produto aparecer. ' +
-          'Nada posado — é o plano que faz quem assiste se reconhecer.' },
+      pt: 'Ela abre falando na câmera, como quem começa um vídeo, e só então mostra o ' +
+          'problema do dia a dia. É o plano que faz quem assiste se reconhecer.' },
 
-    { papel: 'Ela pega o produto',
-      en: base + ' Same person. She ' + f.pega + '. The product — ' + prod + ' — is clearly ' +
-          'visible and in focus, held at a natural angle, never floating and never duplicated. ' +
-          f.luz + '. Camera slowly pushes in on her hands. One continuous shot.',
-      pt: 'A pessoa pega o produto e olha para ele. O produto aparece nítido e inteiro, ' +
-          'na mão dela — é aqui que ele deixa de ser abstrato.' },
+    { papel: 'Ela apresenta o produto',
+      en: base + ' Same person, facing the camera. She ' + f.pega + '. Then she holds it ' +
+          'up beside her face, turned towards the lens, presenting it to the viewer — ' +
+          'her face and the ENTIRE product are both clearly visible in the same frame at ' +
+          'the same time, the product complete from top to bottom with space around it. ' +
+          'The product — ' + prod + ' — is sharp and in focus, held at a natural angle in ' +
+          'her hand, never floating and never duplicated. ' + f.luz + '. ' +
+          'Camera holds steady at chest height. One continuous shot.',
+      pt: 'Ela pega o produto e o APRESENTA na câmera, ao lado do rosto: dá para ver a ' +
+          'cara dela e o produto inteiro no mesmo quadro. É aqui que ele deixa de ser ' +
+          'abstrato — e é a cena que estava saindo sem ninguém.' },
 
     { papel: 'Ela usa de verdade',
       en: base + ' Same person, same light. She ' + f.usa + '. The movement is complete and ' +
@@ -17104,7 +17188,8 @@ function pessCenas(produto, formato){
           'É esta cena que vende — e por isso ela não pode ser sugerida, tem que ser vista.' },
 
     { papel: 'Ela recomenda',
-      en: enq + ' ' + gente + ' holding ' + prod + ' loosely at chest height, ' +
+      en: enq + ' ' + PESS_SEMPRE + ' ' + gente + ' holding ' + prod + ' at chest height, ' +
+          'the whole product visible in her hand, ' +
           'now looking straight into the camera lens, talking to a friend, ' +
           'relaxed and convinced, small honest smile. ' + f.onde + ' softly out of focus ' +
           'behind her. ' + f.luz + '. Handheld selfie distance, arm-length, ' +
@@ -17161,6 +17246,22 @@ function pessPromptTexto(produto, formato){
   l.push('BENEFÍCIOS QUE O VÍDEO PRECISA MOSTRAR:');
   b.forEach(function(x){ l.push('  · ' + x); });
   l.push('');
+  l.push('A PESSOA APRESENTANDO — vale para as cinco cenas:');
+  l.push('  · em TODA cena tem que aparecer uma pessoa de verdade, no quadro,');
+  l.push('    apresentando o produto. Produto sozinho girando é vídeo errado.');
+  l.push('  · é sempre a MESMA pessoa, com a mesma roupa e o mesmo cabelo,');
+  l.push('    do começo ao fim.');
+  l.push('  · ela fala com quem assiste, não com o produto.');
+  l.push('');
+  l.push('ENQUADRAMENTO — vale para as cinco cenas:');
+  l.push('  · o produto aparece INTEIRO, com folga nas quatro bordas.');
+  l.push('    Nunca cortado, nunca encostando na borda, nunca pela metade.');
+  l.push('  · a cabeça da pessoa inteira no quadro, nunca cortada em cima.');
+  if ((formato || '9:16 (vertical)').indexOf('9:16') === 0){
+    l.push('  · deixe a faixa da direita e o quinto de baixo livres: é onde o');
+    l.push('    aplicativo desenha os botões e a legenda, por cima do vídeo.');
+  }
+  l.push('');
   l.push('COMO USAR: gere uma cena de cada vez na sua IA de vídeo (Sora, Veo, Kling,');
   l.push('Runway, Higgsfield). Se ela aceitar imagem de referência, use a foto do');
   l.push('produto em TODAS as cenas — é o que impede a IA de inventar outro produto.');
@@ -17177,7 +17278,11 @@ function pessPromptTexto(produto, formato){
   l.push(typeof AN_NEGATIVO === 'string' ? AN_NEGATIVO : '');
   l.push('deformed product, wrong product, changing product between shots, ' +
          'floating product, two products, unreadable label, plastic skin, ' +
-         'model-like face, studio backdrop, stock footage look');
+         'model-like face, studio backdrop, stock footage look, ' +
+         'product alone without a person, empty room with no person, ' +
+         'no people, faceless shot, cropped product, product cut off at the ' +
+         'frame edge, product touching the edge, head cut off at the top, ' +
+         'subject out of frame');
   return l.join('\n');
 }
 /* =========================================================================
