@@ -151,7 +151,9 @@ async function pautaItemHTML(item){
   const midia = item.midia || [];
   const temMidia = midia.length > 0;
 
-  let h = '<div class="card tw" style="margin-bottom:10px;border-color:' +
+  /* o id serve de âncora: quem chega pelo botão "Criar vídeo no Higgsfield"
+     é levado direto ao cartão certo, em vez de ter que caçar na lista */
+  let h = '<div class="card tw" id="pauta-' + item.id + '" style="margin-bottom:10px;border-color:' +
     (temVideo ? 'var(--green)' : 'var(--bg3)') + '"><div class="bd">' +
 
     '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +

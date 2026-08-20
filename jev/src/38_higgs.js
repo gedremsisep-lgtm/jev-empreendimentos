@@ -298,6 +298,92 @@ function hggCartaoHTML(item){
 
 function hggQualidade(v){ HGG.qualidade = v === 'bom' ? 'bom' : 'barato'; midiaRender(); }
 
+/* =============================== O BOTÃO "CRIAR VÍDEO NO HIGGSFIELD"
+
+   Ele vive no alto da aba Vídeos e pauta, junto com "Novo vídeo", porque é
+   ali que o dono chega quando quer um vídeo — e não dentro do cartão de um
+   produto, que ele só encontra depois de rolar a tela.
+
+   O botão não gera nada sozinho. Ele pergunta PARA QUAL produto, e cai no
+   mesmo caminho de sempre: orçamento na tela, confirmação dele, e só então
+   a geração. Um botão que gastasse dinheiro no primeiro clique seria uma
+   armadilha, por mais bonito que fosse.                                   */
+async function hggCriarVideo(){
+  if (!hggTem()){
+    modal('Criar vídeo no Higgsfield', 'ti-user-check',
+      '<div class="tt">A IA de vídeo com pessoa só funciona no aplicativo instalado no ' +
+      'computador. Pelo navegador, abra o produto na pauta e use <b>Copiar o pedido ' +
+      'completo</b> — ele leva tudo pronto para a IA da sua preferência.</div>');
+    return;
+  }
+
+  if (!HGG.estado) await hggVerEstado();
+  const e = HGG.estado || {};
+
+  if (e.semPeca){
+    modal('Criar vídeo no Higgsfield', 'ti-user-check',
+      '<div class="al aw"><i class="ti ti-info-circle"></i><div>Esta peça não veio no ' +
+      'pacote instalado. Atualize o programa pelo menu Atualizações.</div></div>');
+    return;
+  }
+
+  if (!e.temChave || !e.pronto){
+    /* sem chave não adianta listar produto: o caminho é a chave primeiro */
+    modal('Criar vídeo no Higgsfield', 'ti-key',
+      '<div class="tt">' + esc(e.recado || 'A chave ainda não está configurada.') + '</div>' +
+      '<div class="tt" style="margin-top:8px">Entre em <b>cloud.higgsfield.ai</b>, crie uma ' +
+      'chave e cole o ID e o segredo na aba Vídeos e pauta. Ela fica só neste computador.</div>',
+      '<button class="btn gn" onclick="closeModal(\'mk-form\'); midStab(\'videos\'); ' +
+        'setTimeout(hggAbrirChave, 150)"><i class="ti ti-key"></i>Ir colar a chave</button>' +
+      '<button class="btn gh" onclick="closeModal(\'mk-form\')">Fechar</button>');
+    return;
+  }
+
+  const todos = await dbGetAll('videos');
+  const itens = todos.filter(function(v){ return v.origem === 'garimpo' && v.produto; })
+                     .sort(function(a, b){ return Number(b.id) - Number(a.id); });
+
+  if (!itens.length){
+    modal('Criar vídeo no Higgsfield', 'ti-user-check',
+      '<div class="tt">Não há produto na pauta ainda. Vá no <b>Garimpo</b>, escolha um ' +
+      'produto e ele cai aqui com o prompt pronto.</div>',
+      '<button class="btn gn" onclick="closeModal(\'mk-form\'); midStab(\'gar\')">' +
+        '<i class="ti ti-pick"></i>Ir para o Garimpo</button>' +
+      '<button class="btn gh" onclick="closeModal(\'mk-form\')">Fechar</button>');
+    return;
+  }
+
+  const linhas = itens.map(function(it){
+    const nome = (it.produto && (it.produto.n || it.produto.nome)) || it.titulo || 'sem nome';
+    const jaTem = (it.midia || []).some(function(m){
+      return m && (m.tipo === 'video' || /\.mp4$/i.test(String(m.caminho || m.nome || '')));
+    });
+    return '<button class="btn" style="width:100%;justify-content:flex-start;text-align:left;' +
+      'margin-bottom:6px" onclick="hggEscolherProduto(' + it.id + ')">' +
+      '<i class="ti ti-user-check"></i><span><b>' + esc(nome) + '</b>' +
+      (jaTem ? '<br><span class="tt">já tem cena com pessoa — gerar de novo cria outras</span>'
+             : '') + '</span></button>';
+  }).join('');
+
+  modal('Criar vídeo no Higgsfield', 'ti-user-check',
+    '<div class="tt" style="margin-bottom:10px">Escolha o produto. Eu monto as cinco cenas ' +
+    'com uma pessoa apresentando, mostro <b>quanto vai custar</b> e só gero depois que ' +
+    'você confirmar.</div>' + linhas,
+    '<button class="btn gh" onclick="closeModal(\'mk-form\')">Fechar</button>', 'lg');
+}
+
+async function hggEscolherProduto(id){
+  closeModal('mk-form');
+  midStab('videos');
+  /* abre a ficha do produto para o orçamento aparecer onde ele está olhando */
+  if (typeof PAUTA !== 'undefined' && PAUTA.abertos) PAUTA.abertos[id] = true;
+  await hggOrcar(id);
+  setTimeout(function(){
+    const alvo = document.getElementById('pauta-' + id);
+    if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 250);
+}
+
 /* ================================================== O PEDIDO, NUM CLIQUE
 
    Um "pedido" é tudo que qualquer IA de vídeo precisa para fazer o vídeo
