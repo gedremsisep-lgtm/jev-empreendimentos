@@ -105,6 +105,11 @@ function pautaTemVideo(arquivos){
 }
 
 async function pautaSecaoHTML(){
+  /* a IA que põe a pessoa se apresenta uma vez por abertura da aba, e passa
+     a ouvir o andamento — sem isso a barra de progresso fica parada */
+  if (typeof hggVerEstado === 'function' && !HGG.estado) { await hggVerEstado(); }
+  if (typeof hggEscutar === 'function') hggEscutar();
+
   const todos = await dbGetAll('videos');
   const itens = todos.filter(v => v.origem === 'garimpo' && v.produto)
                      .sort((a, b) => Number(b.id) - Number(a.id));
@@ -128,6 +133,8 @@ async function pautaSecaoHTML(){
     '<div class="tt" style="margin-bottom:12px">O prompt já vem escrito para cada produto. ' +
     'Você pode colar numa IA de vídeo, ou clicar em <b>Gerar o vídeo do produto</b> e deixar o ' +
     'seu próprio computador montar. O botão de publicar aparece depois que o vídeo existir.</div>';
+
+  if (typeof hggSecaoHTML === 'function') h += hggSecaoHTML();
 
   for (const item of itens) h += await pautaItemHTML(item);
   h += '</div></div>';
@@ -216,6 +223,9 @@ async function pautaItemHTML(item){
       '</div></div>';
 
   if (montando) h += pautaBarraHTML();
+  /* o caminho da IA que põe uma pessoa apresentando — vem antes do aviso,
+     porque é a solução dele */
+  if (typeof hggCartaoHTML === 'function') h += hggCartaoHTML(item);
   /* aviso não é erro: o vídeo ficou pronto e prestável, só saiu sem gente.
      Por isso é âmbar e vem com os dois caminhos para resolver, não vermelho */
   if (PAUTA.aviso[item.id])
