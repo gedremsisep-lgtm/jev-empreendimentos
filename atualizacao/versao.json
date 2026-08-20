@@ -1,17 +1,24 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.29",
-  "arquivo": "jev-1.0.29.html",
-  "data": "2026-08-19",
-  "sha256": "129eba3d3b7a490d4a74f3b69ea4028be58fb00797ef634df84ae2531888d43b",
-  "tamanho": 1842147,
+  "versao": "1.0.30",
+  "arquivo": "jev-1.0.30.html",
+  "data": "2026-08-20",
+  "sha256": "12bf060ccc7c75e589ccad25b4bfe87f7889deeda3a44c14b2a73de08e8b9c79",
+  "tamanho": 1848453,
   "notas": [
-    "Prompt novo: pessoa pegando, usando e reagindo ao produto, em cinco cenas, em vez de mostrar so um pedaco do produto",
-    "O sistema reconhece o tipo do produto pelo nome e usa o manuseio certo: espalhar o protetor, quebrar o ovo na panela, pedalar, tomar a capsula",
-    "Os beneficios entram escritos no prompt e falados na narracao, com a prova de vendas em numero redondo"
+    "As fotos do produto entram inteiras no video: antes o enquadramento cortava 44% da largura de uma capa quadrada",
+    "O vazio agora e preenchido com o fundo desfocado da propria foto, sem tarja preta",
+    "O prompt exige uma pessoa apresentando o produto em TODAS as cinco cenas, e o produto inteiro no quadro",
+    "Quando o video sai so com fotos, a tela avisa que nao ha pessoa e mostra os dois caminhos"
   ],
-  "substitui": "1.0.28",
+  "substitui": "1.0.29",
   "anteriores": [
+    {
+      "versao": "1.0.29",
+      "arquivo": "jev-1.0.29.html",
+      "sha256": "129eba3d3b7a490d4a74f3b69ea4028be58fb00797ef634df84ae2531888d43b",
+      "data": "2026-08-19"
+    },
     {
       "versao": "1.0.28",
       "arquivo": "jev-1.0.28.html",
@@ -40,12 +47,6 @@
       "versao": "1.0.24",
       "arquivo": "jev-1.0.24.html",
       "sha256": "8a073539356626855af5272ba62a159ef37fb151ce2b9656641d96018b6ed245",
-      "data": "2026-08-13"
-    },
-    {
-      "versao": "1.0.23",
-      "arquivo": "jev-1.0.23.html",
-      "sha256": "11ac6f2ecc2b092655e107bcdc1a53015765f3575099a2f03651204e5b479a12",
       "data": "2026-08-13"
     }
   ]
