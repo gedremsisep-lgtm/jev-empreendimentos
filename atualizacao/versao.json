@@ -1,18 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.31",
-  "arquivo": "jev-1.0.31.html",
+  "versao": "1.0.32",
+  "arquivo": "jev-1.0.32.html",
   "data": "2026-08-20",
-  "sha256": "716b0da6ca4718b664cee407e888d16e706e6cec6c9dda1ae75b76ac6ad994f0",
-  "tamanho": 1865509,
+  "sha256": "cd86852f7f640a1581428e2e7624963653d8409a7d95f990b96d0c74e26dab4a",
+  "tamanho": 1870338,
   "notas": [
-    "Plugin do Higgsfield dentro do programa: botao Gerar com uma pessoa, que desenha alguem apresentando o produto e poe em movimento",
-    "A chave e do dono, guardada so no computador dele, e a tela nunca devolve o segredo",
-    "O preco aparece antes: o botao de confirmar diz quantos creditos custa, e cena barrada nao e cobrada",
-    "Copiar o pedido completo: leva produto, foto, as cinco cenas e a narracao para qualquer outra IA"
+    "Botao Criar video no Higgsfield no alto da aba Videos e pauta",
+    "Ele pergunta o produto, mostra o custo e so gera depois da confirmacao: clicar nao gasta nada",
+    "Sem chave ele ensina a criar a chave; sem produto ele aponta o Garimpo; pelo navegador ele avisa"
   ],
-  "substitui": "1.0.30",
+  "substitui": "1.0.31",
   "anteriores": [
+    {
+      "versao": "1.0.31",
+      "arquivo": "jev-1.0.31.html",
+      "sha256": "716b0da6ca4718b664cee407e888d16e706e6cec6c9dda1ae75b76ac6ad994f0",
+      "data": "2026-08-20"
+    },
     {
       "versao": "1.0.30",
       "arquivo": "jev-1.0.30.html",
@@ -42,12 +47,6 @@
       "arquivo": "jev-1.0.26.html",
       "sha256": "97ee6d168c457b960d8e7c39ff33c0a5df0a76121a85505c3f325128791afaf4",
       "data": "2026-08-14"
-    },
-    {
-      "versao": "1.0.25",
-      "arquivo": "jev-1.0.25.html",
-      "sha256": "b96351a4136613cd9ebbbcbccc48afc17378c6247d2e8b3afb0f915dfa76421f",
-      "data": "2026-08-13"
     }
   ]
 }
