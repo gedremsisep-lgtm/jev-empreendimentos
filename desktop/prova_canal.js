@@ -121,6 +121,14 @@ fs.writeFileSync(EMBUTIDO,
   ok('e o pedido completo, que serve para qualquer IA',
     html.includes('function hggPedidoTexto') && html.includes('PEDIDO DE VÍDEO') ? true : 'não veio');
 
+  /* 1.0.32: o botão no alto da aba Vídeos e pauta */
+  ok('o botão "Criar vídeo no Higgsfield" veio',
+    html.includes('Criar vídeo no Higgsfield') && html.includes('function hggCriarVideo') ? true : 'não veio');
+  ok('ele pergunta o produto em vez de gerar no primeiro clique',
+    html.includes('function hggEscolherProduto') && html.includes('quanto vai custar') ? true : 'não veio');
+  ok('e o cartão do produto ganhou âncora, para o botão levar até ele',
+    html.includes("id=\"pauta-' + item.id + '\"") || html.includes('pauta-') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();
