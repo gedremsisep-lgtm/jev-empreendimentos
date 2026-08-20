@@ -174,6 +174,74 @@ const ok = (t, v) => {
   ok('e o negativo contra produto sozinho',
     /product alone without a person/.test(pedido) ? true : 'sem negativo');
 
+  /* ====== 4b) o botão "Criar vídeo no Higgsfield" na aba Vídeos e pauta
+
+     Ele fica no alto, junto com "Novo vídeo", que é onde o dono chega
+     quando quer um vídeo. E não pode gastar no primeiro clique: pergunta
+     o produto, mostra o preço, e só gera depois da confirmação.        */
+  console.log('\n4b) o botão no alto da aba Vídeos e pauta');
+  await page.evaluate(() => { go('midia'); midStab('videos'); });
+  await page.waitForTimeout(900);
+  const naAba = await page.evaluate(() => document.getElementById('mid-body').innerHTML);
+  ok('o botão aparece na aba', /hggCriarVideo\(\)/.test(naAba) ? true : 'não achei o botão');
+  ok('com o nome que o dono pediu',
+    /Criar vídeo no Higgsfield/.test(naAba) ? true : 'nome diferente');
+
+  const antesDoClique = await page.evaluate(() => window.__hg.gerou);
+  const escolha = await page.evaluate(async () => {
+    await hggCriarVideo();
+    return { corpo: document.getElementById('mkf-body').innerHTML,
+             gerou: window.__hg.gerou, orcou: window.__hg.orcou };
+  });
+  ok('clicar NÃO gera nada — só pergunta qual produto',
+    escolha.gerou === antesDoClique ? true : 'gastou no primeiro clique');
+  ok('lista o produto da pauta para escolher',
+    /hggEscolherProduto\(/.test(escolha.corpo) && /Jogo de Panelas/.test(escolha.corpo)
+      ? true : escolha.corpo.slice(0, 160));
+  ok('e avisa que o custo aparece antes',
+    /quanto vai custar/.test(escolha.corpo) ? true : 'não avisou');
+
+  const escolheu = await page.evaluate(async id => {
+    const antes = window.__hg.gerou;
+    await hggEscolherProduto(id);
+    return { gerou: window.__hg.gerou, antes,
+             temOrcamento: !!(HGG.orcamento && HGG.orcamento.id === id),
+             aberto: !!PAUTA.abertos[id] };
+  }, idItem);
+  ok('escolher o produto faz o orçamento, não a geração',
+    escolheu.temOrcamento === true && escolheu.gerou === escolheu.antes
+      ? true : escolheu);
+  ok('e abre a ficha do produto, para o preço aparecer onde ele olha',
+    escolheu.aberto === true ? true : 'ficha fechada');
+
+  const ancora = await page.evaluate(async () => {
+    await midiaRender();
+    return !!document.getElementById('pauta-' + (window.__idItem || 0));
+  });
+  await page.evaluate(id => { window.__idItem = id; }, idItem);
+  const temAncora = await page.evaluate(async id => {
+    await midiaRender();
+    return !!document.getElementById('pauta-' + id);
+  }, idItem);
+  ok('o cartão tem âncora, para o botão levar até ele',
+    temAncora === true ? true : 'sem âncora');
+
+  await page.evaluate(() => { hggCancelarOrcamento(); closeModal('mk-form'); });
+
+  /* sem chave, o botão ensina o caminho em vez de listar produto */
+  const semChave = await page.evaluate(async () => {
+    window.__hg.temChave = false; HGG.estado = null;
+    await hggCriarVideo();
+    return document.getElementById('mkf-body').innerHTML;
+  });
+  ok('sem chave, manda criar a chave em vez de listar produto',
+    /cloud\.higgsfield\.ai/.test(semChave) && !/hggEscolherProduto\(/.test(semChave)
+      ? true : semChave.slice(0, 160));
+  await page.evaluate(async () => {
+    window.__hg.temChave = true; HGG.estado = null; await hggVerEstado();
+    closeModal('mk-form');
+  });
+
   /* =============================================== 5) sem aplicativo */
   console.log('\n5) pelo navegador, avisa em vez de oferecer o que não funciona');
   const semApp = await page.evaluate(async () => {
