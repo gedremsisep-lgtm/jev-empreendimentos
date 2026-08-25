@@ -23,6 +23,16 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
     ipcRenderer.on('jev-sistema', (_e, dados) => { try { callback(dados); } catch (e) { console.error(e); } });
   },
 
+  /* o dono clicou no aviso da oferta: a página abre a oferta da vez */
+  aoClicarOferta(callback) {
+    ipcRenderer.on('jev-oferta-clicada', () => { try { callback(); } catch (e) { console.error(e); } });
+  },
+
+  /* ---- aviso do sistema: a oferta das 4 em 4 horas chama o dono mesmo
+     com a janela minimizada. Só um título e um texto atravessam a ponte —
+     nada do que a página tem vai junto. ---- */
+  avisar: (titulo, corpo) => ipcRenderer.invoke('jev-avisar', String(titulo || ''), String(corpo || '')),
+
   versao: () => ipcRenderer.invoke('jev-versao'),
   pastaDados: () => ipcRenderer.invoke('jev-pasta-dados'),
   procurarAtualizacao: () => ipcRenderer.invoke('jev-checar-atualizacao'),
@@ -53,6 +63,15 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estParar:       ()               => ipcRenderer.invoke('est-parar'),
   estEscolher:    qual             => ipcRenderer.invoke('est-escolher', qual),
   estMidiaProduto:url              => ipcRenderer.invoke('est-midia-produto', url),
+  /* ---- Shopee Afiliados: o link de afiliado gerado sozinho ----
+     O App Secret fica guardado no computador e NUNCA volta por esta ponte:
+     o que atravessa é o pedido e o link pronto. */
+  shDisponivel:    ()              => ipcRenderer.invoke('sh-disponivel'),
+  shEstado:        ()              => ipcRenderer.invoke('sh-estado'),
+  shGuardarChave:  (id, segredo)   => ipcRenderer.invoke('sh-guardar-chave', id, segredo),
+  shEsquecerChave: ()              => ipcRenderer.invoke('sh-esquecer-chave'),
+  shGerar:         (lista, subId)  => ipcRenderer.invoke('sh-gerar', lista, subId),
+
   /* ---- garimpo pelo Kalodata (você entra na conta uma vez) ---- */
   kaloEstado:     ()               => ipcRenderer.invoke('kalo-estado'),
   kaloEntrar:     ()               => ipcRenderer.invoke('kalo-entrar'),

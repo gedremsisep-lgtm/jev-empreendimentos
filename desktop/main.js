@@ -4,7 +4,7 @@
    associação com os arquivos .jev, atualização do sistema (com teste e
    volta atrás) e atualização do próprio programa.
    ========================================================================= */
-const { app, BrowserWindow, Menu, dialog, shell, ipcMain, session } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, ipcMain, session, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -48,6 +48,16 @@ try {
   higgsfield = require('./higgsfield');
 } catch (e) {
   console.error('higgsfield indisponível:', e && e.message);
+}
+
+/* A Shopee é a única das quatro lojas com API pública de link de afiliado.
+   Mesma porta protegida das outras peças: faltando, o programa abre igual e
+   a tela explica, em vez de o botão sumir sem motivo aparente. */
+let shopee = null;
+try {
+  shopee = require('./shopee');
+} catch (e) {
+  console.error('shopee indisponível:', e && e.message);
 }
 
 let versoes;
@@ -487,6 +497,28 @@ function configurarAtualizacao() {
 /* =========================================================================
    PONTES COM A TELA
    ========================================================================= */
+/* O aviso do sistema operacional. Clicar nele traz a janela para a frente e
+   avisa a página, que abre a oferta da vez. Se o Windows estiver com as
+   notificações desligadas, isto falha calado — e é por isso que a página
+   NUNCA depende só daqui: ela também mostra o quadro dela. */
+ipcMain.handle('jev-avisar', (_e, titulo, corpo) => {
+  try {
+    if (!Notification.isSupported()) return false;
+    const n = new Notification({ title: String(titulo || 'JeV'), body: String(corpo || '') });
+    n.on('click', () => {
+      try {
+        if (janela) {
+          if (janela.isMinimized()) janela.restore();
+          janela.show(); janela.focus();
+          janela.webContents.send('jev-oferta-clicada');
+        }
+      } catch (e) {}
+    });
+    n.show();
+    return true;
+  } catch (e) { return false; }
+});
+
 ipcMain.handle('jev-versao', () => app.getVersion());
 ipcMain.handle('jev-pasta-dados', () => app.getPath('userData'));
 ipcMain.handle('jev-checar-atualizacao', () => {
@@ -569,6 +601,25 @@ const contaHiggs = evento => {
   if (janela && !janela.isDestroyed()) janela.webContents.send('higgs-passo', evento);
 };
 const semHiggs = { ok: false, motivo: 'a IA de vídeo não veio neste pacote' };
+
+/* ---- Shopee Afiliados: gera o link de afiliado sozinho ---- */
+ipcMain.handle('sh-disponivel', () => !!shopee);
+ipcMain.handle('sh-estado', async () => {
+  try { return shopee ? await shopee.estado() : { ok:false, semPeca:true }; }
+  catch (e) { return { ok:false, motivo:String(e && e.message || e) }; }
+});
+ipcMain.handle('sh-guardar-chave', (_e, id, segredo) => {
+  try { return shopee ? shopee.guardarChave(id, segredo) : { ok:false, semPeca:true }; }
+  catch (e) { return { ok:false, motivo:String(e && e.message || e) }; }
+});
+ipcMain.handle('sh-esquecer-chave', () => {
+  try { return shopee ? shopee.esquecerChave() : { ok:false, semPeca:true }; }
+  catch (e) { return { ok:false, motivo:String(e && e.message || e) }; }
+});
+ipcMain.handle('sh-gerar', async (_e, lista, subId) => {
+  try { return shopee ? await shopee.gerarVarios(lista || [], subId) : { ok:false, semPeca:true }; }
+  catch (e) { return { ok:false, motivo:String(e && e.message || e) }; }
+});
 
 ipcMain.handle('hg-disponivel', () => !!higgsfield);
 ipcMain.handle('hg-estado', async () => {
