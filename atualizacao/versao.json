@@ -1,18 +1,27 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.33",
-  "arquivo": "jev-1.0.33.html",
-  "data": "2026-08-20",
-  "sha256": "cd0ba9eb13269a21d3fabf9b01c6ec124e2fb068e86043b486c53554035968ed",
-  "tamanho": 1887442,
+  "versao": "1.0.34",
+  "arquivo": "jev-1.0.34.html",
+  "data": "2026-08-25",
+  "sha256": "c1b9cc2f3efc123fa9ada4a1248773fa4be10f8815b440a0166b827927f0b7d8",
+  "tamanho": 1972148,
   "notas": [
-    "A IA de video local volta a instalar: o Python embutido vinha sem pip e com o site-packages desligado, e agora e destravado antes",
-    "O botao Criar video no Higgsfield subiu para o alto da aba, junto da chave",
-    "Ao garimpar, cada produto ja vira ficha de afiliado e ganha a legenda de cada plataforma, cortada no limite dela",
-    "Abrir todas para publicar: abre cada plataforma com a legenda pronta. O botao de publicar continua sendo seu"
+    "Canais e Vídeos: 3 abas grandes no lugar de 9, e Cadastros recolhido no canto",
+    "Cada produto mostra só o próximo passo; o resto fica em Mais opções",
+    "Baixar as mídias e montar o vídeo viraram um clique só",
+    "Canal de promoções no WhatsApp: escreve todas e vai passando uma a uma",
+    "Grupo de ofertas de 4 em 4 horas, com aviso do Windows na hora certa",
+    "Carteira de links de afiliado: cole o lote do painel e eu caso com cada produto",
+    "Shopee gerando o link de afiliado sozinha, pela API oficial"
   ],
-  "substitui": "1.0.32",
+  "substitui": "1.0.33",
   "anteriores": [
+    {
+      "versao": "1.0.33",
+      "arquivo": "jev-1.0.33.html",
+      "sha256": "cd0ba9eb13269a21d3fabf9b01c6ec124e2fb068e86043b486c53554035968ed",
+      "data": "2026-08-20"
+    },
     {
       "versao": "1.0.32",
       "arquivo": "jev-1.0.32.html",
@@ -41,12 +50,6 @@
       "versao": "1.0.28",
       "arquivo": "jev-1.0.28.html",
       "sha256": "163f97fd44addd4e50d7e345f45ea16aa4319b38404e7c2a5afb2c86a3074f57",
-      "data": "2026-08-19"
-    },
-    {
-      "versao": "1.0.27",
-      "arquivo": "jev-1.0.27.html",
-      "sha256": "42e9cab74d6e6beca0b7451e420da78cd6ed240a603440b2ff56a6130df19414",
       "data": "2026-08-19"
     }
   ]
