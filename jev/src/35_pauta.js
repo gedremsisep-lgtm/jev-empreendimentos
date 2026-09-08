@@ -147,32 +147,43 @@ async function pautaSecaoHTML(){
   const prontos = itens.filter(i => (i.producao || []).length).length;
   const publicados = itens.filter(i => i.status === 'Publicado').length;
 
-  let h = '<div class="card"><div class="hd"><i class="ti ti-pick"></i>Produtos garimpados — do prompt ao vídeo publicado' +
-    '<span class="sp"></span><span class="st s-nt">' + itens.length + ' na pauta</span>' +
+  /* =====================================================================
+     O PRODUTO VEM PRIMEIRO.
+
+     Antes, entre o alto da tela e o primeiro produto havia SEIS camadas:
+     título da página, fileira de grupos, fileira de telas, cabeçalho do
+     cartão, um parágrafo explicando o cartão, um aviso amarelo e ainda o
+     seletor de estilo. Ele reclamou disso com todas as letras — "muita
+     coisa antes do produto" — e estava certo.
+
+     Sobrou UMA linha: o nome, a contagem, e os três ícones de estilo no
+     canto. Tudo o que era explicação e ferramenta de lote desceu para
+     DEPOIS da lista, onde continua inteiro e não atrapalha ninguém.
+     ===================================================================== */
+  let h = '<div class="card"><div class="hd"><i class="ti ti-pick"></i>Produtos garimpados' +
+    '<span class="st s-nt">' + itens.length + ' na pauta</span>' +
     (prontos ? '<span class="st s-ok">' + prontos + ' com vídeo</span>' : '') +
     (publicados ? '<span class="st s-ok">' + publicados + ' publicado(s)</span>' : '') +
-    '</div><div class="bd">' +
-    '<div class="tt" style="margin-bottom:12px">O prompt já vem escrito para cada produto. ' +
-    'Você pode colar numa IA de vídeo, ou clicar em <b>Gerar o vídeo do produto</b> e deixar o ' +
-    'seu próprio computador montar. O botão de publicar aparece depois que o vídeo existir.</div>';
+    '<span class="sp"></span>' + menuEstiloHTML() +
+    '</div><div class="bd">';
 
-  if (typeof hggSecaoHTML === 'function') h += hggSecaoHTML();
+  h += menuListaHTML(itens);
 
-  /* o preparo em lote: um clique resolve os sete de uma vez */
+  /* --- daqui para baixo, o que não é produto --- */
   const semAnuncio = itens.filter(i => !i.anuncio).length;
-  h += '<div class="sh" style="margin-top:12px"><i class="ti ti-checks"></i>' +
-    'Anúncio pronto para todas as plataformas</div>' +
-    '<div class="tt">Ao garimpar, cada produto já vira uma ficha em Afiliados e ganha a ' +
-    'legenda de cada plataforma, cortada no limite dela. O que fica faltando é só o ' +
-    '<b>seu link de afiliado</b> — esse só você consegue gerar no painel da plataforma.</div>' +
-    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+  if (semAnuncio)
+    h += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bg3);' +
+      'display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
       '<button class="btn gn" onclick="prepPrepararTudo()"><i class="ti ti-wand"></i>' +
         'Preparar o anúncio de todos</button>' +
-      (semAnuncio ? '<span class="tt">' + semAnuncio + ' ainda sem anúncio</span>'
-                  : '<span class="tt">todos preparados</span>') +
+      '<span class="tt">' + semAnuncio + ' ainda sem a legenda de cada plataforma. ' +
+        'O que só você consegue é o <b>link de afiliado</b>.</span>' +
     '</div>';
 
-  for (const item of itens) h += await pautaItemHTML(item);
+  if (typeof hggSecaoHTML === 'function')
+    h += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bg3)">' +
+      hggSecaoHTML() + '</div>';
+
   h += '</div></div>';
   return h;
 }
@@ -208,8 +219,37 @@ async function pautaItemHTML(item){
       '</div>' +
     '</div>' +
 
-    /* ---- a fileira de botões: prompt · gerar · publicar ---- */
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" class="no-print">' +
+    /* ---- o próximo passo, sozinho, grande ---- */
+    menuPassoHTML(item) + pautaDetalhesHTML(item);
+
+  h += '</div></div>';
+  return h;
+}
+
+/* =========================================================================
+   O MIOLO DO CARTÃO: a fileira antiga, os recados e os dois cartões grandes.
+
+   Ficou em função separada porque agora existem TRÊS desenhos diferentes da
+   lista de produtos, e os três precisam poder abrir exatamente este mesmo
+   conteúdo quando a pessoa clica em "mais opções". Se cada desenho tivesse
+   a sua cópia, um dia um deles ficaria para trás — e o dono descobriria
+   isso do pior jeito, procurando um botão que existe só nos outros dois.
+   ========================================================================= */
+function pautaDetalhesHTML(item){
+  const p = item.produto;
+  const pac = pautaPacote(item);
+  const chave = 'p' + item.id;
+  const temVideo = (item.producao || []).length > 0;
+  const aberto = !!PAUTA.abertos[item.id];
+  const montando = PAUTA.montando === item.id;
+  const midia = item.midia || [];
+  const temMidia = midia.length > 0;
+  let h = '';
+
+  /* ---- e a fileira antiga inteira, atrás de "mais opções" ----
+     nada foi tirado: só deixou de disputar a atenção com o passo certo */
+  if (MENU_MAIS[item.id])
+    h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" class="no-print">' +
       '<button class="btn xs ' + (aberto ? 'bl' : 'gh') + '" onclick="pautaAbrir(' + item.id + ')">' +
         '<i class="ti ti-' + (aberto ? 'chevron-up' : 'file-text') + '"></i>' +
         (aberto ? 'Fechar o prompt' : 'Ver o prompt automático') + '</button>' +
@@ -240,8 +280,10 @@ async function pautaItemHTML(item){
       '<button class="btn xs rd" onclick="pautaTirar(' + item.id + ')"><i class="ti ti-trash"></i></button>' +
     '</div>';
 
-  /* o aviso que explica o vídeo com texto ANTES de você gerar e se decepcionar */
-  if (estTem() && !temMidia)
+  /* o aviso que explica o vídeo com texto ANTES de você gerar e se decepcionar.
+     Com a corrente ligada ele virou explicação de quem já sabe: o botão grande
+     baixa as mídias sozinho. Fica em "mais opções", para quem for gerar na mão. */
+  if (estTem() && !temMidia && MENU_MAIS[item.id])
     h += '<div class="al aw" style="margin-top:9px"><i class="ti ti-info-circle"></i><div>' +
       '<b>Antes de gerar, traga as mídias do produto.</b> Clique em ' +
       '<b>Baixar as mídias do produto</b>: eu busco as fotos e o vídeo na própria página de ' +
@@ -250,7 +292,7 @@ async function pautaItemHTML(item){
       'vendedor e use <b>Materiais do produto</b>. ' +
       'Sem material, as cenas saem em fundo liso com o texto por cima.</div></div>';
 
-  if (temMidia)
+  if (temMidia && MENU_MAIS[item.id])
     h += '<div class="al ag" style="margin-top:9px"><i class="ti ti-folder"></i><div>' +
       '<b>' + pautaContaMidia(midia) + '</b> guardados no seu computador. ' +
       'É com esses arquivos que o vídeo vai ser montado — o vídeo do vendedor entra primeiro, ' +
@@ -261,11 +303,16 @@ async function pautaItemHTML(item){
       '</div></div>';
 
   if (montando) h += pautaBarraHTML();
-  /* o caminho da IA que põe uma pessoa apresentando — vem antes do aviso,
-     porque é a solução dele */
-  if (typeof hggCartaoHTML === 'function') h += hggCartaoHTML(item);
-  /* e o anúncio já preparado para todas as plataformas */
-  if (typeof prepCartaoHTML === 'function') h += prepCartaoHTML(item);
+
+  /* Os dois cartões grandes — a IA da nuvem e o anúncio pronto — só quando
+     ele pedir. São dois blocos altos, coloridos e cheios de botão; deixados
+     soltos na lista, empurram o produto seguinte para fora da tela e a
+     página volta a ser aquela parede de informação. Em "mais opções" eles
+     estão sempre lá, para os dois, em qualquer ponto do caminho. */
+  if (MENU_MAIS[item.id]){
+    if (typeof hggCartaoHTML === 'function')  h += hggCartaoHTML(item);
+    if (typeof prepCartaoHTML === 'function') h += prepCartaoHTML(item);
+  }
   /* aviso não é erro: o vídeo ficou pronto e prestável, só saiu sem gente.
      Por isso é âmbar e vem com os dois caminhos para resolver, não vermelho */
   if (PAUTA.aviso[item.id])
@@ -303,7 +350,7 @@ async function pautaItemHTML(item){
              'e fecho a janela.</div></div>' : '') +
          '</div></div>';
 
-  if (temVideo){
+  if (temVideo && MENU_MAIS[item.id]){
     h += '<div class="al ag" style="margin-top:9px"><i class="ti ti-movie"></i><div>' +
       '<b>' + item.producao.length + ' versão(ões) prontas</b> — ' +
       item.producao.map(a => esc(a.formato)).join(' · ') +
@@ -323,9 +370,11 @@ async function pautaItemHTML(item){
         pac.hashtags.map(x => '<span class="chip">' + esc(x) + '</span>').join('') + '</div>';
   }
 
-  h += '</div></div>';
   return h;
 }
+
+/* o que "mais opções" abre, nos três desenhos */
+function menuFileiraAntigaHTML(item){ return pautaDetalhesHTML(item); }
 
 function pautaBarraHTML(){
   return '<div data-pauta-barra="1" style="margin-top:10px">' +
@@ -670,6 +719,9 @@ async function pautaAssistir(id){
     if (r) EST.roteiro = r;
   }
   EST.vendo = 0; EST.fase = 'pronto';
+  /* fica registrado que ele já viu: é isso que faz o cartão passar de
+     "assistir" para "publicar" sozinho, sem pedir confirmação de nada */
+  if (!item.visto) await dbPut('videos', { ...item, visto: hoje() });
   midStab('gerar');
 }
 
