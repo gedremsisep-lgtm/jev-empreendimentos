@@ -17,7 +17,7 @@
 set -e
 cd "$(dirname "$0")"
 RAIZ="$(pwd)"
-FONTE="/root/jev"          # onde mora o código do sistema
+FONTE="$RAIZ/jev"          # onde mora o código do sistema (agora dentro do próprio repositório)
 
 NOVA="$1"; shift || true
 if [ -z "$NOVA" ]; then
@@ -38,7 +38,17 @@ node -e "
   const j=JSON.parse(fs.readFileSync(p,'utf8')); j.version='$NOVA';
   fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
 "
-sed -i "s/const APP_VER = '[^']*'/const APP_VER = '$NOVA'/" mobile/src/03_core.js
+# O aplicativo do celular: os fontes dele (mobile/src/) nunca foram
+# publicados no GitHub e se perderam quando o ambiente foi reciclado. Só
+# sobrou o mobile/dist já montado. Enquanto não forem recuperados, este
+# passo AVISA e segue — travar a publicação do sistema por causa do celular,
+# que está parado na 1.0.1 e sem Pages ligado, seria trocar um problema
+# pequeno por um grande.
+if [ -f mobile/src/03_core.js ]; then
+  sed -i "s/const APP_VER = '[^']*'/const APP_VER = '$NOVA'/" mobile/src/03_core.js
+else
+  echo "  (aviso: mobile/src/ não existe — o aplicativo do celular fica na versão antiga)"
+fi
 
 # trava de segurança: o package.json do aplicativo precisa continuar completo.
 # Se a seção "build" sumir, o instalador sai sem o motor de atualização.
