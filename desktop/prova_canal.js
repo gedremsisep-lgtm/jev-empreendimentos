@@ -143,6 +143,19 @@ fs.writeFileSync(EMBUTIDO,
   ok('e a tela avisa quando falta o link de afiliado',
     html.includes('não ganha comissão') ? true : 'não veio');
 
+  /* 1.0.35: o garimpo do Mercado Livre com o link já pronto */
+  ok('a tela do Mercado Livre veio',
+    html.includes('Mercado Livre — garimpo com o link já pronto') &&
+    html.includes('function mlSecaoHTML') ? true : 'não veio');
+  ok('o garimpo que já gera os links veio',
+    html.includes('function mlGarimpar') && html.includes('Garimpar e gerar os links')
+      ? true : 'não veio');
+  ok('a conversão para produto da casa veio — é o que liga no resto do sistema',
+    html.includes('function mlComoProduto') && html.includes('function mlNichoDe')
+      ? true : 'não veio');
+  ok('e a tela promete, escrito, que não guarda a senha dele',
+    html.includes('não vejo nem guardo a sua senha') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();

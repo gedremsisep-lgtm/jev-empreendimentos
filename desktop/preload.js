@@ -63,6 +63,15 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estParar:       ()               => ipcRenderer.invoke('est-parar'),
   estEscolher:    qual             => ipcRenderer.invoke('est-escolher', qual),
   estMidiaProduto:url              => ipcRenderer.invoke('est-midia-produto', url),
+  /* ---- Mercado Livre: você entra na conta na janela dele, uma vez ----
+     Nenhuma senha atravessa esta ponte: o que passa é o pedido e a lista
+     de produtos já com comissão e link. */
+  mlDisponivel: ()        => ipcRenderer.invoke('ml-disponivel'),
+  mlEntrar:     ()        => ipcRenderer.invoke('ml-entrar'),
+  mlFechar:     ()        => ipcRenderer.invoke('ml-fechar'),
+  mlEstado:     ()        => ipcRenderer.invoke('ml-estado'),
+  mlGarimpar:   opcoes    => ipcRenderer.invoke('ml-garimpar', opcoes),
+
   /* ---- Shopee Afiliados: o link de afiliado gerado sozinho ----
      O App Secret fica guardado no computador e NUNCA volta por esta ponte:
      o que atravessa é o pedido e o link pronto. */

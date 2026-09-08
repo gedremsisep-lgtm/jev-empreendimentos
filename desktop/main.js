@@ -60,6 +60,15 @@ try {
   console.error('shopee indisponível:', e && e.message);
 }
 
+/* O Mercado Livre: a lista com comissão e o link de afiliado em lote.
+   Mesma porta protegida das outras peças. */
+let mercadolivre = null;
+try {
+  mercadolivre = require('./mercadolivre');
+} catch (e) {
+  console.error('mercadolivre indisponível:', e && e.message);
+}
+
 let versoes;
 let motorOk = true;
 try {
@@ -601,6 +610,25 @@ const contaHiggs = evento => {
   if (janela && !janela.isDestroyed()) janela.webContents.send('higgs-passo', evento);
 };
 const semHiggs = { ok: false, motivo: 'a IA de vídeo não veio neste pacote' };
+
+/* ---- Mercado Livre: janela onde ELE entra, e a lista com comissão ---- */
+ipcMain.handle('ml-disponivel', () => !!mercadolivre);
+ipcMain.handle('ml-entrar', async () => {
+  try { if (!mercadolivre) return { ok:false, semPeca:true };
+        await mercadolivre.abrir(true); return { ok:true }; }
+  catch (e) { return { ok:false, motivo:String(e && e.message || e) }; }
+});
+ipcMain.handle('ml-fechar', () => { try { return mercadolivre ? mercadolivre.fechar() : false; }
+                                    catch (e) { return false; } });
+ipcMain.handle('ml-estado', async () => {
+  try { return mercadolivre ? await mercadolivre.estado() : { conectado:false, semPeca:true }; }
+  catch (e) { return { conectado:false, motivo:String(e && e.message || e) }; }
+});
+ipcMain.handle('ml-garimpar', async (_e, opcoes) => {
+  try { return mercadolivre ? await mercadolivre.garimparComLinks(opcoes || {})
+                            : { ok:false, semPeca:true }; }
+  catch (e) { return { ok:false, motivo:String(e && e.message || e) }; }
+});
 
 /* ---- Shopee Afiliados: gera o link de afiliado sozinho ---- */
 ipcMain.handle('sh-disponivel', () => !!shopee);
