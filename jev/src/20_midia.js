@@ -33,12 +33,27 @@ async function midiaRender(){
   const views = publicados.reduce((s,v)=>s+num(v.views),0);
   const naFila = videos.filter(v=>['Ideia','Roteiro','Gravado','Editado'].includes(v.status));
 
-  let h = `<div class="ph"><div class="ic" style="background:#FBEAE8;color:#C0392B"><i class="ti ti-brand-youtube"></i></div>
-    <div><h1>Canais de Vídeo</h1><p>Plataformas digitais, produção de conteúdo e monetização</p></div>
-    <div class="sp"></div>
-    <button class="btn gh" onclick="midReceita()"><i class="ti ti-cash"></i>Lançar monetização</button>
-    <button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Novo canal</button></div>`;
+  /* O CABEÇALHO SÓ COM O QUE É DESTA TELA.
 
+     "Lançar monetização" é dinheiro que entrou: só faz sentido em Resultados.
+     "Novo canal" é cadastro: só faz sentido em Cadastros. Os dois ficavam no
+     alto de TODAS as telas, inclusive na de montar vídeo, onde nenhum dos
+     dois tem o que fazer. E a linha de subtítulo repetia, em outras palavras,
+     o nome que já está escrito logo acima dela. */
+  const grupoAgora = menuGrupoDe(MID_TAB).id;
+  let h = `<div class="ph" style="margin-bottom:10px"><div class="ic" style="background:#FBEAE8;color:#C0392B"><i class="ti ti-brand-youtube"></i></div>
+    <div><h1>Canais de Vídeo</h1>${grupoAgora==='cadastros'?'<p>Plataformas digitais, produção de conteúdo e monetização</p>':''}</div>
+    <div class="sp"></div>
+    ${grupoAgora==='resultado'?'<button class="btn gh" onclick="midReceita()"><i class="ti ti-cash"></i>Lançar monetização</button>':''}
+    ${grupoAgora==='cadastros'?'<button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Novo canal</button>':''}</div>`;
+
+  /* OS SEIS QUADRADOS SÓ EM "RESULTADOS".
+
+     Inscritos, visualizações, receita do mês: é tudo verdade e tudo útil —
+     uma vez por semana. Mas eles ocupavam o terço de cima da tela em TODAS
+     as abas, inclusive naquela em que a pessoa entrou para montar um vídeo.
+     Número que não muda o que você vai clicar agora é decoração cara. */
+  if (menuGrupoDe(MID_TAB).id === 'resultado')
   h += `<div class="kg" style="margin-bottom:16px">
     <div class="kc rd"><div class="lb"><i class="ti ti-device-tv"></i>Canais</div><div class="vl">${canais.length}</div>
       <div class="sb">${canais.filter(c=>c.monetizado).length} monetizado(s)</div></div>
@@ -62,17 +77,7 @@ async function midiaRender(){
       <button class="btn xs gh" style="margin-left:8px" onclick="midStab('videos')">Ver pauta</button></div></div>`;
   }
 
-  h += `<div class="tabs">
-    <button class="tab ${MID_TAB==='canais'?'on':''}" onclick="midStab('canais')"><i class="ti ti-device-tv"></i>Canais</button>
-    <button class="tab ${MID_TAB==='videos'?'on':''}" onclick="midStab('videos')"><i class="ti ti-video"></i>Vídeos e pauta</button>
-    <button class="tab ${MID_TAB==='afil'?'on':''}" onclick="midStab('afil')"><i class="ti ti-link"></i>Afiliados</button>
-    <button class="tab ${MID_TAB==='gar'?'on':''}" onclick="midStab('gar')"><i class="ti ti-pick"></i>Garimpo</button>
-    <button class="tab ${MID_TAB==='cort'?'on':''}" onclick="midStab('cort')"><i class="ti ti-scissors"></i>Cortes</button>
-    <button class="tab ${MID_TAB==='gerar'?'on':''}" onclick="midStab('gerar')"><i class="ti ti-wand"></i>Gerar vídeo</button>
-    <button class="tab ${MID_TAB==='pub'?'on':''}" onclick="midStab('pub')"><i class="ti ti-send"></i>Publicar</button>
-    <button class="tab ${MID_TAB==='plat'?'on':''}" onclick="midStab('plat')"><i class="ti ti-world"></i>Plataformas</button>
-    <button class="tab ${MID_TAB==='des'?'on':''}" onclick="midStab('des')"><i class="ti ti-chart-bar"></i>Desempenho</button>
-  </div><div id="mid-body"></div>`;
+  h += menuBarraHTML(MID_TAB) + `<div id="mid-body"></div>`;
   root.innerHTML = h;
 
   if(MID_TAB==='canais') await midTabCanais(canais,videos);
@@ -246,14 +251,15 @@ async function midTabVideos(canais,videos){
   if(!canais.length){
     /* sem canal ainda dá para garimpar, ver o prompt e montar o vídeo —
        o canal só faz falta na hora de publicar */
+    /* Antes vinha aqui um cartão inteiro de "vazio", com ícone gigante, para
+       dizer uma coisa que não impede nada: falta cadastrar canal. Virou uma
+       linha embaixo dos produtos. Cartão de tela vazia embaixo de uma tela
+       cheia é só barulho. */
     body.innerHTML = await pautaSecaoHTML() +
-      `<div class="card"><div class="hd"><i class="ti ti-video"></i>Pauta e vídeos<span class="sp"></span>
-      <button class="btn sm gh" onclick="hggCriarVideo()"><i class="ti ti-user-check"></i>Criar vídeo no Higgsfield</button>
-      </div><div class="bd"><div class="empty"><i class="ti ti-video-off"></i>
-      <b>Cadastre um canal para publicar</b>O vídeo você já pode montar aqui. O canal é
-      necessário só na hora de subir para a plataforma.
-      <div class="brow" style="justify-content:center;margin-top:14px">
-      <button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar canal</button></div></div></div></div>`;
+      `<div class="tt" style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <i class="ti ti-info-circle"></i>Você ainda não cadastrou canal. Dá para garimpar e montar
+      o vídeo assim mesmo — o canal só faz falta na hora de publicar.
+      <button class="btn xs gh" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar canal</button></div>`;
     return;
   }
   const fases = ['Ideia','Roteiro','Gravado','Editado','Publicado'];
