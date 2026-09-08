@@ -10,7 +10,7 @@
 
    Rodar:  node test_higgs.js
    ========================================================================= */
-const { chromium } = require('/root/jev/node_modules/playwright');
+const { chromium } = require('playwright');
 
 let falhas = 0;
 const erros = [];
@@ -25,7 +25,7 @@ const ok = (t, v) => {
     args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const page = await b.newPage();
   page.on('pageerror', e => erros.push(String(e.message)));
-  await page.goto('file:///root/jev/jev_empreendimentos.html');
+  await page.goto('file://' + __dirname + '/jev_empreendimentos.html');
   await page.waitForTimeout(2500);
 
   /* --------- o aplicativo de mentira, que registra tudo que recebe ------- */

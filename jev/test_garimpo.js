@@ -1,5 +1,5 @@
 /* Garimpo de produtos: condições, pontuação, links e ligação com o gerador */
-const { chromium } = require('/root/jev/node_modules/playwright');
+const { chromium } = require('playwright');
 (async () => {
   const erros = [];
   const ok = (t,v)=>console.log((v===true?'  OK  ':' FALHA')+'  '+t+(v===true?'':'  → '+JSON.stringify(v)));
@@ -8,12 +8,12 @@ const { chromium } = require('/root/jev/node_modules/playwright');
   const page = await ctx.newPage();
   page.on('pageerror',e=>erros.push('PAGEERROR: '+e.message));
   page.on('console',m=>{ if(m.type()==='error'&&!/favicon|api.github|ERR_/.test(m.text())) erros.push('CONSOLE: '+m.text()); });
-  await page.goto('file:///root/jev/jev_empreendimentos.html');
+  await page.goto('file://' + __dirname + '/jev_empreendimentos.html');
   await page.waitForFunction(()=>typeof db!=='undefined'&&db!==null,{timeout:20000});
   await page.waitForTimeout(1800);
 
   /* ---------------------------------------------------------- o catálogo */
-  const versaoEsperada = Number((require('fs').readFileSync('/root/jev/src/03_core.js','utf8')
+  const versaoEsperada = Number((require('fs').readFileSync(__dirname + '/src/03_core.js','utf8')
     .match(/DB_VERSION\s*=\s*(\d+)/)||[])[1]);
   ok('o banco está na versão que o código pede ('+versaoEsperada+')',
     await page.evaluate(v=>db.version===v, versaoEsperada));

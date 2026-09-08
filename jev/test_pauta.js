@@ -3,7 +3,7 @@
    o botão de gerar o vídeo, e — só depois que o vídeo existe — o botão
    de publicar com todas as plataformas.
    ========================================================================= */
-const { chromium } = require('/root/jev/node_modules/playwright');
+const { chromium } = require('playwright');
 const { spawnSync } = require('child_process');
 
 const VIDEO = '/tmp/jev-pauta-vertical.webm';
@@ -23,7 +23,7 @@ spawnSync('ffmpeg', ['-loglevel','error','-y','-f','lavfi',
   const page = await ctx.newPage();
   page.on('pageerror',e=>erros.push('PAGEERROR: '+e.message));
   page.on('console',m=>{ if(m.type()==='error'&&!/favicon|api.github|ERR_|net::/.test(m.text())) erros.push('CONSOLE: '+m.text()); });
-  await page.goto('file:///root/jev/jev_empreendimentos.html');
+  await page.goto('file://' + __dirname + '/jev_empreendimentos.html');
   await page.waitForFunction(()=>typeof db!=='undefined'&&db!==null,{timeout:20000});
   await page.waitForTimeout(1800);
 
@@ -72,6 +72,28 @@ spawnSync('ffmpeg', ['-loglevel','error','-y','-f','lavfi',
   tela = await page.evaluate(()=>document.getElementById('mid-body').innerHTML);
   ok('os produtos aparecem na aba Vídeos e pauta',
     /Produtos garimpados/.test(tela) ? true : 'não apareceram');
+
+  /* -------------------------------------------------------------------
+     Da 1.0.34 em diante o cartão mostra UM passo, não a fileira inteira.
+     Duas conferências no estado fechado, e então abrimos "mais opções" em
+     todos os cartões — porque tudo que este teste cobrava continua
+     existindo, só que um andar abaixo. Se algum daqueles botões tivesse
+     sido REMOVIDO em vez de recolhido, o que vem depois quebraria igual.
+     ------------------------------------------------------------------- */
+  ok('fechado, cada cartão mostra o próximo passo e nada mais',
+    (tela.match(/Passo \d de 4/g)||[]).length === naPauta.n ? true :
+      (tela.match(/Passo \d de 4/g)||[]).length);
+  ok('e a fileira antiga não fica na cara de quem abre a tela',
+    !/Ver o prompt automático/.test(tela) ? true : 'a fileira continua aberta');
+
+  await page.evaluate(()=>{
+    /* o miolo do cartão é a mesma função nos três desenhos da lista;
+       abrir "mais opções" para todo mundo é ligar a chave nela */
+    const real = pautaDetalhesHTML;
+    window.pautaDetalhesHTML = function(item){ MENU_MAIS[item.id] = true; return real(item); };
+  });
+  await page.evaluate(()=>midiaRender()); await page.waitForTimeout(900);
+  tela = await page.evaluate(()=>document.getElementById('mid-body').innerHTML);
   ok('cada um traz o botão de ver o prompt',
     (tela.match(/Ver o prompt automático/g)||[]).length === naPauta.n ? true :
       (tela.match(/Ver o prompt automático/g)||[]).length);
