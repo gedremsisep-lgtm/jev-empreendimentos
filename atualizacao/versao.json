@@ -1,21 +1,25 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.34",
-  "arquivo": "jev-1.0.34.html",
-  "data": "2026-08-25",
-  "sha256": "c1b9cc2f3efc123fa9ada4a1248773fa4be10f8815b440a0166b827927f0b7d8",
-  "tamanho": 1972148,
+  "versao": "1.0.35",
+  "arquivo": "jev-1.0.35.html",
+  "data": "2026-09-08",
+  "sha256": "4cb8bb8a959383c43dec45a739840043231421f5834ce7105c76b26f7f4f46a1",
+  "tamanho": 1984333,
   "notas": [
-    "Canais e Vídeos: 3 abas grandes no lugar de 9, e Cadastros recolhido no canto",
-    "Cada produto mostra só o próximo passo; o resto fica em Mais opções",
-    "Baixar as mídias e montar o vídeo viraram um clique só",
-    "Canal de promoções no WhatsApp: escreve todas e vai passando uma a uma",
-    "Grupo de ofertas de 4 em 4 horas, com aviso do Windows na hora certa",
-    "Carteira de links de afiliado: cole o lote do painel e eu caso com cada produto",
-    "Shopee gerando o link de afiliado sozinha, pela API oficial"
+    "Mercado Livre: garimpo que já traz a comissão e gera os seus links de afiliado em lote",
+    "Você entra na sua conta do ML uma vez, numa janela dele — nenhuma senha passa pelo programa",
+    "Filtros por ganho mínimo por venda, teto de preço e só os de ganhos extras",
+    "O produto do ML vira ficha com link, pauta de vídeo e oferta do grupo sozinho",
+    "Se o site do ML mudar de forma, o sistema recusa e avisa, em vez de inventar link"
   ],
-  "substitui": "1.0.33",
+  "substitui": "1.0.35",
   "anteriores": [
+    {
+      "versao": "1.0.34",
+      "arquivo": "jev-1.0.34.html",
+      "sha256": "c1b9cc2f3efc123fa9ada4a1248773fa4be10f8815b440a0166b827927f0b7d8",
+      "data": "2026-08-25"
+    },
     {
       "versao": "1.0.33",
       "arquivo": "jev-1.0.33.html",
@@ -44,12 +48,6 @@
       "versao": "1.0.29",
       "arquivo": "jev-1.0.29.html",
       "sha256": "129eba3d3b7a490d4a74f3b69ea4028be58fb00797ef634df84ae2531888d43b",
-      "data": "2026-08-19"
-    },
-    {
-      "versao": "1.0.28",
-      "arquivo": "jev-1.0.28.html",
-      "sha256": "163f97fd44addd4e50d7e345f45ea16aa4319b38404e7c2a5afb2c86a3074f57",
       "data": "2026-08-19"
     }
   ]
