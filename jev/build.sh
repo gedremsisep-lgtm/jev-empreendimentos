@@ -19,5 +19,6 @@ cat src/01_head.html src/02_body.html \
     src/29_anuncio.js src/30_disparo.js src/31_postar.js src/32_cortes.js src/33_afiliado.js \
     src/34_estudio.js src/35_pauta.js src/36_kalo.js src/37_pessoa.js src/38_higgs.js \
     src/39_preparo.js src/40_menu.js src/41_zap.js src/42_ofertas.js src/43_links.js src/44_ml.js \
+    src/45_obraimport.js \
     src/24_boot.js src/25_foot.html > jev_empreendimentos.html
 python3 confere_icones.py
