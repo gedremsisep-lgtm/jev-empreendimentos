@@ -121,6 +121,18 @@
   </div>
 </div>
 
+<div class="mk" id="mk-oimp" onclick="if(event.target===this)closeModal('mk-oimp')">
+  <div class="mw sm">
+    <div class="mh"><i class="ti ti-package-import"></i>Importar obra<span class="sp"></span>
+      <button class="ib" onclick="closeModal('mk-oimp')"><i class="ti ti-x"></i></button></div>
+    <div class="mb"><div id="oimp-corpo"></div></div>
+    <div class="mf">
+      <button class="btn gh" onclick="closeModal('mk-oimp')">Cancelar</button>
+      <button class="btn" id="oimp-ok" onclick="obraImpGravar()"><i class="ti ti-check"></i>Adicionar esta obra</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-wrap" style="position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:300;
   display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none"></div>
 

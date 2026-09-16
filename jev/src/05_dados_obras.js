@@ -208,8 +208,13 @@ const TIPOS_OBRA = [
 const ST_OBRA = {
   'Planejamento':'s-nt','Em andamento':'s-pd','Paralisada':'s-wn','Concluída':'s-ok','Entregue':'s-ok'
 };
+/* As sete primeiras são de edificação. As de infraestrutura entraram para
+   atender loteamento, que tem prancha de drenagem, pavimentação e calçada —
+   coisas que não cabiam em nenhuma das antigas e caíam todas em "Outro". */
 const DISCIPLINAS = ['Arquitetônico','Estrutural','Hidrossanitário','Elétrico','Prevenção Incêndio',
-                     'Climatização','Paisagismo','Terraplenagem','Levantamento Topográfico','Modelo BIM (IFC)','Aprovação / Prefeitura','Outro'];
+                     'Climatização','Paisagismo','Terraplenagem','Levantamento Topográfico','Modelo BIM (IFC)',
+                     'Urbanismo / Loteamento','Abastecimento de Água','Esgotamento Sanitário','Drenagem Pluvial',
+                     'Pavimentação','Calçadas e Acessibilidade','Aprovação / Prefeitura','Outro'];
 
 function tipoInfo(t){ return TIPOS_OBRA.find(x=>x.v===t) || TIPOS_OBRA[0]; }
 function etapaCor(nome){ const e = ETAPAS_PADRAO.find(x=>x.nome===nome); return e?e.cor:'#8B93A3'; }

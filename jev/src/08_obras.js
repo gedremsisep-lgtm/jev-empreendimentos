@@ -90,6 +90,8 @@ async function obrasRender(){
   let html = `<div class="ph"><div class="ic"><i class="ti ti-building-community"></i></div>
     <div><h1>Obras</h1><p>Cadastro e acompanhamento de todas as obras da empresa</p></div>
     <div class="sp"></div>
+    <button class="btn gh" onclick="document.getElementById('oimp-file').click()"><i class="ti ti-package-import"></i>Importar obra</button>
+    <input type="file" id="oimp-file" accept=".jevobra,.json" class="hide" onchange="obraImportarArquivo(this)">
     <button class="btn gh" onclick="conjuntoForm()"><i class="ti ti-home-plus"></i>Conjunto de casas</button>
     <button class="btn" onclick="obraForm()"><i class="ti ti-plus"></i>Nova Obra</button></div>`;
 
