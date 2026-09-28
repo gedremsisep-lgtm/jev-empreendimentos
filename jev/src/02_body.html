@@ -14,6 +14,14 @@
     <button id="mn-cfg"  onclick="go('cfg')"><i class="ti ti-settings"></i>Configurações</button>
   </div>
   <button class="tbt" id="nv-status" onclick="go('nuvem')" title="Nuvem da JeV"><i class="ti ti-cloud-off"></i></button>
+  <button class="tbt" onclick="go('ctl')" title="Controle — a equipe de agentes" style="position:relative">
+    <i class="ti ti-settings-automation"></i>
+    <span data-ctl-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--brand);color:#fff;
+      font-size:9.5px;font-weight:900;border-radius:9px;padding:0 5px;line-height:15px">0</span></button>
+  <button class="tbt" onclick="go('vigias')" title="Vigias do negócio" style="position:relative">
+    <i class="ti ti-bell-ringing"></i>
+    <span data-vig-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
+      font-size:9.5px;font-weight:900;border-radius:9px;padding:0 5px;line-height:15px">0</span></button>
   <button class="tbt" onclick="go('cel')" title="Celular da equipe — guias recebidas" style="position:relative">
     <i class="ti ti-device-mobile"></i>
     <span data-cel-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--gold);color:#0A2531;
@@ -53,7 +61,10 @@
   <div class="pg" id="pg-produtos"><div id="produtos-root"></div></div>
   <div class="pg" id="pg-info"><div id="info-root"></div></div>
   <div class="pg" id="pg-midia"><div id="midia-root"></div></div>
+  <div class="pg" id="pg-galeria"><div id="galeria-root"></div></div>
 
+  <div class="pg" id="pg-ctl"><div id="ctl-root"></div></div>
+  <div class="pg" id="pg-vigias"><div id="vigias-root"></div></div>
   <div class="pg" id="pg-cel"><div id="cel-root"></div></div>
   <div class="pg" id="pg-nuvem"><div id="nuvem-root"></div></div>
   <div class="pg" id="pg-pes"><div id="pes-root"></div></div>

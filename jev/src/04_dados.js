@@ -20,7 +20,8 @@ const UNIDADES = [
   {id:'info', pg:'info', nome:'Infoprodutos', curto:'Infoprodutos', ic:'ti-device-laptop',
    cor:'#7B3FA0', bg:'#F2EAF9', desc:'Cursos e materiais digitais', tabs:[]},
   {id:'midia', pg:'midia', nome:'Canais de Vídeo', curto:'Mídia', ic:'ti-brand-youtube',
-   cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização', tabs:[]}
+   cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização',
+   tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]}
 ];
 const UN_GERAL = {id:'geral', nome:'Administrativo / Geral', curto:'Geral', ic:'ti-building-store', cor:'#5B6260', bg:'#EFEDE7'};
 function unInfo(id){ return UNIDADES.find(u=>u.id===id) || UN_GERAL; }

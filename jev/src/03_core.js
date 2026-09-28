@@ -2,16 +2,16 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.36';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.37';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
-const DB_VERSION = 7;   // v2: 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem) · v4: afiliados, roteiros e publicações · v5: garimpo de produtos · v6: cortes de vídeo · v7: vídeos montados no estúdio
+const DB_VERSION = 9;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio
 const STORES = [
   'config','contas','financeiro','recorrencias','pessoas',
   'obras','etapas','orcamento','insumos','compras','estoque','equipe','apontamentos','rdo','projetos','medicoes',
   'imoveis','veiculos','contratos','manutencoes',
   'lotes','ciclos','produtos','vendas','canais','videos',
   'guias','lixeira','sync',
-  'programas','roteiros','publicacoes','garimpos','cortes','producoes'
+  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias'
 ];
 let db = null;
 
@@ -78,9 +78,9 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','cfg','ver'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','ver'],
-  c:['hub','obras','crono','mat','mo','rdo','proj','chacara','pes','cel']
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','ver'],
+  c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
 
 /* ---------------- Navegação ---------------- */
@@ -99,10 +99,10 @@ function go(pg){
   document.getElementById('bn-'+pg)?.classList.add('on');
   renderCtxBar(u);
   window.scrollTo(0,0);
-  const R = {hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
+  const R = {vigias:vigiasRender, ctl:controleRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
-             midia:midiaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
+             midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
              ver:verRender};
   safeRender(R[pg], pg);
 }
