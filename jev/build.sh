@@ -20,5 +20,6 @@ cat src/01_head.html src/02_body.html \
     src/34_estudio.js src/35_pauta.js src/36_kalo.js src/37_pessoa.js src/38_higgs.js \
     src/39_preparo.js src/40_menu.js src/41_zap.js src/42_ofertas.js src/43_links.js src/44_ml.js \
     src/45_obraimport.js src/46_visual.js src/47_galeria.js src/48_vigias.js src/49_controle.js \
+    src/50_escritorio.js \
     src/24_boot.js src/25_foot.html > jev_empreendimentos.html
 python3 confere_icones.py
