@@ -221,6 +221,33 @@ fs.writeFileSync(EMBUTIDO,
   ok('e o progresso da tarefa se ajusta na tela',
     html.includes('function ctlVerTarefa') && html.includes('function ctlAplicarProgresso') ? true : 'não veio');
 
+  /* 1.0.39 — o Escritório, o oitavo card do painel.
+     A verificação que mais importa aqui é a quarta: o dia em que alguém
+     empurrar ESCRITORIO para dentro de UNIDADES, o financeiro passa a
+     oferecer "Escritório" como negócio no lançamento e o rateio fica errado
+     em silêncio. Nenhum teste de tela pegaria isso. */
+  ok('o Escritório veio, com as duas abas',
+    html.includes("id:'escritorio'") && html.includes("['ctl','Controle'") &&
+    html.includes("['vigias','Vigias'") ? true : 'não veio');
+  ok('o card dele sabe se desenhar no painel',
+    html.includes('function escrCard') && html.includes('function escrPreencher') ? true : 'não veio');
+  ok('a navegação emoldura o Controle e os Vigias',
+    /unidadeDaPagina[\s\S]{0,200}ESCRITORIO/.test(html) ? true : 'a moldura sumiu');
+  /* recorta a lista UNIDADES do arquivo e olha dentro dela — regex solta
+     sobre o arquivo inteiro casaria com o ESCRITORIO que vem logo abaixo e
+     daria "passou" numa prova que não provou nada */
+  const listaUnidades = (html.split('const UNIDADES = [')[1] || '').split('\n];')[0];
+  ok('e ele continua FORA das unidades de negócio, longe do dinheiro',
+    listaUnidades && !listaUnidades.includes('escritorio') ? true :
+      'entrou em UNIDADES — o financeiro vai oferecer Escritório como negócio');
+  ok('o painel não espera a pasta do Controle para aparecer',
+    /if\(PERMS\[CU\]\.includes\(ESCRITORIO\.pg\)\) escrPreencher\(\);/.test(html) &&
+    !/await escrPreencher/.test(html) ? true : 'alguém pôs await e travou o painel');
+  ok('Controle desligado vira "desligado", nunca zero agentes',
+    html.includes("escrPor('agentes', 'desligado'") ? true : 'não veio');
+  ok('e os dois sininhos acendem sem reler tudo de novo',
+    /async function vigSino\(n\)/.test(html) && /async function ctlBadge\(n\)/.test(html) ? true : 'não veio');
+
   /* a Midiateca e o motor de visuais, que estavam prontos desde setembro */
   ok('a Midiateca veio',
     html.includes('galeria:galeriaRender') && html.includes('function galDoEstudio') ? true : 'não veio');

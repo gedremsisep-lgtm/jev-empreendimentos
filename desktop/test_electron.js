@@ -1,6 +1,9 @@
 /* Testa o aplicativo de janela: abre o Electron de verdade, carrega o sistema,
    confere a ponte com o preload e simula a abertura de um arquivo .jev. */
-const { _electron: electron } = require('/root/jev/node_modules/playwright');
+/* pelo nome, não por endereço absoluto: o /root/jev/node_modules de antes
+   sumiu quando o projeto virou um repositório só, e desde então este teste
+   travava sem dizer por quê em vez de rodar */
+const { _electron: electron } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
@@ -26,8 +29,12 @@ const fs = require('fs');
   ok('sistema carregou dentro do aplicativo', await page.evaluate(() => !!document.getElementById('hub-root').innerHTML));
   ok('ponte com o aplicativo disponível', await page.evaluate(() => !!(window.JeVDesktop && window.JeVDesktop.ehAplicativo)));
 
+  /* contra o package.json, não contra um número escrito à mão: preso no
+     '1.0.0' original, este teste virou uma falha fixa que ninguém via */
+  const esperada = require('./package.json').version;
   const ver = await page.evaluate(() => window.JeVDesktop.versao());
-  ok('versão informada pelo aplicativo: ' + ver, ver === '1.0.0');
+  ok('a versão que o aplicativo informa é a do package.json (' + esperada + ')',
+    ver === esperada ? true : 'aplicativo diz ' + ver);
 
   const pasta = await page.evaluate(() => window.JeVDesktop.pastaDados());
   ok('pasta de dados informada', typeof pasta === 'string' && pasta.length > 3 ? true : pasta);
@@ -35,10 +42,17 @@ const fs = require('fs');
   ok('rodapé do logo mostra a versão',
     await page.evaluate(() => (document.querySelector('.lgt span').textContent || '').includes('versão')));
 
-  ok('menu em português montado', await app.evaluate(async ({ Menu }) => {
+  /* o que importa é que o menu está em português e tem os cinco que a
+     família usa — e não a ordem exata, que era o que estava escrito aqui e
+     quebrou calado no dia em que "Atualizações" entrou no meio */
+  const menus = await app.evaluate(async ({ Menu }) => {
     const m = Menu.getApplicationMenu();
-    return !!m && m.items.map(i => i.label).join('|') === 'Arquivo|Editar|Exibir|Ajuda';
-  }));
+    return m ? m.items.map(i => i.label) : null;
+  });
+  ok('menu em português montado, com os cinco de sempre',
+    menus && ['Arquivo','Editar','Exibir','Atualizações','Ajuda'].every(x => menus.includes(x))
+      && menus[0] === 'Arquivo' && menus[menus.length-1] === 'Ajuda'
+      ? true : menus);
 
   // --- abrir um arquivo .jev como se fosse dois cliques no Windows
   const pacote = await page.evaluate(async () => {

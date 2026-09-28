@@ -89,9 +89,20 @@ function versaoBoa(v) {
   return BASE.replace(/const SISTEMA_VERSAO = '[^']*'/, `const SISTEMA_VERSAO = '${v}'`);
 }
 function versaoComDefeito(v) {
-  /* uma tela que estoura erro: o autoteste tem de pegar */
-  return versaoBoa(v).replace('</body>',
-    `<script>function obrasRender(){ throw new Error('defeito plantado no teste'); }</script></body>`);
+  /* Uma tela que estoura erro: o autoteste tem de pegar.
+
+     O defeito entra no ÚLTIMO </body>, não no primeiro. O primeiro está
+     dentro de um texto de JavaScript, no motor de visuais que monta uma
+     página como string — plantar ali não estraga uma tela, estraga o
+     arquivo inteiro: o script nem compila, nada abre, e quem reverte passa
+     a ser o vigia do tempo. O teste continuava "passando" em cinco das seis
+     linhas e provando outra coisa. Foi assim por várias versões. */
+  const html = versaoBoa(v);
+  const i = html.lastIndexOf('</body>');
+  if (i < 0) throw new Error('não achei </body> para plantar o defeito');
+  return html.slice(0, i) +
+    `<script>function obrasRender(){ throw new Error('defeito plantado no teste'); }</script>` +
+    html.slice(i);
 }
 function versaoQueNaoAbre() {
   /* uma tela em branco: o sistema nem chega a rodar o autoteste, e quem
