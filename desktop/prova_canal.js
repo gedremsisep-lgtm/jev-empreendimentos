@@ -203,6 +203,24 @@ fs.writeFileSync(EMBUTIDO,
   ok('sem o Mission Control, a tela explica em vez de ficar em branco',
     html.includes('não está respondendo') && html.includes('INICIAR.bat') ? true : 'não veio');
 
+  /* 1.0.38 — as quatro que vieram da versão que já rodava na máquina de casa.
+     Entram aqui porque a fusão podia ter perdido qualquer uma sem quebrar
+     nada: o arquivo montaria igual, os testes passariam, e a falta só
+     apareceria com o sistema aberto, semanas depois. */
+  ok('o Controle relê sozinho de 6 em 6 segundos',
+    html.includes('function ctlLigarRelogio') && html.includes('}, 6000)') ? true : 'não veio');
+  ok('e não relê por baixo de um modal aberto',
+    /ctlLigarRelogio[\s\S]{0,400}\.mk\.on/.test(html) ? true : 'a guarda do modal sumiu');
+  ok('e para de reler quando você sai da tela',
+    /ctlLigarRelogio[\s\S]{0,400}PG !== 'ctl'/.test(html) ? true : 'a guarda da tela sumiu');
+  ok('a ficha do agente abre pela tela',
+    html.includes('function ctlVerAgente') && html.includes('function ctlAgentePorId') ? true : 'não veio');
+  ok('dá para criar agente e mudar o estado dele',
+    html.includes('function ctlFormAgente') && html.includes('function ctlSalvarAgente') &&
+    html.includes('function ctlAplicarStatus') && html.includes('function ctlCriarAgente') ? true : 'não veio');
+  ok('e o progresso da tarefa se ajusta na tela',
+    html.includes('function ctlVerTarefa') && html.includes('function ctlAplicarProgresso') ? true : 'não veio');
+
   /* a Midiateca e o motor de visuais, que estavam prontos desde setembro */
   ok('a Midiateca veio',
     html.includes('galeria:galeriaRender') && html.includes('function galDoEstudio') ? true : 'não veio');
