@@ -893,7 +893,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.38';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.39';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 9;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio
 const STORES = [
@@ -1008,7 +1008,13 @@ async function safeRender(fn,pg){
       <br><small>Recarregue a página. Se continuar, restaure o último backup.</small></div></div>`;
   }
 }
-function unidadeDaPagina(pg){ return UNIDADES.find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg)); }
+/* O Escritório entra na busca aqui, e só aqui dentro do núcleo: é isto que
+   dá a ele a barra de contexto com as duas abas. Somar ESCRITORIO dentro de
+   UNIDADES resolveria em menos linhas e estragaria o financeiro, que percorre
+   UNIDADES para ratear receita e despesa por negócio. */
+function unidadeDaPagina(pg){
+  return [...UNIDADES, ESCRITORIO].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
+}
 
 function renderCtxBar(u){
   const bar = document.getElementById('ctxbar');
@@ -1032,7 +1038,7 @@ function renderCtxBar(u){
 function menuNegocios(el){
   const d = document.getElementById('dropneg');
   if(d.style.display==='block'){ fecharDrops(); return; }
-  d.innerHTML = UNIDADES.filter(u=>PERMS[CU].includes(u.pg)).map(u=>
+  d.innerHTML = [...UNIDADES, ESCRITORIO].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
     `<div onclick="go('${u.pg}')" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;cursor:pointer"
        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
        <div style="width:32px;height:32px;border-radius:9px;background:${u.bg};color:${u.cor};display:flex;align-items:center;justify-content:center;font-size:18px">
@@ -1344,6 +1350,26 @@ const UNIDADES = [
 ];
 const UN_GERAL = {id:'geral', nome:'Administrativo / Geral', curto:'Geral', ic:'ti-building-store', cor:'#5B6260', bg:'#EFEDE7'};
 function unInfo(id){ return UNIDADES.find(u=>u.id===id) || UN_GERAL; }
+
+/* O ESCRITÓRIO — onde ficam os que trabalham sozinhos
+   ---------------------------------------------------
+   Tem a mesma cara de uma unidade e aparece no painel como mais um card, ao
+   lado de Mídia. Mas está FORA de UNIDADES de propósito, e isso é o ponto
+   inteiro desta peça: quem percorre UNIDADES é o financeiro, o relatório e o
+   rateio por negócio. Escritório não fatura nem gasta — entrar lá encheria
+   três telas de uma linha que sempre valeria zero, e um dia alguém ia somar
+   errado. Fica de fora do dinheiro e dentro da navegação.
+
+   As duas abas não são telas novas: são as telas que já existem. A barra de
+   contexto (a mesma de Obras e Mídia) as emoldura, e os dois botões da barra
+   de cima continuam levando direto para cada uma. */
+const ESCRITORIO = {
+  id:'escritorio', pg:'ctl', nome:'Escritório', curto:'Escritório',
+  ic:'ti-device-desktop-cog', cor:'#0E6E70', bg:'#E2F3F3',
+  desc:'Agentes de IA e vigias do negócio',
+  tabs:[['ctl','Controle','ti-settings-automation'],
+        ['vigias','Vigias','ti-bell-ringing']]
+};
 
 /* ---------------- Plano de contas ---------------- */
 const CAT_REC = [
@@ -2549,6 +2575,10 @@ async function hubRender(){
           <div class="go">Abrir <i class="ti ti-arrow-right"></i></div></div>
       </div></div>`;
   }
+  /* o oitavo card, ao lado de Mídia: o Escritório. Vem depois do laço, e não
+     dentro dele, porque não é unidade de negócio — o miolo conta gente, não
+     dinheiro, e os números só entram depois que o painel já apareceu */
+  if(PERMS[CU].includes(ESCRITORIO.pg)) h += escrCard();
   h += `</div>`;
 
   // ------- atalhos -------
@@ -2591,6 +2621,11 @@ async function hubRender(){
       </div></div></div>`;
   }
   root.innerHTML = h;
+
+  /* SEM await de propósito: o Escritório pergunta a uma pasta fora do sistema,
+     com prazo de 2,5 segundos. Esperar aqui seria trocar o painel da família
+     por um relógio girando toda vez que o Controle estivesse desligado. */
+  if(PERMS[CU].includes(ESCRITORIO.pg)) escrPreencher();
 }
 
 /* indicadores curtos por unidade, mostrados no card do hub */
@@ -21906,10 +21941,13 @@ async function vigContar(){
     return achados.filter(a=>a.grave!=='baixo').length;
   } catch(e){ return 0; }
 }
-async function vigSino(){
+/* Aceita o número já contado. Quem está no painel acabou de rodar os vinte
+   vigias para encher o card do Escritório — mandar rodar de novo só para
+   acender o sino seria ler o banco inteiro duas vezes pelo mesmo número. */
+async function vigSino(n){
   const el = document.querySelector('[data-vig-badge]');
   if(!el) return;
-  const n = await vigContar();
+  if(n === undefined) n = await vigContar();
   el.textContent = n > 99 ? '99+' : String(n);
   el.classList.toggle('hide', n === 0);
 }
@@ -22280,11 +22318,15 @@ function ctlPendencias(d){
        + agentes.filter(a=>a.status==='error').length;
 }
 
-async function ctlBadge(){
+/* Aceita o número já apurado, pelo mesmo motivo do sino dos vigias: o painel
+   acaba de perguntar o estado ao Controle para encher o card do Escritório, e
+   perguntar de novo custaria outra ida à pasta com prazo de 2,5 segundos. */
+async function ctlBadge(n){
   const el = document.querySelector('[data-ctl-badge]');
   if(!el) return;
-  let n = 0;
-  try { n = ctlPendencias(await ctlEstado()); } catch { n = 0; }
+  if(n === undefined){
+    try { n = ctlPendencias(await ctlEstado()); } catch { n = 0; }
+  }
   el.textContent = n > 99 ? '99+' : String(n);
   el.classList.toggle('hide', n === 0);
 }
@@ -22871,6 +22913,111 @@ function ctlVazio(msg, ic){
     <i class="ti ${ic}"></i><b>${esc(msg)}</b>
     Quem escreve aqui são os agentes, na pasta do Mission Control.
   </div></div></div>`;
+}
+/* =========================================================================
+   ESCRITÓRIO — o card do painel, e quem enche os números dele
+
+   O QUE É O ESCRITÓRIO
+   --------------------
+   Os sete cards do painel são negócios: entra dinheiro, sai dinheiro, sobra
+   ou falta. O Escritório é o oitavo card e não é nada disso. É a sala de quem
+   trabalha sozinho: a equipe de agentes de IA que roda na máquina (o
+   Controle) e os vinte vigias que leem o sistema. Ele não tem receita nem
+   despesa — por isso o rodapé do card, onde os outros mostram o resultado do
+   mês, aqui mostra quantas coisas estão esperando por você.
+
+   A LIGAÇÃO ESTÁ EM 04_dados.js
+   -----------------------------
+   A peça ESCRITORIO mora lá, junto das unidades, e explica ali por que fica
+   de fora de UNIDADES. As duas abas dele são as telas que já existem — o
+   Controle e os Vigias —, emolduradas pela mesma barra de contexto de Obras
+   e Mídia.
+
+   POR QUE OS NÚMEROS CHEGAM DEPOIS
+   --------------------------------
+   Metade deles vem de uma pasta fora do sistema, pelo Mission Control, com
+   prazo de 2,5 segundos para responder. Segurar o painel da casa esperando
+   uma pasta que talvez nem esteja ligada seria trocar a tela inicial de
+   todo mundo por um relógio girando. Então o card nasce com traço, o painel
+   aparece na hora, e os números entram quando chegam.
+
+   E DE QUEBRA, OS DOIS SININHOS
+   -----------------------------
+   Os contadores da barra de cima só acendiam depois que alguém entrava nas
+   telas — quem ficasse no painel não era avisado de nada, que é justamente
+   o contrário do que um sininho serve. Como aqui já se lê o estado dos dois,
+   os dois sininhos são acesos com esta mesma leitura, sem custo novo.
+   ========================================================================= */
+
+/* o card, no mesmo molde dos outros sete (.ucard), para não destoar da
+   fileira — o que muda é o miolo, que conta gente em vez de dinheiro */
+function escrCard(){
+  const u = ESCRITORIO;
+  return `<div class="ucard" style="--uc:${u.cor};--ucb:${u.bg}" onclick="go('${u.pg}')">
+      <div class="bar"></div>
+      <div class="top2"><div class="ico"><i class="ti ${u.ic}"></i></div>
+        <div style="flex:1;min-width:0"><h3>${esc(u.curto)}</h3><div class="sub">${esc(u.desc)}</div></div></div>
+      <div class="body">
+        <div class="kv"><span>Agentes de pé</span><b data-escr="agentes">—</b></div>
+        <div class="kv"><span>Tarefas andando</span><b data-escr="tarefas">—</b></div>
+        <div class="kv"><span>Rotinas ligadas</span><b data-escr="rotinas">—</b></div>
+        <div class="kv"><span>Vigias apontando</span><b data-escr="vigias">—</b></div>
+        <div class="foot">
+          <div><div class="tt">Esperando você</div>
+            <div class="res" data-escr="espera" style="color:var(--text3)">—</div></div>
+          <div class="go">Abrir <i class="ti ti-arrow-right"></i></div></div>
+      </div></div>`;
+}
+
+function escrPor(chave, texto, cor){
+  const el = document.querySelector(`[data-escr="${chave}"]`);
+  if(!el) return;                 /* o dono saiu do painel enquanto se lia */
+  el.textContent = texto;
+  el.style.color = cor || '';
+}
+
+/* Roda SEM await no fim do painel. Cada metade tem o seu try: a pasta do
+   Controle pode não existir e os vigias podem tropeçar num dado torto, e
+   nem um nem outro pode deixar o card pela metade sem dizer por quê. */
+async function escrPreencher(){
+  let espera = 0;
+
+  /* os vigias leem o banco daqui mesmo — sempre respondem */
+  try {
+    const {achados} = await vigRodar();
+    const graves = achados.filter(a=>a.grave!=='baixo').length;
+    escrPor('vigias', String(achados.length),
+            achados.length ? 'var(--amber)' : 'var(--text3)');
+    espera += graves;
+    vigSino(graves);
+  } catch(e){ escrPor('vigias', '—'); }
+
+  /* o Controle mora fora do sistema e pode simplesmente estar desligado.
+     Escrever "desligado" é informação; deixar traço seria mentira por
+     omissão — o dono ficaria achando que tem zero agente cadastrado. */
+  try {
+    const d = await ctlEstado();
+    if(!d.disponivel){
+      escrPor('agentes', 'desligado', 'var(--text3)');
+      escrPor('tarefas', '—');
+      escrPor('rotinas', '—');
+      ctlBadge(0);
+    } else {
+      const ag = (d.agents && d.agents.agents) || [];
+      const tf = (d.tasks && d.tasks.tasks) || [];
+      const jb = (d.cron && d.cron.jobs) || [];
+      const comErro = ag.filter(a=>a.status==='error').length;
+      escrPor('agentes', ag.filter(a=>['online','busy'].includes(a.status)).length + ' de ' + ag.length,
+              comErro ? 'var(--red)' : 'var(--green)');
+      escrPor('tarefas', String(tf.filter(t=>t.stage==='em_execucao').length), 'var(--blue)');
+      escrPor('rotinas', jb.filter(j=>j.enabled).length + ' de ' + jb.length);
+      const pend = ctlPendencias(d);
+      espera += pend;
+      ctlBadge(pend);
+    }
+  } catch(e){ escrPor('agentes', 'desligado', 'var(--text3)'); }
+
+  escrPor('espera', String(espera), espera ? 'var(--amber)' : 'var(--green)');
 }
 /* =========================================================================
    INICIALIZAÇÃO
