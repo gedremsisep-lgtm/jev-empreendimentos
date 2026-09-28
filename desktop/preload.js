@@ -112,6 +112,19 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
     });
   },
 
+  /* ---- o Controle: a equipe de agentes que trabalha na máquina ----
+     Só leitura e dois comandos (mudar a etapa de uma tarefa, mandar uma
+     rotina rodar agora). Nada aqui publica em lugar nenhum. */
+  ctlEstado:        ()              => ipcRenderer.invoke('ctl-estado'),
+  ctlArquivo:       rel             => ipcRenderer.invoke('ctl-arquivo', rel),
+  ctlMudarTarefa:   (id, dados)     => ipcRenderer.invoke('ctl-mudar-tarefa', id, dados),
+  ctlMudarRotina:   (id, dados)     => ipcRenderer.invoke('ctl-mudar-rotina', id, dados),
+  ctlRodarAgora:    id              => ipcRenderer.invoke('ctl-rodar-agora', id),
+  ctlMudarAgente:   (id, dados)     => ipcRenderer.invoke('ctl-mudar-agente', id, dados),
+  ctlCriarAgente:   dados           => ipcRenderer.invoke('ctl-criar-agente', dados),
+  ctlSubirServidor: ()              => ipcRenderer.invoke('ctl-subir-servidor'),
+  ctlEscolherPasta: ()              => ipcRenderer.invoke('ctl-escolher-pasta'),
+
   /* o andamento chega por aqui, ao vivo, enquanto o vídeo é montado */
   aoEstudio(callback) {
     ipcRenderer.on('estudio-passo', (_e, dados) => {

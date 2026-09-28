@@ -156,6 +156,25 @@ fs.writeFileSync(EMBUTIDO,
   ok('e a tela promete, escrito, que não guarda a senha dele',
     html.includes('não vejo nem guardo a sua senha') ? true : 'não veio');
 
+  /* 1.0.36: importar uma obra pronta, sem apagar o que já está no sistema */
+  ok('o botão de importar obra veio na tela de Obras',
+    html.includes('Importar obra') && html.includes('oimp-file') ? true : 'não veio');
+  ok('o importador veio inteiro',
+    html.includes('function obraImpConferir') && html.includes('function obraImpGravar') &&
+    html.includes('function obraImportarArquivo') ? true : 'não veio');
+  ok('e o exportador, para levar a obra para outra máquina',
+    html.includes('function obraExportar') && html.includes('JEV_OBRA') ? true : 'não veio');
+  ok('a tela promete, escrito, que importar SÓ ADICIONA',
+    html.includes('A importação <b>só adiciona</b>') ? true : 'não veio');
+  ok('o importador recusa arquivo que não é obra',
+    html.includes('Este arquivo não é uma obra da JeV') ? true : 'não veio');
+  ok('o registro de projetos entra junto com a obra',
+    html.includes('pranchas e cadernos registrados') ? true : 'não veio');
+  ok('as disciplinas de infraestrutura entraram',
+    html.includes('Urbanismo / Loteamento') && html.includes('Drenagem Pluvial') &&
+    html.includes('Abastecimento de Água') && html.includes('Esgotamento Sanitário') &&
+    html.includes('Calçadas e Acessibilidade') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();

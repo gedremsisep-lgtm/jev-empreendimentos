@@ -32,6 +32,16 @@ try {
   console.error('estúdio indisponível:', e && e.message);
 }
 
+/* O Controle — a ponte com o Mission Control. Mesma porta protegida: a
+   pasta mora FORA do pacote do programa, então pode simplesmente não estar
+   lá. Faltando, o JeV abre igual e a tela explica o que houve. */
+let controle = null;
+try {
+  controle = require('./controle');
+} catch (e) {
+  console.error('controle indisponível:', e && e.message);
+}
+
 /* O garimpo pelo Kalodata — mesma porta protegida. */
 let kalodata = null;
 try {
@@ -752,6 +762,31 @@ ipcMain.handle('est-guardar-como', async (_e, origem, sugestao) => {
 });
 ipcMain.handle('est-faxina', (_e, guardar) => {
   try { return estudio ? estudio.faxina(guardar) : 0; } catch (e) { return 0; }
+});
+
+/* ---------------- Controle (Mission Control) ---------------- */
+/* Nenhum destes escreve em plataforma nenhuma: o mais longe que vão é
+   mudar a etapa de uma tarefa e mandar uma rotina rodar agora. */
+ipcMain.handle('ctl-estado', () => {
+  if (!controle) return { disponivel: false, motivo: 'o módulo do Controle não foi empacotado com o programa' };
+  return controle.estado();
+});
+ipcMain.handle('ctl-arquivo',       (_e, rel)        => controle && controle.arquivo(rel));
+ipcMain.handle('ctl-mudar-tarefa',  (_e, id, dados)  => controle && controle.mudarTarefa(id, dados));
+ipcMain.handle('ctl-mudar-rotina',  (_e, id, dados)  => controle && controle.mudarRotina(id, dados));
+ipcMain.handle('ctl-rodar-agora',   (_e, id)         => controle && controle.rodarAgora(id));
+ipcMain.handle('ctl-mudar-agente',  (_e, id, dados)  => controle && controle.mudarAgente(id, dados));
+ipcMain.handle('ctl-criar-agente',  (_e, dados)      => controle && controle.criarAgente(dados));
+ipcMain.handle('ctl-subir-servidor', () => controle ? controle.subirServidor() : { ok: false, motivo: 'Controle indisponível' });
+ipcMain.handle('ctl-escolher-pasta', async () => {
+  if (!controle) throw new Error('Controle indisponível');
+  const r = await dialog.showOpenDialog({
+    title: 'Onde está a pasta do Mission Control?',
+    properties: ['openDirectory'],
+    defaultPath: controle.pasta || undefined,
+  });
+  if (r.canceled || !r.filePaths[0]) return { cancelado: true };
+  return controle.definirPasta(app, r.filePaths[0]);
 });
 
 ipcMain.handle('versao-validar', (_e, ok, detalhes) => {

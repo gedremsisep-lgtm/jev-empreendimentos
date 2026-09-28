@@ -1,7 +1,7 @@
 {
   "name": "jev-empreendimentos",
   "productName": "JeV Empreendimentos",
-  "version": "1.0.36",
+  "version": "1.0.37",
   "description": "Gestão integrada de obras, imóveis, veículos, chácara, produtos e mídia da JeV Empreendimentos",
   "author": {
     "name": "JeV Empreendimentos"
@@ -33,6 +33,7 @@
       "main.js",
       "atualizacao.js",
       "publicador.js",
+      "controle.js",
       "estudio.js",
       "kalodata.js",
       "higgsfield.js",
