@@ -175,6 +175,40 @@ fs.writeFileSync(EMBUTIDO,
     html.includes('Abastecimento de Água') && html.includes('Esgotamento Sanitário') &&
     html.includes('Calçadas e Acessibilidade') ? true : 'não veio');
 
+  /* 1.0.37: os Vigias do negócio e o Controle da equipe de agentes */
+  ok('a tela dos Vigias veio na rota e no menu',
+    html.includes("vigias:vigiasRender") && html.includes('id="pg-vigias"') ? true : 'não veio');
+  ok('os vinte vigias vieram inteiros',
+    html.includes('function vigRodar') && html.includes('function vigDados') &&
+    html.includes("id:'obra_etapa_atrasada'") && html.includes("id:'fin_vencida'") &&
+    html.includes("id:'ctr_vencendo'") && html.includes("id:'prod_estoque_min'") &&
+    html.includes("id:'canal_parado'") ? true : 'não veio');
+  ok('o vigia prepara a cobrança, não só o alerta',
+    html.includes('Copiar a cobrança') && html.includes('me manda o comprovante') ? true : 'não veio');
+  ok('a tela promete, escrito, que vigia nenhum grava no banco',
+    html.includes('Nenhum deles grava nada no banco') ? true : 'não veio');
+  ok('e avisa que, sem abrir o sistema, ninguém é avisado',
+    html.includes('ninguém é avisado') ? true : 'não veio');
+  ok('o banco conhece a tabela dos vigias',
+    html.includes("'midiateca','vigias'") ? true : 'não veio');
+
+  ok('a tela do Controle veio na rota e no menu',
+    html.includes("ctl:controleRender") && html.includes('id="pg-ctl"') ? true : 'não veio');
+  ok('o Controle veio com as duas pontes',
+    html.includes('function ctlNoApp') && html.includes('127.0.0.1:3020') &&
+    html.includes('JeVDesktop.ctlEstado') ? true : 'não veio');
+  ok('e com as oito abas',
+    html.includes("'painel'") && html.includes("'rotinas'") &&
+    html.includes("'esteira'") && html.includes("'memorias'") ? true : 'não veio');
+  ok('sem o Mission Control, a tela explica em vez de ficar em branco',
+    html.includes('não está respondendo') && html.includes('INICIAR.bat') ? true : 'não veio');
+
+  /* a Midiateca e o motor de visuais, que estavam prontos desde setembro */
+  ok('a Midiateca veio',
+    html.includes('galeria:galeriaRender') && html.includes('function galDoEstudio') ? true : 'não veio');
+  ok('e o motor de visuais desenhados por código',
+    html.includes('function visualHTML') && html.includes('function visContador') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();
