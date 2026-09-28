@@ -1,18 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.37",
-  "arquivo": "jev-1.0.37.html",
+  "versao": "1.0.38",
+  "arquivo": "jev-1.0.38.html",
   "data": "2026-09-28",
-  "sha256": "612ed9105b6128564b1acec3936a600e7f3bc44d8fc9c114f172312a86863418",
-  "tamanho": 2100199,
+  "sha256": "f30399071dc360c00a33ea042c155d492987840641e6bcde2c3d6b52cb7c5aff",
+  "tamanho": 2111032,
   "notas": [
-    "Vigias do negócio: vinte leituras do seu próprio sistema que apontam conta vencida, etapa atrasada, contrato acabando e estoque no fim — com a cobrança já escrita para copiar",
-    "Controle: a equipe de agentes que trabalha na máquina, vista de dentro do sistema — quem está de pé, o que roda e a que horas",
-    "Midiateca: os vídeos da casa num lugar só; o banco guarda a ficha, o disco guarda o arquivo",
-    "Motor de visuais desenhados por código, sem custo de crédito"
+    "Controle: ficha do agente e da tarefa, criar agente pela tela e relógio que relê sozinho a cada 6 segundos",
+    "As quatro vieram da versão que já rodava na máquina de casa, juntadas com a 1.0.37 publicada"
   ],
-  "substitui": "1.0.36",
+  "substitui": "1.0.37",
   "anteriores": [
+    {
+      "versao": "1.0.37",
+      "arquivo": "jev-1.0.37.html",
+      "sha256": "612ed9105b6128564b1acec3936a600e7f3bc44d8fc9c114f172312a86863418",
+      "data": "2026-09-28"
+    },
     {
       "versao": "1.0.36",
       "arquivo": "jev-1.0.36.html",
@@ -41,12 +45,6 @@
       "versao": "1.0.32",
       "arquivo": "jev-1.0.32.html",
       "sha256": "cd86852f7f640a1581428e2e7624963653d8409a7d95f990b96d0c74e26dab4a",
-      "data": "2026-08-20"
-    },
-    {
-      "versao": "1.0.31",
-      "arquivo": "jev-1.0.31.html",
-      "sha256": "716b0da6ca4718b664cee407e888d16e706e6cec6c9dda1ae75b76ac6ad994f0",
       "data": "2026-08-20"
     }
   ]
