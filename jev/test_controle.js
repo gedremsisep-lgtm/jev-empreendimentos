@@ -140,6 +140,8 @@ const ESTADO = {
       ctlMudarTarefa: (id, d) => { chamadas.push('tarefa:' + id + ':' + JSON.stringify(d)); return Promise.resolve({}); },
       ctlMudarRotina: (id, d) => { chamadas.push('rotina:' + id + ':' + JSON.stringify(d)); return Promise.resolve({}); },
       ctlRodarAgora:  id     => { chamadas.push('rodar:' + id); return Promise.resolve({ok:true}); },
+      ctlMudarAgente: (id, d) => { chamadas.push('agente:' + id + ':' + JSON.stringify(d)); return Promise.resolve({}); },
+      ctlCriarAgente: d      => { chamadas.push('criar:' + JSON.stringify(d)); return Promise.resolve({id:'novo'}); },
       ctlArquivo:     rel    => { chamadas.push('arquivo:' + rel);
                                   return Promise.resolve({file:rel, content:'# Conteúdo lido do disco'}); },
       ctlSubirServidor: () => Promise.resolve({ok:true, url:'http://127.0.0.1:3020'}),
@@ -252,6 +254,99 @@ const ESTADO = {
   t('o navegador chama 127.0.0.1:3020', web.urls.some(u => u.includes('127.0.0.1:3020/api/state')),
     JSON.stringify(web.urls));
   t('e a tela desenha igual', /Canal Finanças|Três vídeos na esteira|Agentes de pé/.test(web.txt));
+
+  console.log('\n— as fichas que vieram da versão da máquina dele —');
+  const fichas = await page.evaluate(async (E) => {
+    /* reinstala a ponte: o bloco anterior apagou window.JeVDesktop de propósito */
+    const chamadas = [];
+    window.JeVDesktop = {
+      ehAplicativo: true,
+      ctlEstado:      ()      => { chamadas.push('estado'); return Promise.resolve(E); },
+      ctlMudarTarefa: (id,d)  => { chamadas.push('tarefa:'+id+':'+JSON.stringify(d)); return Promise.resolve({}); },
+      ctlMudarRotina: (id,d)  => { chamadas.push('rotina:'+id+':'+JSON.stringify(d)); return Promise.resolve({}); },
+      ctlRodarAgora:  id      => { chamadas.push('rodar:'+id); return Promise.resolve({ok:true}); },
+      ctlMudarAgente: (id,d)  => { chamadas.push('agente:'+id+':'+JSON.stringify(d)); return Promise.resolve({}); },
+      ctlCriarAgente: d       => { chamadas.push('criar:'+JSON.stringify(d)); return Promise.resolve({id:'novo'}); },
+      ctlArquivo:     rel     => { chamadas.push('arquivo:'+rel); return Promise.resolve({file:rel,content:'x'}); },
+    };
+    window.__ch = chamadas;
+    CTL.aba = 'agentes'; await controleRender(); await new Promise(r => setTimeout(r, 200));
+    const listaTem = /Novo agente/.test(document.getElementById('ctl-root').innerText);
+
+    /* ficha do agente */
+    ctlVerAgente('produtor');
+    await new Promise(r => setTimeout(r, 200));
+    const fa = document.getElementById('mkf-body').innerText;
+
+    /* formulário de criar agente, a partir da ficha */
+    ctlFormAgente(null);
+    await new Promise(r => setTimeout(r, 200));
+    const form = document.getElementById('mkf-body').innerText;
+    const temCampos = ['ctl-f-nome','ctl-f-papel','ctl-f-desc','ctl-f-status','ctl-f-cor','ctl-f-skills','ctl-f-canais']
+      .every(i => !!document.getElementById(i));
+
+    /* criar sem nome tem de ser recusado, sem mandar nada */
+    await ctlSalvarAgente(null);
+    await new Promise(r => setTimeout(r, 150));
+    const semNome = window.__ch.filter(c => c.startsWith('criar:')).length;
+
+    /* agora com nome */
+    document.getElementById('ctl-f-nome').value = 'Vigia Novo';
+    document.getElementById('ctl-f-papel').value = 'Testes';
+    document.getElementById('ctl-f-skills').value = 'a, b , c';
+    await ctlSalvarAgente(null);
+    await new Promise(r => setTimeout(r, 250));
+    const criou = window.__ch.filter(c => c.startsWith('criar:'));
+
+    /* ficha da tarefa */
+    CTL.aba = 'tarefas'; await controleRender(); await new Promise(r => setTimeout(r, 150));
+    ctlVerTarefa('T-101');
+    await new Promise(r => setTimeout(r, 200));
+    const ft = document.getElementById('mkf-body').innerText;
+    const temRange = !!document.querySelector('#mkf-body input[type=range]');
+
+    window.__ch.length = 0;
+    await ctlAplicarProgresso('T-101', 80);
+    await new Promise(r => setTimeout(r, 200));
+    const prog = window.__ch.filter(c => c.startsWith('tarefa:'));
+    closeModal('mk-form');
+    return {listaTem, fa, form, temCampos, semNome, criou, ft, temRange, prog};
+  }, ESTADO);
+  t('a aba Agentes oferece criar um novo', fichas.listaTem);
+  t('a ficha do agente mostra o papel dele', /Montagem/.test(fichas.fa), fichas.fa.slice(0,120));
+  t('a ficha lista as tarefas abertas dele', /Produzir vídeo longo/.test(fichas.fa));
+  t('e diz "nenhuma" nas rotinas, porque o Produtor não tem nenhuma',
+    /Rotinas \(0\)/.test(fichas.fa) && /nenhuma/.test(fichas.fa), fichas.fa.slice(-200));
+  t('o formulário traz os sete campos', fichas.temCampos);
+  t('criar sem nome NÃO manda nada', fichas.semNome === 0, String(fichas.semNome));
+  t('com nome, manda UMA chamada só', fichas.criou.length === 1, JSON.stringify(fichas.criou));
+  t('e separa as habilidades por vírgula', /"skills":\["a","b","c"\]/.test(fichas.criou[0] || ''), fichas.criou[0]);
+  t('a ficha da tarefa mostra a evidência', /narracao\.mp3/.test(fichas.ft));
+  t('e tem a barra de arrastar o andamento', fichas.temRange);
+  t('arrastar o andamento manda UMA chamada só', fichas.prog.length === 1, JSON.stringify(fichas.prog));
+  t('e manda o número certo', /"progress":80/.test(fichas.prog[0] || ''), fichas.prog[0]);
+
+  console.log('\n— o relógio que relê sozinho —');
+  const relogio = await page.evaluate(async () => {
+    PG = 'ctl';
+    window.__ch.length = 0;
+    CTL.aba = 'painel'; await controleRender(); await new Promise(r => setTimeout(r, 150));
+    const ligou = !!CTL.relogio;
+    /* com modal aberto ele tem de ficar quieto: redesenhar por baixo do que
+       o dono está lendo faz o texto sumir do meio da frase */
+    modal('teste', 'ti-eye', 'segurando o relógio');
+    window.__ch.length = 0;
+    await new Promise(r => setTimeout(r, 6600));
+    const comModal = window.__ch.filter(c => c === 'estado').length;
+    closeModal('mk-form');
+    /* e fora da tela do Controle ele se desliga em vez de ficar lendo disco */
+    PG = 'hub';
+    await new Promise(r => setTimeout(r, 6600));
+    return {ligou, comModal, desligou: CTL.relogio === null};
+  });
+  t('o relógio liga quando a tela abre', relogio.ligou);
+  t('com modal aberto ele não relê', relogio.comModal === 0, String(relogio.comModal));
+  t('e se desliga ao sair da tela', relogio.desligou);
 
   await browser.close();
   console.log(`\n${ok} passaram, ${fail} falharam`);
