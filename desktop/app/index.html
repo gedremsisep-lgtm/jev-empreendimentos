@@ -740,6 +740,14 @@ tfoot td{padding:10px;font-weight:800;background:var(--bg3);border-top:2px solid
     <button id="mn-cfg"  onclick="go('cfg')"><i class="ti ti-settings"></i>Configurações</button>
   </div>
   <button class="tbt" id="nv-status" onclick="go('nuvem')" title="Nuvem da JeV"><i class="ti ti-cloud-off"></i></button>
+  <button class="tbt" onclick="go('ctl')" title="Controle — a equipe de agentes" style="position:relative">
+    <i class="ti ti-settings-automation"></i>
+    <span data-ctl-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--brand);color:#fff;
+      font-size:9.5px;font-weight:900;border-radius:9px;padding:0 5px;line-height:15px">0</span></button>
+  <button class="tbt" onclick="go('vigias')" title="Vigias do negócio" style="position:relative">
+    <i class="ti ti-bell-ringing"></i>
+    <span data-vig-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
+      font-size:9.5px;font-weight:900;border-radius:9px;padding:0 5px;line-height:15px">0</span></button>
   <button class="tbt" onclick="go('cel')" title="Celular da equipe — guias recebidas" style="position:relative">
     <i class="ti ti-device-mobile"></i>
     <span data-cel-badge class="hide" style="position:absolute;top:-4px;right:-4px;background:var(--gold);color:#0A2531;
@@ -779,7 +787,10 @@ tfoot td{padding:10px;font-weight:800;background:var(--bg3);border-top:2px solid
   <div class="pg" id="pg-produtos"><div id="produtos-root"></div></div>
   <div class="pg" id="pg-info"><div id="info-root"></div></div>
   <div class="pg" id="pg-midia"><div id="midia-root"></div></div>
+  <div class="pg" id="pg-galeria"><div id="galeria-root"></div></div>
 
+  <div class="pg" id="pg-ctl"><div id="ctl-root"></div></div>
+  <div class="pg" id="pg-vigias"><div id="vigias-root"></div></div>
   <div class="pg" id="pg-cel"><div id="cel-root"></div></div>
   <div class="pg" id="pg-nuvem"><div id="nuvem-root"></div></div>
   <div class="pg" id="pg-pes"><div id="pes-root"></div></div>
@@ -882,16 +893,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.36';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.37';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
-const DB_VERSION = 7;   // v2: 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem) · v4: afiliados, roteiros e publicações · v5: garimpo de produtos · v6: cortes de vídeo · v7: vídeos montados no estúdio
+const DB_VERSION = 9;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio
 const STORES = [
   'config','contas','financeiro','recorrencias','pessoas',
   'obras','etapas','orcamento','insumos','compras','estoque','equipe','apontamentos','rdo','projetos','medicoes',
   'imoveis','veiculos','contratos','manutencoes',
   'lotes','ciclos','produtos','vendas','canais','videos',
   'guias','lixeira','sync',
-  'programas','roteiros','publicacoes','garimpos','cortes','producoes'
+  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias'
 ];
 let db = null;
 
@@ -958,9 +969,9 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','cfg','ver'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','ver'],
-  c:['hub','obras','crono','mat','mo','rdo','proj','chacara','pes','cel']
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','ver'],
+  c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
 
 /* ---------------- Navegação ---------------- */
@@ -979,10 +990,10 @@ function go(pg){
   document.getElementById('bn-'+pg)?.classList.add('on');
   renderCtxBar(u);
   window.scrollTo(0,0);
-  const R = {hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
+  const R = {vigias:vigiasRender, ctl:controleRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
-             midia:midiaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
+             midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
              ver:verRender};
   safeRender(R[pg], pg);
 }
@@ -1328,7 +1339,8 @@ const UNIDADES = [
   {id:'info', pg:'info', nome:'Infoprodutos', curto:'Infoprodutos', ic:'ti-device-laptop',
    cor:'#7B3FA0', bg:'#F2EAF9', desc:'Cursos e materiais digitais', tabs:[]},
   {id:'midia', pg:'midia', nome:'Canais de Vídeo', curto:'Mídia', ic:'ti-brand-youtube',
-   cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização', tabs:[]}
+   cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização',
+   tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]}
 ];
 const UN_GERAL = {id:'geral', nome:'Administrativo / Geral', curto:'Geral', ic:'ti-building-store', cor:'#5B6260', bg:'#EFEDE7'};
 function unInfo(id){ return UNIDADES.find(u=>u.id===id) || UN_GERAL; }
@@ -20469,6 +20481,2203 @@ async function obraExportar(id){
   const base = String(o.cod || o.nome).replace(/[^\w\-]+/g,'_').slice(0,40);
   baixarArquivo(JSON.stringify(dump, null, 1), `obra_${base}.jevobra`, 'application/json');
   toast('Obra exportada. O arquivo só adiciona quando for importado — nunca apaga nada.');
+}
+/* =========================================================================
+   46_visual.js — os visuais de número, desenhados por código.
+
+   A REGRA QUE VALE DINHEIRO
+   Vídeo gerado por IA custa 20 créditos a cada 10 segundos — um vídeo de
+   10 minutos passa de 1.200 créditos. Visual de finanças e de obra não é
+   filmagem: é dado desenhado. Tabela, gráfico, contador, escada e régua
+   saem de uma página HTML por custo ZERO. Crédito só se gasta na narração.
+
+   E não é só o preço: vídeo de IA é o perfil que o YouTube passou a remover
+   em janeiro de 2026 como conteúdo inautêntico.
+
+   COMO A PÁGINA FUNCIONA
+   Ela NUNCA anima pelo relógio. Expõe window.TOTAL_FRAMES e window.setFrame(f),
+   e quem manda no tempo é o renderizador. Animação por relógio perde quadro
+   quando a máquina engasga, e o áudio descola.
+
+   Tudo aqui é texto: visualHTML() devolve a página pronta. Quem grava o
+   arquivo e fotografa é o aplicativo (desktop/quadros.js).
+   ========================================================================= */
+
+/* A identidade não muda de vídeo para vídeo. Template que varia a cada peça
+   é uma das assinaturas que o YouTube usa para achar fazenda de conteúdo —
+   mas o contrário também vale: cor trocada a cada peça destrói a marca. */
+const VIS_CORES = {
+  fundo:     '#0f1318',
+  superficie:'#171c23',
+  linha:     '#2a313a',
+  texto:     '#e7ebef',
+  secundario:'#a3adb8',
+  destaque:  '#8ab4e0',
+  resultado: '#6cbd96',
+  subtracao: '#e69080',
+  chave:     '#d9a951',
+};
+
+/* Fonte externa é bloqueada no ambiente de render: só as que existem na
+   máquina. DejaVu vem com o Python portátil e com quase todo Linux; as
+   outras são a escada de reserva no Windows. */
+const VIS_FONTE = "'DejaVu Sans', 'Segoe UI', Arial, sans-serif";
+const VIS_MONO  = "'DejaVu Sans Mono', 'Consolas', 'Courier New', monospace";
+
+const VIS_FPS = 30;
+
+/* ---------------------------------------------------------- utilidades --- */
+
+function visEsc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function visNum(v, casas){
+  const n = Number(v) || 0;
+  return n.toLocaleString('pt-BR', {minimumFractionDigits: casas==null?2:casas,
+                                    maximumFractionDigits: casas==null?2:casas});
+}
+
+/* quantos quadros um trecho de N segundos ocupa */
+function visQuadros(segundos, fps){
+  return Math.max(1, Math.round((Number(segundos)||0) * (Number(fps)||VIS_FPS)));
+}
+
+/* A animação serve ao raciocínio, não ao enfeite: o número sobe rápido e
+   desacelera, como quem chega a uma conclusão. */
+function visEaseOut(t){
+  const x = Math.min(1, Math.max(0, Number(t)||0));
+  return 1 - Math.pow(1 - x, 3);
+}
+
+/* ------------------------------------------------------------ o esqueleto */
+
+/* O CSS e as funções que TODA página de visual carrega. Sai como texto para
+   dentro do <head>, porque a página tem de ser um arquivo só — o
+   renderizador abre por file:// e nada externo carrega. */
+function visBaseCSS(){
+  const c = VIS_CORES;
+  return `
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:1920px;height:1080px;overflow:hidden}
+    body{background:${c.fundo};color:${c.texto};font-family:${VIS_FONTE};
+         font-size:28px;line-height:1.4;-webkit-font-smoothing:antialiased}
+    .palco{position:relative;width:1920px;height:1080px;padding:84px 104px;display:flex;
+           flex-direction:column}
+    .rot{font-family:${VIS_MONO};font-size:22px;letter-spacing:.22em;text-transform:uppercase;
+         color:${c.secundario};font-weight:700}
+    h1{font-size:64px;line-height:1.1;font-weight:700;letter-spacing:-.02em;margin-top:18px;
+       max-width:1500px}
+    .n{font-family:${VIS_MONO};font-variant-numeric:tabular-nums;font-weight:700}
+    .neg{color:${c.subtracao}}
+    .pos{color:${c.resultado}}
+    .chave{color:${c.chave}}
+    .dest{color:${c.destaque}}
+    /* a premissa fica sempre visível: número sem premissa é número sem fonte */
+    .premissa{position:absolute;left:104px;bottom:52px;font-family:${VIS_MONO};font-size:19px;
+              color:${c.secundario};letter-spacing:.04em;max-width:1500px}
+    .fonte{position:absolute;right:104px;bottom:52px;font-family:${VIS_MONO};font-size:19px;
+           color:${c.secundario};letter-spacing:.04em;text-align:right;max-width:900px}
+    .linha{height:1px;background:${c.linha};width:100%}
+  `;
+}
+
+/* monta o arquivo inteiro */
+function visPagina(css, corpo, script, total){
+  return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<style>${visBaseCSS()}${css||''}</style></head>
+<body><div class="palco" id="palco">${corpo||''}</div>
+<script>
+window.TOTAL_FRAMES = ${Number(total)||1};
+function easeOut(t){var x=Math.min(1,Math.max(0,t));return 1-Math.pow(1-x,3);}
+function nbr(v,c){c=(c==null?2:c);return Number(v||0).toLocaleString('pt-BR',
+  {minimumFractionDigits:c,maximumFractionDigits:c});}
+/* faixa: devolve 0..1 do trecho que começa em "ini" e dura "dur" quadros */
+function faixa(f,ini,dur){ if(dur<=0) return f>=ini?1:0;
+  return Math.min(1,Math.max(0,(f-ini)/dur)); }
+${script||''}
+if(typeof window.setFrame!=='function'){ window.setFrame=function(){}; }
+window.setFrame(0);
+<\/script></body></html>`;
+}
+
+/* ============================================================ os visuais ==
+   Cada um recebe uma ficha e devolve {html, segundos, quadros}.
+   As cinco formas cobrem o que um número precisa mostrar:
+     contador  — uma manchete virando reais no bolso de alguém
+     escada    — degraus comparáveis, com uma régua atravessando
+     tabela    — camadas que se subtraem até o resultado
+     barras    — quanto cada opção custa, lado a lado
+     regua     — um valor caindo dentro ou fora de um limite
+   ========================================================================= */
+
+/* ---- contador: o número sobe e desacelera, com as etapas embaixo ------- */
+function visContador(f){
+  const fps = Number(f.fps)||VIS_FPS;
+  const seg = Number(f.segundos)||6;
+  const total = visQuadros(seg, fps);
+  const etapas = Array.isArray(f.etapas) ? f.etapas : [];
+  const entrada = Math.round(total*0.45);   /* o número leva 45% do tempo subindo */
+
+  const corpo = `
+    <div class="rot">${visEsc(f.rotulo||'')}</div>
+    <h1>${visEsc(f.titulo||'')}</h1>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="n" id="vl" style="font-size:190px;letter-spacing:-.03em"></div>
+      <div id="sub" style="font-size:34px;color:${VIS_CORES.secundario};margin-top:10px">${visEsc(f.legenda||'')}</div>
+      <div id="etapas" style="margin-top:56px;display:flex;gap:64px">
+        ${etapas.map((e,i)=>`<div class="et" data-i="${i}" style="opacity:0">
+          <div class="rot" style="font-size:19px">${visEsc(e.rotulo||'')}</div>
+          <div class="n ${e.cor||'chave'}" style="font-size:52px;margin-top:8px">${visEsc(e.valor||'')}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    ${f.premissa?`<div class="premissa">${visEsc(f.premissa)}</div>`:''}
+    ${f.fonte?`<div class="fonte">${visEsc(f.fonte)}</div>`:''}`;
+
+  const script = `
+    var ALVO=${Number(f.valor)||0}, CASAS=${f.casas==null?2:Number(f.casas)};
+    var PRE=${JSON.stringify(f.prefixo||'')}, POS=${JSON.stringify(f.sufixo||'')};
+    var ENTRADA=${entrada}, TOTAL=${total}, NET=${etapas.length};
+    window.setFrame=function(fr){
+      var t=easeOut(faixa(fr,0,ENTRADA));
+      document.getElementById('vl').textContent = PRE + nbr(ALVO*t,CASAS) + POS;
+      /* as etapas entram escalonadas DEPOIS que o número fecha: primeiro o
+         resultado, depois a conta que levou até ele */
+      for(var i=0;i<NET;i++){
+        var ini=ENTRADA+Math.round((TOTAL-ENTRADA)*0.12*(i+1));
+        var o=faixa(fr,ini,Math.round(TOTAL*0.10));
+        var el=document.querySelector('.et[data-i="'+i+'"]');
+        if(el){ el.style.opacity=o; el.style.transform='translateY('+((1-o)*14).toFixed(1)+'px)'; }
+      }
+    };`;
+
+  return {html: visPagina('', corpo, script, total), segundos: seg, quadros: total, forma:'contador'};
+}
+
+/* ---- escada: degraus em ordem, com uma linha de limite atravessando ---- */
+function visEscada(f){
+  const fps = Number(f.fps)||VIS_FPS;
+  const seg = Number(f.segundos)||8;
+  const total = visQuadros(seg, fps);
+  const degraus = Array.isArray(f.degraus) ? f.degraus : [];
+  const maior = Math.max(...degraus.map(d=>Number(d.valor)||0), Number(f.limite)||0, 1);
+
+  const corpo = `
+    <div class="rot">${visEsc(f.rotulo||'')}</div>
+    <h1>${visEsc(f.titulo||'')}</h1>
+    <div style="flex:1;position:relative;margin-top:44px">
+      <div id="limite" style="position:absolute;left:0;right:0;border-top:2px dashed ${VIS_CORES.subtracao};opacity:0">
+        <div class="rot" style="font-size:19px;color:${VIS_CORES.subtracao};margin-top:8px">${visEsc(f.limiteRotulo||'')}</div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;gap:38px;height:100%">
+        ${degraus.map((d,i)=>`<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">
+          <div class="n" data-vl="${i}" style="font-size:40px;text-align:center;margin-bottom:12px;color:${d.cor||VIS_CORES.chave}"></div>
+          <div data-bar="${i}" style="background:${d.cor||VIS_CORES.destaque};height:0;border-radius:4px 4px 0 0"></div>
+          <div class="rot" style="font-size:18px;text-align:center;margin-top:14px;min-height:52px">${visEsc(d.rotulo||'')}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    ${f.premissa?`<div class="premissa">${visEsc(f.premissa)}</div>`:''}
+    ${f.fonte?`<div class="fonte">${visEsc(f.fonte)}</div>`:''}`;
+
+  const script = `
+    var VALS=${JSON.stringify(degraus.map(d=>Number(d.valor)||0))};
+    var MAIOR=${maior}, TOTAL=${total}, LIM=${Number(f.limite)||0};
+    var SUF=${JSON.stringify(f.sufixo||'')}, CASAS=${f.casas==null?2:Number(f.casas)};
+    var ALTURA=0;
+    window.setFrame=function(fr){
+      var caixa=document.querySelector('[data-bar="0"]');
+      if(!ALTURA){ ALTURA = document.getElementById('palco').clientHeight - 420; }
+      for(var i=0;i<VALS.length;i++){
+        /* cada degrau entra um pouco depois do anterior: o olho acompanha a
+           comparação em vez de receber tudo de uma vez */
+        var ini=Math.round(TOTAL*0.06*i);
+        var t=easeOut(faixa(fr,ini,Math.round(TOTAL*0.34)));
+        var b=document.querySelector('[data-bar="'+i+'"]');
+        var v=document.querySelector('[data-vl="'+i+'"]');
+        if(b) b.style.height=(ALTURA*(VALS[i]/MAIOR)*t).toFixed(1)+'px';
+        if(v) v.textContent=nbr(VALS[i]*t,CASAS)+SUF;
+      }
+      if(LIM>0){
+        var el=document.getElementById('limite');
+        var o=faixa(fr,Math.round(TOTAL*0.52),Math.round(TOTAL*0.12));
+        el.style.opacity=o;
+        el.style.bottom=(ALTURA*(LIM/MAIOR)+108).toFixed(1)+'px';
+      }
+    };`;
+
+  return {html: visPagina('', corpo, script, total), segundos: seg, quadros: total, forma:'escada'};
+}
+
+/* ---- tabela: camadas que se subtraem, com o resumo recalculando -------- */
+function visTabela(f){
+  const fps = Number(f.fps)||VIS_FPS;
+  const seg = Number(f.segundos)||10;
+  const total = visQuadros(seg, fps);
+  const linhas = Array.isArray(f.linhas) ? f.linhas : [];
+
+  const corpo = `
+    <div class="rot">${visEsc(f.rotulo||'')}</div>
+    <h1>${visEsc(f.titulo||'')}</h1>
+    <div style="flex:1;margin-top:40px;display:flex;flex-direction:column;justify-content:center">
+      <table style="width:100%;border-collapse:collapse">
+        ${linhas.map((l,i)=>`<tr data-lin="${i}" style="opacity:0">
+          <td style="padding:16px 0;border-bottom:1px solid ${VIS_CORES.linha};font-size:36px">${visEsc(l.desc||'')}</td>
+          <td class="n ${Number(l.valor)<0?'neg':''}" style="padding:16px 0;border-bottom:1px solid ${VIS_CORES.linha};
+              font-size:40px;text-align:right;width:340px">${Number(l.valor)<0?'−':''}${visNum(Math.abs(Number(l.valor)||0), f.casas)}</td>
+        </tr>`).join('')}
+      </table>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:34px">
+        <div class="rot" style="font-size:24px">${visEsc(f.resumoRotulo||'Resultado')}</div>
+        <div class="n pos" id="res" style="font-size:78px"></div>
+      </div>
+    </div>
+    ${f.premissa?`<div class="premissa">${visEsc(f.premissa)}</div>`:''}
+    ${f.fonte?`<div class="fonte">${visEsc(f.fonte)}</div>`:''}`;
+
+  const script = `
+    var VALS=${JSON.stringify(linhas.map(l=>Number(l.valor)||0))};
+    var TOTAL=${total}, CASAS=${f.casas==null?2:Number(f.casas)};
+    var PRE=${JSON.stringify(f.prefixo||'')};
+    window.setFrame=function(fr){
+      var soma=0;
+      for(var i=0;i<VALS.length;i++){
+        var ini=Math.round(TOTAL*0.62*(i/Math.max(1,VALS.length)));
+        var o=faixa(fr,ini,Math.round(TOTAL*0.10));
+        var tr=document.querySelector('[data-lin="'+i+'"]');
+        if(tr){ tr.style.opacity=o; }
+        /* o resumo recalcula conforme a camada entra — é isso que faz o
+           espectador ver a subtração acontecendo, e não só o resultado */
+        soma += VALS[i]*o;
+      }
+      document.getElementById('res').textContent = PRE + nbr(soma,CASAS);
+    };`;
+
+  return {html: visPagina('', corpo, script, total), segundos: seg, quadros: total, forma:'tabela'};
+}
+
+/* ---- régua: um valor caindo dentro ou fora de um limite ---------------- */
+function visRegua(f){
+  const fps = Number(f.fps)||VIS_FPS;
+  const seg = Number(f.segundos)||7;
+  const total = visQuadros(seg, fps);
+  const lim = Number(f.limite)||0;
+  const val = Number(f.valor)||0;
+  const max = Math.max(lim*2, val*1.25, 1);
+  const dentro = val <= lim;
+
+  const corpo = `
+    <div class="rot">${visEsc(f.rotulo||'')}</div>
+    <h1>${visEsc(f.titulo||'')}</h1>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div style="position:relative;height:96px;background:${VIS_CORES.superficie};border-radius:8px;overflow:hidden">
+        <div style="position:absolute;top:0;bottom:0;left:0;width:${(lim/max*100).toFixed(2)}%;
+             background:${VIS_CORES.resultado}22;border-right:3px solid ${VIS_CORES.resultado}"></div>
+        <div id="pont" style="position:absolute;top:0;bottom:0;width:6px;background:${dentro?VIS_CORES.resultado:VIS_CORES.subtracao};left:0"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:20px">
+        <div class="rot" style="font-size:20px;color:${VIS_CORES.resultado}">${visEsc(f.limiteRotulo||'limite')} · ${visNum(lim, f.casas)}${visEsc(f.sufixo||'')}</div>
+        <div class="rot" style="font-size:20px">${visNum(max, f.casas)}${visEsc(f.sufixo||'')}</div>
+      </div>
+      <div style="margin-top:56px;display:flex;align-items:baseline;gap:26px">
+        <div class="n ${dentro?'pos':'neg'}" id="vl" style="font-size:112px"></div>
+        <div id="vered" class="rot" style="font-size:28px;opacity:0;color:${dentro?VIS_CORES.resultado:VIS_CORES.subtracao}">
+          ${visEsc(dentro ? (f.dentroTexto||'dentro do limite') : (f.foraTexto||'fora do limite'))}</div>
+      </div>
+    </div>
+    ${f.premissa?`<div class="premissa">${visEsc(f.premissa)}</div>`:''}
+    ${f.fonte?`<div class="fonte">${visEsc(f.fonte)}</div>`:''}`;
+
+  const script = `
+    var VAL=${val}, MAX=${max}, TOTAL=${total}, CASAS=${f.casas==null?2:Number(f.casas)};
+    var SUF=${JSON.stringify(f.sufixo||'')};
+    window.setFrame=function(fr){
+      var t=easeOut(faixa(fr,0,Math.round(TOTAL*0.55)));
+      document.getElementById('pont').style.left=((VAL/MAX)*t*100).toFixed(3)+'%';
+      document.getElementById('vl').textContent=nbr(VAL*t,CASAS)+SUF;
+      document.getElementById('vered').style.opacity=faixa(fr,Math.round(TOTAL*0.62),Math.round(TOTAL*0.12));
+    };`;
+
+  return {html: visPagina('', corpo, script, total), segundos: seg, quadros: total, forma:'regua'};
+}
+
+/* ---- barras: quanto cada opção custa, lado a lado ---------------------- */
+function visBarras(f){
+  const fps = Number(f.fps)||VIS_FPS;
+  const seg = Number(f.segundos)||8;
+  const total = visQuadros(seg, fps);
+  const itens = Array.isArray(f.itens) ? f.itens : [];
+  const maior = Math.max(...itens.map(i=>Number(i.valor)||0), 1);
+
+  const corpo = `
+    <div class="rot">${visEsc(f.rotulo||'')}</div>
+    <h1>${visEsc(f.titulo||'')}</h1>
+    <div style="flex:1;margin-top:44px;display:flex;flex-direction:column;justify-content:center;gap:26px">
+      ${itens.map((it,i)=>`<div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div style="font-size:32px">${visEsc(it.rotulo||'')}</div>
+          <div class="n" data-vl="${i}" style="font-size:38px;color:${it.cor||VIS_CORES.chave}"></div>
+        </div>
+        <div style="height:26px;background:${VIS_CORES.superficie};border-radius:4px;overflow:hidden">
+          <div data-bar="${i}" style="height:100%;width:0;background:${it.cor||VIS_CORES.destaque}"></div>
+        </div>
+      </div>`).join('')}
+    </div>
+    ${f.premissa?`<div class="premissa">${visEsc(f.premissa)}</div>`:''}
+    ${f.fonte?`<div class="fonte">${visEsc(f.fonte)}</div>`:''}`;
+
+  const script = `
+    var VALS=${JSON.stringify(itens.map(i=>Number(i.valor)||0))};
+    var MAIOR=${maior}, TOTAL=${total}, CASAS=${f.casas==null?2:Number(f.casas)};
+    var PRE=${JSON.stringify(f.prefixo||'')}, SUF=${JSON.stringify(f.sufixo||'')};
+    window.setFrame=function(fr){
+      for(var i=0;i<VALS.length;i++){
+        var ini=Math.round(TOTAL*0.07*i);
+        var t=easeOut(faixa(fr,ini,Math.round(TOTAL*0.40)));
+        var b=document.querySelector('[data-bar="'+i+'"]');
+        var v=document.querySelector('[data-vl="'+i+'"]');
+        if(b) b.style.width=((VALS[i]/MAIOR)*t*100).toFixed(2)+'%';
+        if(v) v.textContent=PRE+nbr(VALS[i]*t,CASAS)+SUF;
+      }
+    };`;
+
+  return {html: visPagina('', corpo, script, total), segundos: seg, quadros: total, forma:'barras'};
+}
+
+/* ---------------------------------------------------- o despachante ----- */
+
+const VIS_FORMAS = {
+  contador: visContador,
+  escada:   visEscada,
+  tabela:   visTabela,
+  regua:    visRegua,
+  barras:   visBarras,
+};
+
+/* Devolve {ok, html, segundos, quadros, forma} ou {ok:false, motivo}. */
+function visualHTML(ficha){
+  if(!ficha || !ficha.forma) return {ok:false, motivo:'o visual não disse qual forma usar'};
+  const fn = VIS_FORMAS[ficha.forma];
+  if(!fn) return {ok:false, motivo:`forma desconhecida: ${ficha.forma}. Use ${Object.keys(VIS_FORMAS).join(', ')}.`};
+  try{
+    const r = fn(ficha);
+    return {ok:true, ...r};
+  }catch(e){
+    return {ok:false, motivo:String(e && e.message || e)};
+  }
+}
+
+/* Uma peça inteira: a lista de visuais do roteiro vira lista de páginas.
+   Também soma o tempo, que é o que permite conferir contra a narração
+   ANTES de gastar crédito gerando o áudio. */
+function visualPeca(fichas){
+  const lista = Array.isArray(fichas) ? fichas : [];
+  const saida = [], erros = [];
+  let segundos = 0;
+  lista.forEach((f,i)=>{
+    const r = visualHTML(f);
+    if(!r.ok){ erros.push(`visual ${i+1}: ${r.motivo}`); return; }
+    saida.push({html:r.html, segundos:r.segundos, quadros:r.quadros, forma:r.forma,
+                titulo:f.titulo||''});
+    segundos += r.segundos;
+  });
+  return {ok: erros.length===0, visuais:saida, segundos, erros,
+          quadros: saida.reduce((s,v)=>s+v.quadros,0)};
+}
+
+/* A conta que decide se vale a pena: o que a IA cobraria por este mesmo
+   vídeo, contra o que custa desenhar. Serve para a tela mostrar, porque
+   número na cara é o que faz a regra ser obedecida. */
+function visualEconomia(segundos){
+  const s = Number(segundos)||0;
+  const blocos = Math.ceil(s/10);
+  const creditosIA = blocos*20;      /* 20 créditos por bloco de 10 s */
+  return {segundos:s, blocos, creditosIA, creditosAqui:0, economia:creditosIA};
+}
+/* =========================================================================
+   47_galeria.js — a Midiateca: onde os vídeos da casa ficam para ver.
+
+   POR QUE NÃO GUARDA O VÍDEO DENTRO DO BANCO
+   Um vídeo de um minuto em 1920x1080 passa de 10 MB. Gravar isso como
+   dataURL dentro do IndexedDB incha o banco, entope a sincronização da
+   nuvem (que sobe registro a registro) e trava a tela na hora de abrir.
+   Então a regra aqui é: o BANCO guarda a FICHA, o disco guarda o arquivo.
+
+   Isso tem uma consequência honesta, e ela está escrita na tela: a ficha
+   sincroniza entre os aparelhos, o arquivo não. Quem abrir a midiateca em
+   outro computador vê o vídeo na lista, com todos os dados, e um aviso de
+   que o arquivo está na outra máquina.
+
+   No aplicativo o vídeo toca direto do disco. No navegador, sem aplicativo,
+   o arquivo precisa ser escolhido na hora — o navegador não deixa uma
+   página abrir um caminho do disco sozinha, e isso é proteção, não defeito.
+   ========================================================================= */
+
+const GAL_TIPOS = ['Vídeo da obra', 'Vídeo de produto', 'Peça para canal',
+                   'Registro de campo', 'Apresentação', 'Outro'];
+
+let GAL = { busca: '', tipo: '', obra: '', tocando: null, temp: {} };
+
+/* ---------- utilidades ---------- */
+
+function galEhVideo(nome){
+  return /\.(mp4|webm|mov|m4v|mkv|avi)$/i.test(String(nome || ''));
+}
+
+function galDuracao(s){
+  const n = Math.max(0, Math.round(Number(s) || 0));
+  const m = Math.floor(n / 60), r = n % 60;
+  return m + ':' + String(r).padStart(2, '0');
+}
+
+function galTamanho(b){
+  const n = Number(b) || 0;
+  if (!n) return '—';
+  if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+
+/* o aplicativo consegue abrir caminho do disco; o navegador não */
+function galNoApp(){
+  const d = (typeof APP === 'function') ? APP() : null;
+  return !!d;
+}
+
+/* De onde o <video> vai ler. Três casos, e cada um com um motivo:
+   1. o dono acabou de escolher o arquivo nesta sessão -> URL temporária
+   2. estamos no aplicativo e a ficha tem caminho       -> lê do disco
+   3. nenhum dos dois                                   -> não dá para tocar */
+function galFonte(f){
+  if (!f) return '';
+  if (GAL.temp[f.id]) return GAL.temp[f.id];
+  if (f.caminho && galNoApp()) return 'file:///' + String(f.caminho).replace(/\\/g, '/').replace(/^\/+/, '');
+  return '';
+}
+
+/* ---------- a tela ---------- */
+
+async function galeriaRender(){
+  const itens = (await dbGetAll('midiateca')).sort((a, b) =>
+    String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+  const obras = await dbGetAll('obras');
+  const mapaObra = {}; obras.forEach(o => mapaObra[o.id] = o);
+
+  const filtrados = itens.filter(f => {
+    if (GAL.tipo && f.tipo !== GAL.tipo) return false;
+    if (GAL.obra && Number(f.obraId) !== Number(GAL.obra)) return false;
+    if (GAL.busca){
+      const t = (String(f.titulo || '') + ' ' + String(f.descricao || '') + ' ' +
+                 String(f.tags || '')).toLowerCase();
+      if (!t.includes(GAL.busca.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  const bytes = itens.reduce((s, f) => s + num(f.bytes), 0);
+  const seg = itens.reduce((s, f) => s + num(f.duracao), 0);
+
+  let html = `<div class="ph"><div class="ic"><i class="ti ti-photo-video"></i></div>
+    <div><h1>Midiateca</h1><p>Os vídeos da casa, num lugar só</p></div>
+    <div class="sp"></div>
+    <button class="btn gh" onclick="galPasta()"><i class="ti ti-folder-open"></i>Abrir a pasta</button>
+    <button class="btn" onclick="galForm()"><i class="ti ti-video-plus"></i>Guardar um vídeo</button></div>`;
+
+  html += `<div class="kg">
+    <div class="kc bl"><div class="lb"><i class="ti ti-movie"></i>Vídeos</div>
+      <div class="vl">${itens.length}</div><div class="sb">${filtrados.length} na lista agora</div></div>
+    <div class="kc gn"><div class="lb"><i class="ti ti-clock-play"></i>Tempo total</div>
+      <div class="vl">${galDuracao(seg)}</div><div class="sb">somando todas as peças</div></div>
+    <div class="kc am"><div class="lb"><i class="ti ti-database"></i>No disco</div>
+      <div class="vl">${galTamanho(bytes)}</div><div class="sb">o banco guarda só a ficha</div></div>
+  </div>`;
+
+  if (!itens.length){
+    html += `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-video-off"></i>
+      <b>Nenhum vídeo guardado ainda</b>Guarde aqui as peças do Estúdio, os vídeos da obra e o que
+      for gravado em campo. A ficha fica no sistema e sincroniza entre os aparelhos; o arquivo
+      continua no disco de quem gravou.
+      <div class="brow" style="justify-content:center;margin-top:14px">
+        <button class="btn" onclick="galForm()"><i class="ti ti-video-plus"></i>Guardar o primeiro</button>
+      </div></div></div></div>`;
+  } else {
+    html += `<div class="card"><div class="bd">
+      <div class="fg2">
+        <div class="fg"><label>Procurar</label>
+          <input id="gal-busca" value="${esc(GAL.busca)}" placeholder="Título, descrição ou etiqueta"
+            oninput="GAL.busca=this.value;galeriaRender()"></div>
+        <div class="fg"><label>Tipo</label><select onchange="GAL.tipo=this.value;galeriaRender()">
+          <option value="">Todos</option>
+          ${GAL_TIPOS.map(t => `<option ${GAL.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select></div>
+        <div class="fg"><label>Obra</label><select onchange="GAL.obra=this.value;galeriaRender()">
+          <option value="">Todas</option>
+          ${obras.map(o => `<option value="${o.id}" ${Number(GAL.obra) === o.id ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}
+        </select></div>
+      </div></div></div>`;
+
+    html += `<div class="kg" style="grid-template-columns:repeat(auto-fill,minmax(330px,1fr))">`;
+    for (const f of filtrados){
+      const fonte = galFonte(f);
+      const ob = f.obraId ? mapaObra[f.obraId] : null;
+      html += `<div class="card"><div class="bd" style="padding:0;overflow:hidden">
+        <div style="position:relative;background:#0f1318;aspect-ratio:16/9;display:flex;
+                    align-items:center;justify-content:center">
+          ${fonte
+            ? `<video src="${esc(fonte)}" controls preload="metadata"
+                 style="width:100%;height:100%;object-fit:contain;background:#0f1318"></video>`
+            : `<div style="text-align:center;padding:18px">
+                 <i class="ti ti-video-off" style="font-size:34px;color:var(--text3)"></i>
+                 <div class="tt" style="margin-top:8px;line-height:1.6">O arquivo está em outro
+                 aparelho.<br>A ficha veio pela nuvem; o vídeo, não.</div>
+                 <button class="btn gh sm" style="margin-top:10px" onclick="galEscolher(${f.id})">
+                   <i class="ti ti-folder"></i>Apontar o arquivo</button></div>`}
+        </div>
+        <div style="padding:13px 15px">
+          <div style="font-weight:600;font-size:14.5px;line-height:1.35">${esc(f.titulo || 'Sem título')}</div>
+          <div class="tt" style="margin-top:5px">
+            ${f.tipo ? esc(f.tipo) : 'Outro'}${f.duracao ? ' · ' + galDuracao(f.duracao) : ''}${f.bytes ? ' · ' + galTamanho(f.bytes) : ''}
+            ${ob ? '<br>Obra: ' + esc(ob.nome) : ''}
+          </div>
+          ${f.descricao ? `<div class="tt" style="margin-top:7px;line-height:1.6">${esc(f.descricao)}</div>` : ''}
+          <div class="brow" style="margin-top:11px">
+            <button class="ib" title="Editar" onclick="galForm(${f.id})"><i class="ti ti-pencil"></i></button>
+            ${f.caminho && galNoApp() ? `<button class="ib" title="Abrir a pasta" onclick="galAbrirPasta(${f.id})"><i class="ti ti-folder-open"></i></button>` : ''}
+            <span class="sp"></span>
+            <button class="ib" title="Remover da lista" onclick="galDel(${f.id})"><i class="ti ti-trash"></i></button>
+          </div>
+        </div></div></div>`;
+    }
+    html += `</div>`;
+
+    if (!galNoApp()){
+      html += `<div class="al ai" style="margin-top:14px"><i class="ti ti-info-circle"></i><div>
+        Você está vendo o sistema fora do aplicativo. O navegador não deixa uma página abrir um
+        arquivo do disco por conta própria — é proteção dele, não defeito daqui. Para tocar um
+        vídeo agora, use <b>Apontar o arquivo</b>; no aplicativo instalado ele toca sozinho.</div></div>`;
+    }
+  }
+
+  document.getElementById('galeria-root').innerHTML = html;
+}
+
+/* ---------- guardar e editar a ficha ---------- */
+
+async function galForm(id){
+  const f = id ? await dbGet('midiateca', id) : null;
+  const obras = await dbGetAll('obras');
+  modal(f ? 'Editar o vídeo' : 'Guardar um vídeo', 'ti-video-plus', `
+    <div class="fg"><label>Título <span class="rq">*</span></label>
+      <input id="gl-tit" value="${esc(f ? f.titulo : '')}" placeholder="Ex.: Loteamento Jardim Água Branca — as 9 etapas em 3D"></div>
+    <div class="fg2">
+      <div class="fg"><label>Tipo</label><select id="gl-tipo">
+        ${GAL_TIPOS.map(t => `<option ${f && f.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Obra (opcional)</label><select id="gl-obra">
+        <option value="">Nenhuma</option>
+        ${obras.map(o => `<option value="${o.id}" ${f && Number(f.obraId) === o.id ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="fg"><label>Descrição</label>
+      <textarea id="gl-desc" placeholder="O que este vídeo mostra, e para que serve">${esc(f ? f.descricao : '')}</textarea></div>
+    <div class="fg"><label>Etiquetas</label>
+      <input id="gl-tags" value="${esc(f ? f.tags : '')}" placeholder="separadas por vírgula"></div>
+    <div class="drop" onclick="document.getElementById('gl-file').click()">
+      <i class="ti ti-video"></i><b id="gl-nome">${f && f.nomeArq ? esc(f.nomeArq) : 'Escolher o arquivo de vídeo'}</b>
+      <span class="tt">O arquivo fica no disco. O sistema guarda o caminho, a duração e o tamanho.</span></div>
+    <input type="file" id="gl-file" accept="video/*" class="hide" onchange="galArquivo(this)">
+    <div id="gl-err"></div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn" onclick="galSalvar(${id || ''})"><i class="ti ti-check"></i>Guardar</button>`);
+  window.__GLARQ = f ? {caminho: f.caminho, nomeArq: f.nomeArq, bytes: f.bytes,
+                        duracao: f.duracao, largura: f.largura, altura: f.altura} : null;
+}
+
+/* lê o arquivo escolhido e tira dele o que o sistema precisa saber */
+async function galArquivo(inp){
+  const a = inp.files && inp.files[0];
+  if (!a) return;
+  if (!galEhVideo(a.name)){
+    document.getElementById('gl-err').innerHTML =
+      `<div class="al ae"><i class="ti ti-alert-circle"></i>Isso não parece um arquivo de vídeo.</div>`;
+    return;
+  }
+  document.getElementById('gl-nome').textContent = a.name + ' (' + galTamanho(a.size) + ')';
+  /* a duração e a medida saem do próprio navegador, sem programa de fora */
+  const url = URL.createObjectURL(a);
+  const v = document.createElement('video');
+  v.preload = 'metadata';
+  const medidas = await new Promise(res => {
+    v.onloadedmetadata = () => res({d: v.duration, w: v.videoWidth, h: v.videoHeight});
+    v.onerror = () => res({d: 0, w: 0, h: 0});
+    v.src = url;
+  });
+  window.__GLARQ = {
+    /* a.path existe no Electron e é o caminho de verdade; no navegador não
+       existe, e aí guardamos só o nome — a ficha vale, o arquivo não toca */
+    caminho: a.path || '',
+    nomeArq: a.name, bytes: a.size,
+    duracao: Math.round(medidas.d || 0), largura: medidas.w, altura: medidas.h,
+    urlTemp: url,
+  };
+  if (!a.path){
+    document.getElementById('gl-err').innerHTML =
+      `<div class="al aw"><i class="ti ti-alert-triangle"></i>Fora do aplicativo o navegador não
+       informa o caminho do arquivo. A ficha será guardada e o vídeo toca nesta sessão; para tocar
+       sempre, guarde pelo aplicativo instalado.</div>`;
+  }
+}
+
+async function galSalvar(id){
+  const titulo = val('gl-tit');
+  if (!titulo){
+    document.getElementById('gl-err').innerHTML =
+      `<div class="al ae"><i class="ti ti-alert-circle"></i>Dê um título ao vídeo.</div>`;
+    return;
+  }
+  const a = window.__GLARQ || {};
+  const d = {
+    titulo, tipo: val('gl-tipo'), descricao: val('gl-desc'), tags: val('gl-tags'),
+    obraId: val('gl-obra') ? Number(val('gl-obra')) : null,
+    caminho: a.caminho || '', nomeArq: a.nomeArq || '', bytes: num(a.bytes),
+    duracao: num(a.duracao), largura: num(a.largura), altura: num(a.altura),
+  };
+  let novoId = id;
+  if (id){
+    const velho = await dbGet('midiateca', id);
+    await dbPut('midiateca', {...velho, ...d});
+  } else {
+    d.criadoEm = new Date().toISOString();
+    novoId = await dbAdd('midiateca', d);
+  }
+  /* a URL temporária não cabe no banco, mas serve para tocar já nesta sessão */
+  if (a.urlTemp) GAL.temp[novoId] = a.urlTemp;
+  window.__GLARQ = null;
+  closeModal('mk-form');
+  toast('Vídeo guardado na midiateca.');
+  galeriaRender();
+}
+
+/* apontar o arquivo de uma ficha que veio de outro aparelho */
+function galEscolher(id){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'video/*';
+  inp.onchange = async () => {
+    const a = inp.files && inp.files[0];
+    if (!a) return;
+    GAL.temp[id] = URL.createObjectURL(a);
+    if (a.path){
+      const f = await dbGet('midiateca', id);
+      await dbPut('midiateca', {...f, caminho: a.path, nomeArq: a.name, bytes: a.size});
+    }
+    galeriaRender();
+  };
+  inp.click();
+}
+
+function galDel(id){
+  confirmar('Tirar da midiateca',
+    'A ficha sai do sistema. <b>O arquivo de vídeo no disco não é apagado</b> — só o registro daqui.',
+    async () => { await dbDel('midiateca', id); delete GAL.temp[id]; toast('Removido da lista.', 'aw'); galeriaRender(); });
+}
+
+async function galAbrirPasta(id){
+  const f = await dbGet('midiateca', id);
+  const d = (typeof APP === 'function') ? APP() : null;
+  if (d && d.estAbrirPasta && f.caminho){ d.estAbrirPasta(f.caminho); return; }
+  toast('Isso só funciona dentro do aplicativo.', 'aw');
+}
+
+async function galPasta(){
+  const d = (typeof APP === 'function') ? APP() : null;
+  if (d && d.estAbrirPasta){ d.estAbrirPasta(''); return; }
+  toast('A pasta de vídeos só abre pelo aplicativo instalado.', 'aw');
+}
+
+/* ---------- a ponte com o Estúdio ----------
+   Uma peça montada no Estúdio deve poder ir para a midiateca sem o dono ter
+   de procurar o arquivo de novo. */
+async function galDoEstudio(caminho, titulo, extras){
+  if (!caminho) return null;
+  const nome = String(caminho).split(/[\\/]/).pop();
+  const id = await dbAdd('midiateca', {
+    titulo: titulo || nome, tipo: (extras && extras.tipo) || 'Peça para canal',
+    descricao: (extras && extras.descricao) || '', tags: (extras && extras.tags) || '',
+    obraId: (extras && extras.obraId) || null,
+    caminho, nomeArq: nome, bytes: num(extras && extras.bytes),
+    duracao: num(extras && extras.duracao),
+    largura: num(extras && extras.largura) || 1920,
+    altura: num(extras && extras.altura) || 1080,
+    criadoEm: new Date().toISOString(), origem: 'Estúdio',
+  });
+  return id;
+}
+/* =========================================================================
+   OS VIGIAS DE MONITORAMENTO
+
+   O QUE É, EM UMA FRASE
+   ---------------------
+   Vinte vigias que leem o banco toda vez que o sistema abre e dizem, sem
+   você ir procurar, o que está prestes a doer: etapa atrasada, conta
+   vencida, contrato acabando, estoque no fim, canal parado.
+
+   AS TRÊS DECISÕES QUE ELE TOMOU, E QUE ESTÃO CRAVADAS AQUI
+   ---------------------------------------------------------
+   1. VIGIAM TODOS OS CAMPOS. Obras, financeiro, imóveis e veículos,
+      produtos, chácara e canais. Nenhum negócio da casa fica de fora.
+
+   2. RODAM DENTRO DO APLICATIVO, quando ele abre. Não há servidor, não há
+      credencial saindo daqui, não há mensalidade. O preço disso é honesto
+      e precisa ser dito: se ninguém abrir o JeV, ninguém é avisado. O
+      agente não acorda de madrugada para te ligar.
+
+   3. AVISAM E JÁ DEIXAM PRONTO. Não é só o alerta vermelho. Junto dele vem
+      o trabalho adiantado: a cobrança já escrita com o valor e o dia certo,
+      a lista de compra já montada com o que falta, a carta de renovação já
+      redigida. Pronto para copiar e mandar — mas nada sai daqui sozinho.
+
+   A REGRA QUE NÃO SE QUEBRA
+   -------------------------
+   AGENTE NÃO ESCREVE NO BANCO DE DADOS. Ele lê, conclui e prepara texto.
+   Quem grava é você, na tela do módulo, como sempre foi. Um vigia com
+   permissão de escrita é um vigia que pode estragar o que devia proteger —
+   e você descobriria tarde demais, porque confiaria nele.
+
+   ONDE ISSO ENCOSTA NO RESTO DO SISTEMA
+   -------------------------------------
+   O store 'vigias' guarda só duas coisas, e nenhuma delas é alerta:
+     - {tipo:'ajuste',   agente:<id>, ligado:<bool>}      qual vigia está de pé
+     - {tipo:'silencio', chave:<str>, ate:<'YYYY-MM-DD'>} o que você mandou calar
+   O alerta em si NUNCA é gravado. Ele nasce da leitura do banco a cada vez.
+   Guardar alerta seria guardar uma foto do passado e mostrá-la como se
+   fosse o presente: a conta que você pagou ontem continuaria gritando.
+   ========================================================================= */
+
+/* quantos dias de antecedência cada vigia usa. Mexer aqui muda o sistema
+   inteiro de uma vez, que é o ponto de ter isso num lugar só. */
+const VIG_PRAZO = {
+  vencer:    7,    /* conta a vencer                                  */
+  contrato:  60,   /* contrato de locação chegando ao fim             */
+  reajuste:  30,   /* reajuste de aluguel entrando na data            */
+  documento: 30,   /* licenciamento, seguro e revisão de veículo      */
+  manut:     15,   /* próxima manutenção programada                   */
+  rdo:       7,    /* obra andando sem diário                         */
+  canal:     14,   /* canal sem vídeo publicado                       */
+  venda:     7,    /* venda parada em Pedido ou Confirmada            */
+  colheita:  7,    /* ciclo da chácara chegando na data               */
+  entrega:   0,    /* compra passou da previsão de entrega            */
+};
+
+/* as cores saem das variáveis da casa, não de hexadecimal solto: quem
+   mexer no tema uma vez acerta esta tela junto, sem passar por aqui */
+const VIG_GRAVE = {
+  alto:  {rotulo:'Urgente', cor:'var(--red)',   bg:'var(--red-bg)',   pill:'s-bl', ic:'ti-alert-triangle'},
+  medio: {rotulo:'Atenção', cor:'var(--amber)', bg:'var(--amber-bg)', pill:'s-wn', ic:'ti-clock-exclamation'},
+  baixo: {rotulo:'De olho', cor:'var(--blue)',  bg:'var(--blue-bg)',  pill:'s-pd', ic:'ti-eye'},
+};
+
+/* estado só da tela — nada disso vai para o banco */
+const VIG = {carregando:false, achados:[], area:'', grave:'', silencios:[], ajustes:[], erro:''};
+
+/* ---------------------------------------------------------------- ajudas */
+/* diasEntre(a,b) devolve b-a; então "quanto falta" é diasEntre(hoje, alvo)
+   e um número NEGATIVO quer dizer que a data já passou. */
+function vigFaltam(iso){ return iso ? diasEntre(hoje(), String(iso).slice(0,10)) : null; }
+function vigVencido(iso){ const d = vigFaltam(iso); return d !== null && d < 0; }
+function vigDentro(iso, dias){ const d = vigFaltam(iso); return d !== null && d >= 0 && d <= dias; }
+/* "há 3 dias" / "em 12 dias" — o jeito que gente fala */
+function vigQuando(iso){
+  const d = vigFaltam(iso);
+  if(d === null) return '';
+  if(d === 0)  return 'hoje';
+  if(d === 1)  return 'amanhã';
+  if(d === -1) return 'ontem';
+  return d > 0 ? `em ${d} dias` : `há ${Math.abs(d)} dias`;
+}
+function vigPrimeiroNome(s){ return String(s||'').trim().split(/\s+/)[0] || ''; }
+function vigAssina(){
+  const e = (CFG && CFG.empresa) ? String(CFG.empresa).trim() : '';
+  return e ? `\n\n${e}` : '';
+}
+
+/* ================================================== OS VINTE VIGIAS ===== */
+/* Cada um recebe o mesmo pacote D, já carregado uma vez só, e devolve uma
+   lista de achados. Carregar o banco vinte vezes seria vinte vezes mais
+   lento sem nenhum ganho — os dados são os mesmos para todos. */
+
+const VIGIAS = [
+
+/* ---------------------------------------------------------------- OBRAS */
+{
+  id:'obra_etapa_atrasada', nome:'Etapa atrasada', area:'obras', rota:'crono',
+  ic:'ti-crane', desc:'Etapa com data de fim já passada e avanço abaixo de 100%.',
+  achar(D){
+    const viva = o => !['Concluída','Entregue'].includes(o.status);
+    const out = [];
+    for(const e of D.etapas){
+      const o = D.obras.find(x=>x.id===e.obraId);
+      if(!o || !viva(o)) continue;
+      if(!e.dtFim || !vigVencido(e.dtFim)) continue;
+      if(num(e.avanco) >= 100) continue;
+      const atraso = Math.abs(vigFaltam(e.dtFim));
+      out.push({
+        chave:`obra_etapa_atrasada:${e.id}`,
+        grave: atraso > 15 ? 'alto' : 'medio',
+        titulo:`${e.nome} — ${o.nome}`,
+        detalhe:`Fim previsto ${dbr(e.dtFim)}, ${vigQuando(e.dtFim)}. Avanço em ${qtd(num(e.avanco),0)}%.`,
+        pronto:{tipo:'ir', rotulo:'Abrir o cronograma da obra', rota:'crono'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'obra_estouro', nome:'Custo passando do orçamento', area:'obras', rota:'obras',
+  ic:'ti-crane', desc:'Despesa realizada da obra encostando ou passando do orçado.',
+  achar(D){
+    const out = [];
+    for(const o of D.obras){
+      if(['Concluída','Entregue'].includes(o.status)) continue;
+      const orcado = D.orcamento.filter(i=>i.obraId===o.id)
+                       .reduce((s,i)=>s+num(i.qtd)*num(i.vunit), 0);
+      if(orcado <= 0) continue;
+      /* finVale tira cancelado e transferência entre contas: sem isso uma
+         transferência apareceria como gasto da obra e o alerta seria falso */
+      const gasto = D.financeiro.filter(l=>finVale(l) && l.tipo==='despesa' &&
+                      l.refTipo==='obra' && Number(l.refId)===o.id)
+                      .reduce((s,l)=>s+num(l.valor), 0);
+      const p = gasto/orcado*100;
+      if(p < 90) continue;
+      out.push({
+        chave:`obra_estouro:${o.id}`,
+        grave: p >= 100 ? 'alto' : 'medio',
+        titulo:`${o.nome} — ${qtd(p,1)}% do orçamento`,
+        detalhe:`Orçado ${moeda(orcado)} · realizado ${moeda(gasto)}` +
+                (p>=100 ? ` · passou ${moeda(gasto-orcado)}` : ` · sobra ${moeda(orcado-gasto)}`),
+        pronto:{tipo:'ir', rotulo:'Abrir o orçamento da obra', rota:'orc'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'obra_medicao_vencida', nome:'Medição vencida sem pagamento', area:'obras', rota:'med',
+  ic:'ti-file-invoice', desc:'Boletim de medição emitido ou aprovado com vencimento passado.',
+  achar(D){
+    const out = [];
+    for(const m of D.medicoes){
+      if(['Paga','Cancelada'].includes(m.status)) continue;
+      if(!m.venc || !vigVencido(m.venc)) continue;
+      const o = D.obras.find(x=>x.id===m.obraId);
+      const quem = o ? (o.cliente || o.nome) : 'o cliente';
+      out.push({
+        chave:`obra_medicao_vencida:${m.id}`,
+        grave:'alto',
+        titulo:`Medição ${m.num} — ${o?o.nome:'obra'}`,
+        detalhe:`${moeda(m.valor)} venceu ${dbr(m.venc)}, ${vigQuando(m.venc)}. Situação: ${m.status}.`,
+        pronto:{tipo:'texto', rotulo:'Copiar a cobrança',
+          conteudo:`Bom dia, ${vigPrimeiroNome(quem)}.\n\n`+
+            `Passando para lembrar do boletim de medição nº ${m.num} da obra ${o?o.nome:''}, `+
+            `no valor de ${moeda(m.valor)}, com vencimento em ${dbr(m.venc)}.\n\n`+
+            `Pode me confirmar a previsão de pagamento? Qualquer documento que faltar, eu envio na hora.`+
+            vigAssina()},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'obra_sem_rdo', nome:'Obra andando sem diário', area:'obras', rota:'rdo',
+  ic:'ti-clipboard-check', desc:'Obra em andamento sem RDO lançado nos últimos dias.',
+  achar(D){
+    const out = [];
+    for(const o of D.obras){
+      if(o.status !== 'Em andamento') continue;
+      const meus = D.rdo.filter(r=>r.obraId===o.id).map(r=>r.data).filter(Boolean).sort();
+      const ult = meus.length ? meus[meus.length-1] : null;
+      const sem = ult ? Math.abs(vigFaltam(ult)) : null;
+      if(ult && sem <= VIG_PRAZO.rdo) continue;
+      out.push({
+        chave:`obra_sem_rdo:${o.id}`,
+        grave: (sem === null || sem > 20) ? 'alto' : 'medio',
+        titulo:`${o.nome} sem diário`,
+        detalhe: ult ? `Último RDO em ${dbr(ult)}, ${vigQuando(ult)}.`
+                     : 'Nenhum RDO lançado nesta obra até agora.',
+        pronto:{tipo:'ir', rotulo:'Abrir o diário de obra', rota:'rdo'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'obra_compra_atrasada', nome:'Compra passou da entrega', area:'obras', rota:'mat',
+  ic:'ti-package', desc:'Requisição ainda aberta com previsão de entrega já vencida.',
+  achar(D){
+    /* 'Solicitada' não existe em ST_COMPRA, mas é o que o celular grava.
+       Tratar como aberta, senão requisição de campo nunca seria vigiada. */
+    const abertas = ['Requisitado','Aguardando cotação','Cotado','Pedido emitido','Solicitada'];
+    const out = [];
+    for(const c of D.compras){
+      if(!abertas.includes(c.status)) continue;
+      if(!c.prevEntrega || !vigVencido(c.prevEntrega)) continue;
+      const o = D.obras.find(x=>x.id===c.obraId);
+      out.push({
+        chave:`obra_compra_atrasada:${c.id}`,
+        grave: Math.abs(vigFaltam(c.prevEntrega)) > 7 ? 'alto' : 'medio',
+        titulo:`${c.num||'Requisição'} — ${o?o.nome:'obra'}`,
+        detalhe:`Entrega prevista ${dbr(c.prevEntrega)}, ${vigQuando(c.prevEntrega)}. `+
+                `Situação: ${c.status}${c.fornecedor?' · '+c.fornecedor:''}.`,
+        pronto:{tipo:'texto', rotulo:'Copiar a cobrança do fornecedor',
+          conteudo:`Bom dia${c.fornecedor?', '+vigPrimeiroNome(c.fornecedor):''}.\n\n`+
+            `Sobre a requisição ${c.num||''}${o?' da obra '+o.nome:''}: a entrega estava prevista `+
+            `para ${dbr(c.prevEntrega)} e ainda não chegou.\n\n`+
+            `Consegue me passar a nova data? A frente de serviço está parada esperando o material.`+
+            vigAssina()},
+      });
+    }
+    return out;
+  }
+},
+
+/* ----------------------------------------------------------- FINANCEIRO */
+{
+  id:'fin_vencida', nome:'Conta vencida', area:'financeiro', rota:'fin',
+  ic:'ti-wallet', desc:'Lançamento pendente com vencimento já passado.',
+  achar(D){
+    const out = [];
+    for(const l of D.financeiro){
+      if(!finVale(l) || !finAtrasado(l)) continue;
+      const rec = l.tipo === 'receita';
+      const dias = Math.abs(vigFaltam(l.venc));
+      out.push({
+        chave:`fin_vencida:${l.id}`,
+        grave: dias > 15 ? 'alto' : 'medio',
+        titulo:`${rec?'A receber':'A pagar'}: ${l.desc||'(sem descrição)'}`,
+        detalhe:`${moeda(l.valor)} venceu ${dbr(l.venc)}, ${vigQuando(l.venc)}`+
+                `${l.pessoa?' · '+l.pessoa:''}.`,
+        pronto: rec
+          ? {tipo:'texto', rotulo:'Copiar a cobrança',
+             conteudo:`Bom dia${l.pessoa?', '+vigPrimeiroNome(l.pessoa):''}.\n\n`+
+               `Identifiquei aqui que ${l.desc?'"'+l.desc+'"':'o valor'} de ${moeda(l.valor)} `+
+               `venceu em ${dbr(l.venc)} e ainda consta em aberto.\n\n`+
+               `Se já tiver sido pago, me manda o comprovante que eu dou baixa. `+
+               `Se ainda não, me diz a melhor data que eu reprogramo.`+ vigAssina()}
+          : {tipo:'ir', rotulo:'Abrir o financeiro', rota:'fin'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'fin_a_vencer', nome:'Conta a vencer', area:'financeiro', rota:'fin',
+  ic:'ti-clock', desc:`Lançamento pendente vencendo nos próximos ${VIG_PRAZO.vencer} dias.`,
+  achar(D){
+    const out = [];
+    for(const l of D.financeiro){
+      if(!finVale(l) || l.status !== 'Pendente') continue;
+      if(!vigDentro(l.venc, VIG_PRAZO.vencer)) continue;
+      out.push({
+        chave:`fin_a_vencer:${l.id}`,
+        grave:'baixo',
+        titulo:`${l.tipo==='receita'?'A receber':'A pagar'}: ${l.desc||'(sem descrição)'}`,
+        detalhe:`${moeda(l.valor)} vence ${dbr(l.venc)}, ${vigQuando(l.venc)}.`,
+        pronto:{tipo:'ir', rotulo:'Abrir o financeiro', rota:'fin'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'fin_rec_nao_lancada', nome:'Recorrência não lançada', area:'financeiro', rota:'fin',
+  ic:'ti-refresh', desc:'Conta fixa ativa que ainda não gerou o lançamento do mês.',
+  achar(D){
+    const mk = mesAtual();
+    const out = [];
+    for(const r of D.recorrencias){
+      if(r.ativo === false) continue;
+      if(r.inicio && String(r.inicio).slice(0,7) > mk) continue;
+      if(r.fim && String(r.fim).slice(0,7) < mk) continue;
+      /* a periodicidade decide se ESTE mês é mês dela */
+      const per = num(r.periodo) || 1;
+      if(per > 1 && r.inicio){
+        const passou = mesesEntre(String(r.inicio).slice(0,7)+'-01', mk+'-01');
+        if(passou % per !== 0) continue;
+      }
+      const tem = D.financeiro.some(l=>Number(l.recorrenteId)===r.id &&
+                    String(l.venc||l.data||'').slice(0,7) === mk);
+      if(tem) continue;
+      out.push({
+        chave:`fin_rec_nao_lancada:${r.id}:${mk}`,
+        grave:'medio',
+        titulo:`${r.desc||'Recorrência'} não lançada em ${dmes(mk+'-01')}`,
+        detalhe:`${r.tipo==='receita'?'Receita':'Despesa'} fixa de ${moeda(r.valor)}, `+
+                `dia ${num(r.dia)||10}. Este mês ainda não apareceu no financeiro.`,
+        pronto:{tipo:'ir', rotulo:'Abrir as contas fixas', rota:'fin'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'fin_saldo_negativo', nome:'Conta no vermelho', area:'financeiro', rota:'fin',
+  ic:'ti-alert-circle', desc:'Conta bancária ou caixa com saldo abaixo de zero.',
+  achar(D){
+    const out = [];
+    for(const c of D.saldos){
+      if(num(c.saldo) >= 0) continue;
+      out.push({
+        chave:`fin_saldo_negativo:${c.id}`,
+        grave:'alto',
+        titulo:`${c.nome} com saldo negativo`,
+        detalhe:`Saldo de ${moeda(c.saldo)}. `+
+                `Entradas ${moeda(c.entradas)} contra saídas ${moeda(c.saidas)}.`,
+        pronto:{tipo:'ir', rotulo:'Abrir as contas', rota:'fin'},
+      });
+    }
+    return out;
+  }
+},
+
+/* ------------------------------------------------ IMÓVEIS E VEÍCULOS --- */
+{
+  id:'ctr_vencendo', nome:'Contrato de locação vencendo', area:'locacao', rota:'imoveis',
+  ic:'ti-file-invoice', desc:`Contrato ativo terminando nos próximos ${VIG_PRAZO.contrato} dias.`,
+  achar(D){
+    const out = [];
+    for(const c of D.contratos){
+      if(c.status !== 'Ativo' || !c.fim) continue;
+      const falta = vigFaltam(c.fim);
+      if(falta === null || falta > VIG_PRAZO.contrato) continue;
+      const bem = vigBem(D, c.tipo, c.refId);
+      out.push({
+        chave:`ctr_vencendo:${c.id}`,
+        grave: falta < 0 ? 'alto' : (falta <= 30 ? 'medio' : 'baixo'),
+        titulo:`${bem} — contrato ${falta<0?'vencido':'vencendo'}`,
+        detalhe:`${c.pessoa||'Locatário'} · fim em ${dbr(c.fim)}, ${vigQuando(c.fim)} · ${moeda(c.valor)}.`,
+        pronto:{tipo:'texto', rotulo:'Copiar a mensagem de renovação',
+          conteudo:`Bom dia${c.pessoa?', '+vigPrimeiroNome(c.pessoa):''}.\n\n`+
+            `O contrato de ${bem} termina em ${dbr(c.fim)}.\n\n`+
+            `Tem interesse em renovar? Se tiver, eu já preparo o aditivo com as condições `+
+            `atualizadas. Se preferir encerrar, também tudo bem — só me avisa para combinarmos `+
+            `a vistoria e a entrega das chaves.`+ vigAssina()},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'ctr_reajuste', nome:'Reajuste de aluguel na data', area:'locacao', rota:'imoveis',
+  ic:'ti-calendar-check', desc:`Contrato com reajuste previsto nos próximos ${VIG_PRAZO.reajuste} dias.`,
+  achar(D){
+    const out = [];
+    for(const c of D.contratos){
+      if(c.status !== 'Ativo' || !c.proxReajuste) continue;
+      const falta = vigFaltam(c.proxReajuste);
+      if(falta === null || falta > VIG_PRAZO.reajuste) continue;
+      const bem = vigBem(D, c.tipo, c.refId);
+      out.push({
+        chave:`ctr_reajuste:${c.id}:${String(c.proxReajuste).slice(0,7)}`,
+        grave: falta < 0 ? 'medio' : 'baixo',
+        titulo:`${bem} — reajuste ${falta<0?'vencido':'chegando'}`,
+        detalhe:`Previsto para ${dbr(c.proxReajuste)}, ${vigQuando(c.proxReajuste)}. `+
+                `Índice ${c.indice||'não definido'}. Valor hoje: ${moeda(c.valor)}.`,
+        pronto:{tipo:'ir', rotulo:'Abrir o contrato', rota: c.tipo==='veiculo'?'veiculos':'imoveis'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'ctr_aluguel_atrasado', nome:'Aluguel atrasado', area:'locacao', rota:'fin',
+  ic:'ti-home', desc:'Aluguel gerado pelo contrato que venceu e não foi recebido.',
+  achar(D){
+    const out = [];
+    for(const l of D.financeiro){
+      if(!finVale(l) || !l.contratoId || l.tipo !== 'receita') continue;
+      if(!finAtrasado(l)) continue;
+      const c = D.contratos.find(x=>x.id===Number(l.contratoId));
+      const bem = c ? vigBem(D, c.tipo, c.refId) : (l.refNome||'o imóvel');
+      out.push({
+        chave:`ctr_aluguel_atrasado:${l.id}`,
+        grave:'alto',
+        titulo:`Aluguel atrasado — ${bem}`,
+        detalhe:`${moeda(l.valor)} venceu ${dbr(l.venc)}, ${vigQuando(l.venc)}`+
+                `${c&&c.pessoa?' · '+c.pessoa:''}.`,
+        pronto:{tipo:'texto', rotulo:'Copiar a cobrança',
+          conteudo:`Bom dia${c&&c.pessoa?', '+vigPrimeiroNome(c.pessoa):''}.\n\n`+
+            `O aluguel de ${bem}, no valor de ${moeda(l.valor)}, venceu em ${dbr(l.venc)} `+
+            `e ainda não constou aqui.\n\n`+
+            `Se já pagou, me manda o comprovante que eu baixo na hora. `+
+            `Se houve algum imprevisto, me fala que a gente combina uma data.`+ vigAssina()},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'veic_documento', nome:'Documento de veículo vencendo', area:'locacao', rota:'veiculos',
+  ic:'ti-car', desc:`Licenciamento, seguro ou revisão nos próximos ${VIG_PRAZO.documento} dias.`,
+  achar(D){
+    const campos = [['vencLicenc','Licenciamento'],['vencSeguro','Seguro'],['proxRevisao','Revisão']];
+    const out = [];
+    for(const v of D.veiculos){
+      for(const [campo, rotulo] of campos){
+        const dt = v[campo];
+        if(!dt) continue;
+        const falta = vigFaltam(dt);
+        if(falta === null || falta > VIG_PRAZO.documento) continue;
+        out.push({
+          chave:`veic_documento:${v.id}:${campo}`,
+          grave: falta < 0 ? 'alto' : 'medio',
+          titulo:`${rotulo} ${falta<0?'vencido':'vencendo'} — ${v.modelo||''} ${v.placa||''}`.trim(),
+          /* "Licenciamento em 24/09, há 4 dias" não diz nada. O verbo é que
+             conta a história: venceu, ou vence. */
+          detalhe:`${campo==='proxRevisao' ? (falta<0?'Revisão estava marcada para':'Revisão marcada para')
+                                           : (falta<0?rotulo+' venceu em':rotulo+' vence em')} `+
+                  `${dbr(dt)}, ${vigQuando(dt)}.`+
+                  (campo==='proxRevisao'&&num(v.km)?` Odômetro em ${qtd(num(v.km),0)} km.`:''),
+          pronto:{tipo:'ir', rotulo:'Abrir o veículo', rota:'veiculos'},
+        });
+      }
+    }
+    return out;
+  }
+},
+{
+  id:'manut_pendente', nome:'Manutenção agendada e não feita', area:'locacao', rota:'imoveis',
+  ic:'ti-tool', desc:'Manutenção marcada cuja data passou sem ser concluída.',
+  achar(D){
+    const out = [];
+    for(const m of D.manutencoes){
+      if(m.status === 'Concluída') continue;
+      if(!m.data || !vigVencido(m.data)) continue;
+      const bem = vigBem(D, m.refTipo, m.refId);
+      out.push({
+        chave:`manut_pendente:${m.id}`,
+        grave: Math.abs(vigFaltam(m.data)) > 15 ? 'alto' : 'medio',
+        titulo:`${m.desc||'Manutenção'} — ${bem}`,
+        detalhe:`Agendada para ${dbr(m.data)}, ${vigQuando(m.data)}. `+
+                `Situação: ${m.status||'Agendada'}${m.prestador?' · '+m.prestador:''}.`,
+        pronto:{tipo:'ir', rotulo:'Abrir manutenções',
+                rota: m.refTipo==='veiculo'?'veiculos':'imoveis'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'imovel_vago', nome:'Imóvel parado sem render', area:'locacao', rota:'imoveis',
+  ic:'ti-home', desc:'Imóvel marcado como vago — todo mês parado é aluguel que não entra.',
+  achar(D){
+    const out = [];
+    for(const i of D.imoveis){
+      if(i.status !== 'Vago') continue;
+      out.push({
+        chave:`imovel_vago:${i.id}`,
+        grave:'baixo',
+        titulo:`${i.nome} está vago`,
+        detalhe: num(i.aluguelBase)
+          ? `Aluguel de referência ${moeda(i.aluguelBase)} por mês que deixa de entrar.`
+          : 'Sem aluguel de referência cadastrado.',
+        pronto:{tipo:'ir', rotulo:'Abrir o imóvel', rota:'imoveis'},
+      });
+    }
+    return out;
+  }
+},
+
+/* ------------------------------- PRODUTOS, CHÁCARA E CANAIS ------------ */
+{
+  id:'prod_estoque_min', nome:'Estoque no mínimo', area:'produtos', rota:'produtos',
+  ic:'ti-shopping-bag', desc:'Produto físico ativo com estoque igual ou abaixo do mínimo.',
+  achar(D){
+    const out = [];
+    for(const p of D.produtos){
+      if(p.ativo === false) continue;
+      if(p.tipo === 'Infoproduto' || p.tipo === 'Serviço' || p.tipo === 'Assinatura') continue;
+      const mn = num(p.estoqueMin);
+      if(mn <= 0) continue;
+      const est = num(p.estoque);
+      if(est > mn) continue;
+      const repor = Math.max(mn*2 - est, 1);
+      out.push({
+        chave:`prod_estoque_min:${p.id}`,
+        grave: est <= 0 ? 'alto' : 'medio',
+        titulo: est <= 0 ? `${p.nome} — ACABOU` : `${p.nome} — estoque no mínimo`,
+        detalhe:`${qtd(est,0)} ${p.und||'un'} em estoque, mínimo de ${qtd(mn,0)}.`+
+                (num(p.custo)?` Repor ${qtd(repor,0)} custa ${moeda(repor*num(p.custo))}.`:''),
+        pronto:{tipo:'texto', rotulo:'Copiar o pedido de reposição',
+          conteudo:`Pedido de reposição\n\n`+
+            `Produto: ${p.nome}${p.sku?'  (SKU '+p.sku+')':''}\n`+
+            `Em estoque: ${qtd(est,0)} ${p.und||'un'}\n`+
+            `Mínimo: ${qtd(mn,0)} ${p.und||'un'}\n`+
+            `Quantidade sugerida: ${qtd(repor,0)} ${p.und||'un'}\n`+
+            (num(p.custo)?`Custo estimado: ${moeda(repor*num(p.custo))}\n`:'')+
+            `\nGerado pelo monitoramento do JeV em ${dbr(hoje())}.`},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'venda_parada', nome:'Venda parada sem fechar', area:'produtos', rota:'produtos',
+  ic:'ti-shopping-bag', desc:`Venda em Pedido ou Confirmada há mais de ${VIG_PRAZO.venda} dias.`,
+  achar(D){
+    const out = [];
+    for(const v of D.vendas){
+      if(!['Pedido','Confirmada'].includes(v.status)) continue;
+      if(!v.data) continue;
+      const parada = Math.abs(vigFaltam(v.data));
+      if(vigFaltam(v.data) > 0 || parada <= VIG_PRAZO.venda) continue;
+      out.push({
+        chave:`venda_parada:${v.id}`,
+        grave: parada > 20 ? 'alto' : 'medio',
+        titulo:`${v.produto||'Venda'} — ${v.status} ${vigQuando(v.data)}`,
+        detalhe:`${moeda(v.total)}${v.cliente?' · '+v.cliente:''}`+
+                `${v.plataforma?' · '+v.plataforma:''}. Ainda não entrou como paga.`,
+        pronto:{tipo:'texto', rotulo:'Copiar a mensagem para o cliente',
+          conteudo:`Bom dia${v.cliente?', '+vigPrimeiroNome(v.cliente):''}.\n\n`+
+            `Passando para saber do seu pedido de ${v.produto||'produto'}`+
+            `${num(v.total)?', no valor de '+moeda(v.total):''}.\n\n`+
+            `Está tudo certo para seguirmos? Qualquer dúvida é só me chamar.`+ vigAssina()},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'ciclo_colheita', nome:'Ciclo chegando na colheita', area:'produtos', rota:'chacara',
+  ic:'ti-plant-2', desc:`Ciclo em andamento com colheita prevista em até ${VIG_PRAZO.colheita} dias, ou já atrasada.`,
+  achar(D){
+    const out = [];
+    for(const c of D.ciclos){
+      if(!['Planejado','Em andamento'].includes(c.status)) continue;
+      if(!c.dtPrev) continue;
+      const falta = vigFaltam(c.dtPrev);
+      if(falta === null || falta > VIG_PRAZO.colheita) continue;
+      const lote = D.lotes.find(l=>l.id===c.loteId);
+      out.push({
+        chave:`ciclo_colheita:${c.id}`,
+        grave: falta < 0 ? 'alto' : 'medio',
+        titulo: falta < 0 ? `${c.nome} — colheita atrasada` : `${c.nome} — colher ${vigQuando(c.dtPrev)}`,
+        detalhe:`Previsto ${dbr(c.dtPrev)}${lote?' · '+lote.nome:''}`+
+                `${c.cultura?' · '+c.cultura:''}. `+
+                `Produção esperada ${qtd(num(c.prodPrev),0)} ${c.und||''}`+
+                (num(c.precoPrev)?`, a ${moeda(c.precoPrev)} = ${moeda(num(c.prodPrev)*num(c.precoPrev))}.`:'.'),
+        pronto:{tipo:'ir', rotulo:'Abrir o ciclo na chácara', rota:'chacara'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'canal_parado', nome:'Canal sem publicar', area:'midia', rota:'midia',
+  ic:'ti-brand-youtube', desc:`Canal sem nenhum vídeo publicado há mais de ${VIG_PRAZO.canal} dias.`,
+  achar(D){
+    const out = [];
+    for(const c of D.canais){
+      const pubs = D.videos.filter(v=>Number(v.canalId)===c.id && v.status==='Publicado' && v.dtPub)
+                     .map(v=>String(v.dtPub).slice(0,10)).sort();
+      const ult = pubs.length ? pubs[pubs.length-1] : null;
+      const sem = ult ? Math.abs(vigFaltam(ult)) : null;
+      if(ult && sem <= VIG_PRAZO.canal) continue;
+      /* canal recém-cadastrado que nunca publicou não é falha: é começo.
+         Só cobra depois que o prazo já teria cabido desde a abertura. */
+      if(!ult && c.dtInicio && Math.abs(vigFaltam(c.dtInicio)) <= VIG_PRAZO.canal) continue;
+      out.push({
+        chave:`canal_parado:${c.id}`,
+        grave: (sem === null || sem > VIG_PRAZO.canal*3) ? 'alto' : 'medio',
+        titulo:`${c.nome} parado`,
+        detalhe: ult ? `Última publicação em ${dbr(ult)}, ${vigQuando(ult)}.`
+                     : 'Nenhum vídeo publicado neste canal até agora.',
+        pronto:{tipo:'ir', rotulo:'Abrir o canal', rota:'midia'},
+      });
+    }
+    return out;
+  }
+},
+{
+  id:'video_atrasado', nome:'Vídeo passou da data prevista', area:'midia', rota:'midia',
+  ic:'ti-player-play', desc:'Vídeo com data prevista vencida e que ainda não foi publicado.',
+  achar(D){
+    const out = [];
+    for(const v of D.videos){
+      if(v.status === 'Publicado' || v.status === 'Arquivado') continue;
+      if(!v.dtPrev || !vigVencido(v.dtPrev)) continue;
+      const c = D.canais.find(x=>x.id===Number(v.canalId));
+      out.push({
+        chave:`video_atrasado:${v.id}`,
+        grave: Math.abs(vigFaltam(v.dtPrev)) > 14 ? 'medio' : 'baixo',
+        titulo:`${v.titulo} — previsto ${vigQuando(v.dtPrev)}`,
+        detalhe:`Parado em "${v.status||'Ideia'}"${c?' · '+c.nome:''}. `+
+                `Data prevista era ${dbr(v.dtPrev)}.`,
+        pronto:{tipo:'ir', rotulo:'Abrir o vídeo', rota:'midia'},
+      });
+    }
+    return out;
+  }
+},
+];
+
+/* nome amigável de um imóvel ou veículo, a partir do par (tipo, id).
+   contratos usa 'tipo', manutencoes usa 'refTipo' — a função recebe o
+   valor já resolvido para não repetir essa confusão em cada agente. */
+function vigBem(D, tipo, refId){
+  const id = Number(refId);
+  if(tipo === 'veiculo'){
+    const v = D.veiculos.find(x=>x.id===id);
+    return v ? `${v.modelo||'Veículo'}${v.placa?' '+v.placa:''}` : 'Veículo';
+  }
+  const i = D.imoveis.find(x=>x.id===id);
+  return i ? (i.nome||'Imóvel') : 'Imóvel';
+}
+
+/* =============================================== RODAR OS VIGIAS ====== */
+/* Lê o banco UMA vez e passa o mesmo pacote para os vinte. */
+async function vigDados(){
+  const [obras,etapas,orcamento,financeiro,recorrencias,medicoes,rdoL,compras,
+         imoveis,veiculos,contratos,manutencoes,lotes,ciclos,produtos,vendas,
+         canais,videos] = await Promise.all([
+    dbGetAll('obras'), dbGetAll('etapas'), dbGetAll('orcamento'),
+    dbGetAll('financeiro'), dbGetAll('recorrencias'), dbGetAll('medicoes'),
+    dbGetAll('rdo'), dbGetAll('compras'),
+    dbGetAll('imoveis'), dbGetAll('veiculos'), dbGetAll('contratos'),
+    dbGetAll('manutencoes'), dbGetAll('lotes'), dbGetAll('ciclos'),
+    dbGetAll('produtos'), dbGetAll('vendas'), dbGetAll('canais'), dbGetAll('videos'),
+  ]);
+  /* saldo de conta não existe no banco — é sempre calculado */
+  let saldos = [];
+  try { saldos = await saldoContas(); } catch(e){ saldos = []; }
+  return {obras,etapas,orcamento,financeiro,recorrencias,medicoes,rdo:rdoL,compras,
+          imoveis,veiculos,contratos,manutencoes,lotes,ciclos,produtos,vendas,
+          canais,videos,saldos};
+}
+
+async function vigAjustes(){
+  const todos = await dbGetAll('vigias');
+  return {
+    ajustes:   todos.filter(x=>x.tipo==='ajuste'),
+    silencios: todos.filter(x=>x.tipo==='silencio' && (!x.ate || x.ate >= hoje())),
+  };
+}
+
+function vigLigado(ajustes, id){
+  const a = ajustes.find(x=>x.agente===id);
+  return !a || a.ligado !== false;     /* nasce ligado */
+}
+
+/* O coração. Devolve a lista de achados já filtrada por permissão, por
+   ajuste e por silêncio, ordenada do mais grave para o menos.
+
+   Um agente que estoura NÃO derruba os outros dezenove: cada um roda
+   dentro do seu próprio try. Vigia quebrado vira aviso na tela, não
+   apagão no painel. */
+async function vigRodar(){
+  const {ajustes, silencios} = await vigAjustes();
+  const D = await vigDados();
+  const cal = new Set(silencios.map(s=>s.chave));
+  const ordem = {alto:0, medio:1, baixo:2};
+  const out = [];
+  const quebrados = [];
+  for(const ag of VIGIAS){
+    if(!PERMS[CU].includes(ag.rota)) continue;   /* não vê a tela, não vê o alerta */
+    if(!vigLigado(ajustes, ag.id)) continue;
+    let achados = [];
+    try { achados = ag.achar(D) || []; }
+    catch(e){ quebrados.push(`${ag.nome}: ${e.message}`); continue; }
+    for(const a of achados){
+      if(cal.has(a.chave)) continue;
+      out.push({...a, agente:ag.id, agenteNome:ag.nome, area:ag.area,
+                ic:ag.ic, rota:a.pronto&&a.pronto.rota ? a.pronto.rota : ag.rota});
+    }
+  }
+  out.sort((x,y)=> (ordem[x.grave]-ordem[y.grave]) || x.titulo.localeCompare(y.titulo,'pt-BR'));
+  return {achados:out, quebrados, ajustes, silencios};
+}
+
+/* contador para o sino do topo — só os urgentes e os de atenção; "de olho"
+   não merece bolinha vermelha, senão o sino grita todo dia e vira paisagem */
+async function vigContar(){
+  try {
+    const {achados} = await vigRodar();
+    return achados.filter(a=>a.grave!=='baixo').length;
+  } catch(e){ return 0; }
+}
+async function vigSino(){
+  const el = document.querySelector('[data-vig-badge]');
+  if(!el) return;
+  const n = await vigContar();
+  el.textContent = n > 99 ? '99+' : String(n);
+  el.classList.toggle('hide', n === 0);
+}
+
+/* ==================================================== A TELA =========== */
+const VIG_AREAS = [
+  ['',          'Tudo',                   'ti-list-check'],
+  ['obras',     'Obras',                  'ti-crane'],
+  ['financeiro','Financeiro',             'ti-wallet'],
+  ['locacao',   'Imóveis e veículos',     'ti-home'],
+  ['produtos',  'Produtos e chácara',     'ti-shopping-bag'],
+  ['midia',     'Canais',                 'ti-brand-youtube'],
+];
+
+async function vigiasRender(){
+  const root = document.getElementById('vigias-root');
+  root.innerHTML = `<div class="card"><div class="bd"><div class="empty">
+    <i class="ti ti-refresh"></i><b>Os vigias estão lendo o sistema…</b></div></div></div>`;
+
+  const {achados, quebrados, ajustes} = await vigRodar();
+  VIG.achados = achados;
+
+  const vis = achados.filter(a=>
+    (!VIG.area  || a.area  === VIG.area) &&
+    (!VIG.grave || a.grave === VIG.grave));
+
+  const cont = g => achados.filter(a=>a.grave===g).length;
+  const meus    = VIGIAS.filter(a=>PERMS[CU].includes(a.rota));
+  const ligados = meus.filter(a=>vigLigado(ajustes,a.id)).length;
+
+  const kpi = (g)=>{
+    const s = VIG_GRAVE[g], n = cont(g), on = VIG.grave === g;
+    return `<div class="kc" onclick="vigFiltrarGrave('${g}')" style="cursor:pointer;
+        ${on?`background:${s.bg};`:''}">
+      <div class="lb"><i class="ti ${s.ic}" style="color:${s.cor}"></i>${s.rotulo}</div>
+      <div class="vl" style="color:${n?s.cor:'var(--text3)'}">${n}</div>
+      <div class="sb">${on?'filtrando por este':'clique para filtrar'}</div>
+    </div>`;
+  };
+
+  let h = `<div class="ph">
+      <div class="ic" style="background:var(--gold-bg);color:var(--gold-dk)"><i class="ti ti-bell-ringing"></i></div>
+      <div><h1>Vigias do negócio</h1>
+        <p>${ligados} de ${meus.length} vigias de pé — leram o sistema agora e o que acharam está aqui</p></div>
+      <div class="sp"></div>
+      <button class="btn gh" onclick="vigiasRender()"><i class="ti ti-refresh"></i>Reler</button>
+      <button class="btn gh" onclick="vigPainelAjustes()"><i class="ti ti-adjustments"></i>Quais vigias</button>
+    </div>`;
+
+  if(quebrados.length){
+    h += `<div class="card"><div class="bd" style="border-left:4px solid var(--red)">
+      <b style="color:var(--red)">Agente com defeito — o painel abaixo está incompleto por causa disso:</b>
+      <div class="tt" style="margin-top:6px;line-height:1.6">${quebrados.map(esc).join('<br>')}</div>
+    </div></div>`;
+  }
+
+  h += `<div class="kg" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+    ${kpi('alto')}${kpi('medio')}${kpi('baixo')}</div>`;
+
+  h += `<div class="chips" style="margin-top:14px">${VIG_AREAS.map(([v,rot,ic])=>{
+    const n = v ? achados.filter(a=>a.area===v).length : achados.length;
+    return `<div class="chip ${VIG.area===v?'on':''}" onclick="vigFiltrarArea('${v}')">
+      <i class="ti ${ic}"></i> ${rot} <b>${n}</b></div>`;
+  }).join('')}</div>`;
+
+  if(vis.length){
+    h += vis.map(vigCartao).join('');
+  } else {
+    h += `<div class="card"><div class="bd"><div class="empty">
+      <i class="ti ti-circle-check" style="color:var(--green)"></i>
+      <b>${achados.length ? 'Nada neste filtro.' : 'Nenhum alerta. Está tudo em dia.'}</b>
+      ${achados.length ? 'Tire o filtro acima para ver o resto.'
+        : 'Os '+ligados+' vigias leram o sistema inteiro e não acharam nada que precise de você agora.'}
+    </div></div></div>`;
+  }
+
+  h += `<div class="card"><div class="bd">
+      <b>Como estes vigias funcionam, sem letra miúda.</b>
+      <div class="tt" style="margin-top:6px;line-height:1.7;font-size:12.5px">
+      Eles rodam aqui dentro, quando você abre o JeV — não há servidor nem mensalidade, e nenhuma
+      senha sua sai da sua máquina. Em troca, se ninguém abrir o sistema, ninguém é avisado: o
+      agente não liga para o seu celular de madrugada.<br>
+      Nenhum deles grava nada no banco. Eles leem, concluem e deixam o texto pronto para você
+      copiar; gravar continua sendo na tela do módulo, com o seu dedo.</div>
+    </div></div>`;
+
+  root.innerHTML = h;
+  vigSino();
+}
+
+function vigFiltrarArea(v){ VIG.area = (VIG.area===v ? '' : v); vigiasRender(); }
+function vigFiltrarGrave(g){ VIG.grave = (VIG.grave===g ? '' : g); vigiasRender(); }
+
+/* a chave vira id de elemento, então tem de sobrar só o que HTML aceita */
+function vigId(chave){ return 'vigtx-' + String(chave).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+
+function vigCartao(a){
+  const s = VIG_GRAVE[a.grave];
+  const p = a.pronto || {};
+  let botao = '';
+  if(p.tipo === 'texto'){
+    botao = `<button class="btn gh sm" onclick="vigCopiar('${esc(a.chave)}')">
+      <i class="ti ti-copy"></i>${esc(p.rotulo||'Copiar')}</button>`;
+  } else if(p.tipo === 'ir'){
+    botao = `<button class="btn gh sm" onclick="go('${esc(p.rota||a.rota)}')">
+      <i class="ti ti-arrow-right"></i>${esc(p.rotulo||'Abrir')}</button>`;
+  }
+  return `<div class="card" style="border-left:4px solid ${s.cor}"><div class="bd">
+    <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <i class="ti ${a.ic}" style="font-size:21px;color:${s.cor};margin-top:1px"></i>
+      <div style="flex:1;min-width:250px">
+        <div style="font-weight:700;font-size:14.5px;line-height:1.35">${esc(a.titulo)}</div>
+        <div style="color:var(--text2);font-size:13px;margin-top:4px;line-height:1.55">${esc(a.detalhe)}</div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <span class="st ${s.pill}">${s.rotulo}</span>
+          <span class="tt">${esc(a.agenteNome)}</span>
+        </div>
+      </div>
+      <div class="brow" style="margin-top:0">
+        ${botao}
+        <button class="btn gh sm" title="Não me mostre isto por 7 dias"
+          onclick="vigSilenciar('${esc(a.chave)}')"><i class="ti ti-x"></i>Silenciar</button>
+      </div>
+    </div>
+    ${p.tipo==='texto' ? `<div id="${vigId(a.chave)}"
+        style="display:none;margin-top:12px;background:var(--bg3);border:1px dashed var(--border2);
+        border-radius:var(--radius);padding:12px 14px;font-size:12.5px;white-space:pre-wrap;
+        line-height:1.6">${esc(p.conteudo||'')}</div>` : ''}
+  </div></div>`;
+}
+
+async function vigCopiar(chave){
+  const a = VIG.achados.find(x=>x.chave===chave);
+  if(!a || !a.pronto || !a.pronto.conteudo) return;
+  const cx = document.getElementById(vigId(chave));
+  if(cx) cx.style.display = 'block';
+  try {
+    await navigator.clipboard.writeText(a.pronto.conteudo);
+    toast('Texto copiado. É só colar no WhatsApp.','ag');
+  } catch(e){
+    /* área de transferência bloqueada acontece: o texto já está na tela,
+       e dizer isso é melhor do que um erro que não ajuda ninguém */
+    toast('Não consegui copiar sozinho — o texto está aí embaixo para você selecionar.','aw');
+  }
+}
+
+async function vigSilenciar(chave){
+  await dbAdd('vigias', {tipo:'silencio', chave, ate:addDias(hoje(),7)});
+  toast('Silenciado por 7 dias.','ai');
+  vigiasRender();
+}
+
+async function vigPainelAjustes(){
+  const {ajustes, silencios} = await vigAjustes();
+  const meus = VIGIAS.filter(a=>PERMS[CU].includes(a.rota));
+  const linhas = meus.map(a=>{
+    const on = vigLigado(ajustes, a.id);
+    return `<div style="display:flex;align-items:flex-start;gap:11px;padding:11px 2px;
+        border-bottom:1px solid var(--border)">
+      <i class="ti ${a.ic}" style="font-size:19px;color:var(--text2);margin-top:2px"></i>
+      <div style="flex:1;min-width:180px">
+        <div style="font-weight:650;font-size:13.5px">${esc(a.nome)}</div>
+        <div class="tt" style="margin-top:2px;line-height:1.5">${esc(a.desc)}</div>
+      </div>
+      <button class="btn ${on?'gn':'gh'} sm" onclick="vigLigar('${a.id}',${on?'false':'true'})">
+        <i class="ti ${on?'ti-circle-check':'ti-x'}"></i>${on?'De pé':'Desligado'}</button>
+    </div>`;
+  }).join('');
+  modal('Quais vigias estão de pé', 'ti-adjustments', `
+    <div style="max-height:56vh;overflow:auto">${linhas}</div>
+    ${silencios.length ? `<div style="margin-top:13px;display:flex;align-items:center;
+        justify-content:space-between;gap:11px;background:var(--bg3);border-radius:var(--radius);padding:11px 13px">
+        <div class="tt">${silencios.length} alerta${silencios.length>1?'s':''} silenciado${silencios.length>1?'s':''} no momento.</div>
+        <button class="btn gh sm" onclick="vigDesfazerSilencios()">
+          <i class="ti ti-refresh"></i>Ouvir tudo de novo</button></div>` : ''}
+    <div class="tt" style="margin-top:13px;line-height:1.6">
+      Desligar um vigia não apaga nada: ele só para de te mostrar o que vê.
+      Ligue de volta quando quiser e o alerta volta na hora, se o motivo ainda existir.
+    </div>`, null, 'sm');
+}
+
+async function vigLigar(id, ligado){
+  const todos = await dbGetAll('vigias');
+  const a = todos.find(x=>x.tipo==='ajuste' && x.agente===id);
+  if(a) await dbPut('vigias', {...a, ligado});
+  else   await dbAdd('vigias', {tipo:'ajuste', agente:id, ligado});
+  vigPainelAjustes();
+  vigiasRender();
+}
+
+async function vigDesfazerSilencios(){
+  const todos = await dbGetAll('vigias');
+  for(const s of todos.filter(x=>x.tipo==='silencio')) await dbDel('vigias', s.id);
+  toast('Os alertas silenciados voltaram.','ai');
+  closeModal('mk-form');
+  vigiasRender();
+}
+/* =========================================================================
+   CONTROLE — a equipe de agentes, vista de dentro do sistema
+
+   NÃO CONFUNDIR COM "VIGIAS". Vigias são vinte leituras do seu próprio
+   banco, que apontam conta vencida e etapa atrasada. Aqui é outra coisa:
+   são os agentes de IA que EXECUTAM trabalho na sua máquina — Radar,
+   Roteirista, Produtor, Guardião — cada um com rotina, tarefa e horário.
+
+   DE ONDE VEM O QUE APARECE AQUI
+   ------------------------------
+   Da pasta workspace/ do Mission Control, que é a fonte de verdade. Esta
+   tela LÊ; quem escreve são os agentes. O sistema não guarda uma cópia:
+   guardar cópia criaria duas verdades, e um dia ninguém saberia qual vale.
+
+   DUAS PONTES, PORQUE SÃO DOIS MUNDOS
+   -----------------------------------
+   1. No aplicativo instalado: JeVDesktop.ctl* → o módulo desktop/controle.js
+      lê os arquivos direto do disco. É o caminho normal.
+   2. No navegador: fetch em http://127.0.0.1:3020 — o server.js do painel
+      avulso, que responde com CORS liberado para a máquina local.
+   Nenhuma das duas existindo, a tela DIZ isso e ensina como ligar. Tela em
+   branco sem explicação é o pior defeito que um painel pode ter.
+
+   O QUE ESTA TELA NÃO FAZ
+   -----------------------
+   Não publica em plataforma nenhuma. Não cria agente sozinha. Não apaga
+   nada. Os únicos dois comandos que ela tem são mudar a etapa de uma
+   tarefa e mandar uma rotina rodar agora — e os dois pedem confirmação.
+   ========================================================================= */
+
+const CTL_URL = 'http://127.0.0.1:3020';
+
+const CTL = {aba:'painel', dados:null, carregando:false, erro:'', arquivo:null};
+
+const CTL_ABAS = [
+  ['painel',   'Painel',   'ti-layout-grid'],
+  ['agentes',  'Agentes',  'ti-users'],
+  ['tarefas',  'Tarefas',  'ti-list-check'],
+  ['rotinas',  'Rotinas',  'ti-clock'],
+  ['projetos', 'Projetos', 'ti-target'],
+  ['esteira',  'Esteira',  'ti-arrow-right'],
+  ['memorias', 'Memórias', 'ti-bulb'],
+  ['docs',     'Documentos', 'ti-file-text'],
+];
+
+/* estado do agente → como mostrar. O vocabulário é o do workspace; traduzir
+   aqui evita espalhar string solta pela tela inteira. */
+const CTL_STATUS = {
+  online:  {rot:'De pé',      pill:'s-ok', ic:'ti-circle-check'},
+  busy:    {rot:'Trabalhando',pill:'s-pd', ic:'ti-player-play'},
+  idle:    {rot:'Parado',     pill:'s-nt', ic:'ti-clock'},
+  paused:  {rot:'Pausado',    pill:'s-wn', ic:'ti-x'},
+  offline: {rot:'Desligado',  pill:'s-nt', ic:'ti-x'},
+  error:   {rot:'Com erro',   pill:'s-bl', ic:'ti-alert-triangle'},
+};
+const CTL_ETAPAS = {
+  backlog:     'Na fila',
+  planejada:   'Planejada',
+  em_execucao: 'Em execução',
+  revisao:     'Esperando você',
+  bloqueada:   'Travada',
+  concluida:   'Pronta',
+};
+
+/* ------------------------------------------------------------- a ponte */
+function ctlNoApp(){ return !!(window.JeVDesktop && window.JeVDesktop.ctlEstado); }
+
+/* No aplicativo vai pelo módulo; no navegador tenta o servidor do painel.
+   O `fetch` leva um prazo curto: servidor desligado tem de falhar rápido e
+   virar explicação, não deixar a tela girando. */
+async function ctlPedir(caminho, opc){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), 2500);
+  try {
+    const r = await fetch(CTL_URL + caminho, {...(opc||{}), signal:ctrl.signal});
+    const txt = await r.text();
+    let corpo = {};
+    try { corpo = txt ? JSON.parse(txt) : {}; } catch { throw new Error('resposta que não é JSON'); }
+    if(!r.ok) throw new Error(corpo.error || ('erro ' + r.status));
+    return corpo;
+  } finally { clearTimeout(t); }
+}
+
+async function ctlEstado(){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlEstado();
+  try {
+    const s = await ctlPedir('/api/state');
+    return {disponivel:true, pelaWeb:true, ...s};
+  } catch(e){
+    return {disponivel:false, pelaWeb:true, motivo:e.message};
+  }
+}
+async function ctlMudarTarefa(id, dados){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlMudarTarefa(id, dados);
+  return await ctlPedir('/api/tasks/'+encodeURIComponent(id),
+    {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(dados)});
+}
+async function ctlMudarRotina(id, dados){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlMudarRotina(id, dados);
+  return await ctlPedir('/api/cron/'+encodeURIComponent(id),
+    {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(dados)});
+}
+async function ctlRodarAgora(id){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlRodarAgora(id);
+  return await ctlPedir('/api/cron/'+encodeURIComponent(id)+'/run', {method:'POST'});
+}
+async function ctlArquivo(rel){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlArquivo(rel);
+  return await ctlPedir('/api/file?path='+encodeURIComponent(rel));
+}
+
+/* ------------------------------------------------------------- ajudas */
+function ctlQuando(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return String(iso);
+  const min = Math.round((Date.now() - d.getTime())/60000);
+  if(min < 1)    return 'agora';
+  if(min < 60)   return `há ${min} min`;
+  if(min < 1440) return `há ${Math.round(min/60)} h`;
+  return d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+}
+function ctlFuturo(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return String(iso);
+  const min = Math.round((d.getTime() - Date.now())/60000);
+  if(min < 0)  return 'passou';
+  if(min < 60) return `em ${min} min`;
+  if(min < 1440) return `em ${Math.round(min/60)} h`;
+  return d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+}
+function ctlAgenteNome(d, id){
+  const a = ((d.agents && d.agents.agents) || []).find(x=>x.id===id);
+  return a ? a.name : (id || '—');
+}
+
+/* o que exige o dono: tarefa esperando ele, tarefa travada, agente com erro.
+   É este número que aparece no botão do menu. */
+function ctlPendencias(d){
+  if(!d || !d.disponivel) return 0;
+  const tarefas = (d.tasks && d.tasks.tasks) || [];
+  const agentes = (d.agents && d.agents.agents) || [];
+  return tarefas.filter(t=>['revisao','bloqueada'].includes(t.stage)).length
+       + agentes.filter(a=>a.status==='error').length;
+}
+
+async function ctlBadge(){
+  const el = document.querySelector('[data-ctl-badge]');
+  if(!el) return;
+  let n = 0;
+  try { n = ctlPendencias(await ctlEstado()); } catch { n = 0; }
+  el.textContent = n > 99 ? '99+' : String(n);
+  el.classList.toggle('hide', n === 0);
+}
+
+/* ======================================================== A TELA ====== */
+async function controleRender(){
+  const root = document.getElementById('ctl-root');
+  root.innerHTML = `<div class="card"><div class="bd"><div class="empty">
+    <i class="ti ti-refresh"></i><b>Falando com o Controle…</b></div></div></div>`;
+
+  const d = await ctlEstado();
+  CTL.dados = d;
+
+  if(!d.disponivel){ root.innerHTML = ctlSemControle(d); return; }
+
+  const pend = ctlPendencias(d);
+  let h = `<div class="ph">
+      <div class="ic" style="background:var(--brand-bg);color:var(--brand)"><i class="ti ti-settings-automation"></i></div>
+      <div><h1>Controle</h1>
+        <p>A equipe de agentes que trabalha na máquina${d.pasta?' · '+esc(d.pasta):''}</p></div>
+      <div class="sp"></div>
+      <button class="btn gh" onclick="controleRender()"><i class="ti ti-refresh"></i>Atualizar</button>
+      <button class="btn gh" onclick="ctlAbrir3D()"><i class="ti ti-external-link"></i>Escritório 3D</button>
+      ${ctlNoApp()?`<button class="btn gh" onclick="ctlTrocarPasta()"><i class="ti ti-folder"></i>Pasta</button>`:''}
+    </div>`;
+
+  if((d.errors||[]).length){
+    h += `<div class="card"><div class="bd" style="border-left:4px solid var(--red)">
+      <b style="color:var(--red)">Arquivo do workspace com problema:</b>
+      <div class="tt" style="margin-top:6px;line-height:1.6">${d.errors.map(esc).join('<br>')}</div>
+    </div></div>`;
+  }
+  if(pend){
+    h += `<div class="al aw" style="margin-bottom:14px"><i class="ti ti-bell-ringing"></i>
+      <div><b>${pend} ${pend>1?'coisas esperam':'coisa espera'} por você.</b>
+      Tarefa parada em revisão, tarefa travada ou agente com erro — está na aba Tarefas.</div></div>`;
+  }
+
+  h += `<div class="chips">${CTL_ABAS.map(([v,rot,ic])=>
+    `<div class="chip ${CTL.aba===v?'on':''}" onclick="ctlAba('${v}')">
+      <i class="ti ${ic}"></i> ${rot}</div>`).join('')}</div>`;
+
+  const pintar = {painel:ctlPainel, agentes:ctlAgentes, tarefas:ctlTarefas,
+                  rotinas:ctlRotinas, projetos:ctlProjetos, esteira:ctlEsteira,
+                  memorias:ctlMemorias, docs:ctlDocs};
+  h += (pintar[CTL.aba] || ctlPainel)(d);
+
+  root.innerHTML = h;
+  ctlBadge();
+}
+
+function ctlAba(v){ CTL.aba = v; CTL.arquivo = null; controleRender(); }
+
+/* ------------------------------------------- quando não há Controle --- */
+/* Esta tela é a mais importante do módulo. Painel que não liga e não
+   explica vira chamado de suporte; painel que não liga e ensina a ligar
+   resolve sozinho. */
+function ctlSemControle(d){
+  const app = ctlNoApp();
+  return `<div class="ph">
+      <div class="ic" style="background:var(--bg4);color:var(--text2)"><i class="ti ti-settings-automation"></i></div>
+      <div><h1>Controle</h1><p>A equipe de agentes que trabalha na máquina</p></div>
+    </div>
+    <div class="card"><div class="bd">
+      <div class="al aw"><i class="ti ti-alert-triangle"></i>
+        <div><b>O Controle não está respondendo.</b><br>
+        ${esc(d.motivo || 'motivo não informado')}</div></div>
+
+      <div style="margin-top:16px;line-height:1.75;font-size:13.5px">
+        <b>O que é isto.</b> O Controle mostra a equipe de agentes que trabalha na sua
+        máquina — quem está de pé, o que cada um está fazendo, quais rotinas rodam e a
+        que horas. Essa equipe mora numa pasta chamada <b>MissionControl</b>, fora do
+        sistema. É de propósito: assim o painel avulso e o JeV leem exatamente a mesma
+        coisa, e não existem duas verdades.
+      </div>
+
+      <div style="margin-top:15px">
+        <b style="font-size:13.5px">Para ligar</b>
+        <div class="tt" style="margin-top:7px;line-height:1.75">
+        ${app
+          ? `1. Confira se a pasta <b>MissionControl</b> está no lugar. Se você a moveu,
+             clique em <b>Apontar a pasta</b> aqui embaixo e escolha onde ela está.<br>
+             2. Se a pasta sumiu, ela pode ser restaurada do backup do Guardião — os
+             backups antigos ficam em <b>_antigos</b> e nada é apagado.`
+          : `Você está vendo o sistema pelo navegador, e o navegador não lê pasta do disco.
+             Há dois caminhos:<br>
+             1. Abrir o JeV pelo <b>aplicativo instalado</b> — é o caminho normal, e aí o
+             Controle lê a pasta direto.<br>
+             2. Ou ligar o painel avulso (o <b>INICIAR.bat</b> dentro da pasta
+             MissionControl) e recarregar esta tela: ele responde em
+             <span class="mono">127.0.0.1:3020</span>.`}
+        </div>
+      </div>
+
+      <div class="brow">
+        <button class="btn gh" onclick="controleRender()"><i class="ti ti-refresh"></i>Tentar de novo</button>
+        ${app?`<button class="btn" onclick="ctlTrocarPasta()"><i class="ti ti-folder"></i>Apontar a pasta</button>`:''}
+      </div>
+    </div></div>`;
+}
+
+async function ctlTrocarPasta(){
+  if(!ctlNoApp()){ toast('Só o aplicativo instalado consegue escolher pasta.','aw'); return; }
+  try {
+    const r = await window.JeVDesktop.ctlEscolherPasta();
+    if(r && r.cancelado) return;
+    if(r && r.ok) toast('Pasta apontada. Lendo o Controle de novo.','ag');
+    else toast((r && r.motivo) || 'não consegui usar essa pasta','ae');
+  } catch(e){ toast(e.message,'ae'); }
+  controleRender();
+}
+
+async function ctlAbrir3D(){
+  /* o 3D vive no painel avulso: o Three.js pesa 691 KB e embutir faria a
+     família baixar isso em toda atualização do sistema, para ver bonequinho */
+  if(ctlNoApp()){
+    try {
+      const r = await window.JeVDesktop.ctlSubirServidor();
+      if(!r || !r.ok){ toast((r&&r.motivo)||'não consegui subir o painel','ae'); return; }
+    } catch(e){ toast(e.message,'ae'); return; }
+  }
+  window.open(CTL_URL, '_blank');
+}
+
+/* ------------------------------------------------------------- painel */
+function ctlPainel(d){
+  const ag = (d.agents && d.agents.agents) || [];
+  const tf = (d.tasks && d.tasks.tasks) || [];
+  const jb = (d.cron && d.cron.jobs) || [];
+  const dePe   = ag.filter(a=>['online','busy'].includes(a.status)).length;
+  const comErro= ag.filter(a=>a.status==='error').length;
+  const emExec = tf.filter(t=>t.stage==='em_execucao').length;
+  const espera = tf.filter(t=>['revisao','bloqueada'].includes(t.stage)).length;
+  const ligadas= jb.filter(j=>j.enabled).length;
+  const proxima= jb.filter(j=>j.enabled && j.nextRun).sort((a,b)=>String(a.nextRun).localeCompare(String(b.nextRun)))[0];
+
+  let h = `<div class="kg">
+    ${ctlKpi('Agentes de pé', dePe+' de '+ag.length, comErro?comErro+' com erro':'nenhum com erro', comErro?'var(--red)':'var(--green)')}
+    ${ctlKpi('Em execução', emExec, 'tarefas andando agora', 'var(--blue)')}
+    ${ctlKpi('Esperando você', espera, 'revisão ou travada', espera?'var(--amber)':'var(--text3)')}
+    ${ctlKpi('Rotinas ligadas', ligadas+' de '+jb.length, proxima?('próxima '+ctlFuturo(proxima.nextRun)):'nenhuma agendada', 'var(--brand)')}
+  </div>`;
+
+  if(d.status){
+    h += `<div class="card"><div class="hd"><i class="ti ti-file-text"></i>O dia, pelo Guardião
+      <span class="sp"></span><span class="tt">STATUS.md</span></div>
+      <div class="bd"><div class="mono" style="white-space:pre-wrap;font-size:12.5px;line-height:1.65">${esc(d.status)}</div></div></div>`;
+  }
+
+  const recentes = tf.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,5);
+  if(recentes.length){
+    h += `<div class="card"><div class="hd"><i class="ti ti-history"></i>Mexeram nisto por último</div><div class="bd">
+      ${recentes.map(t=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)">
+        <span class="st ${ctlPillEtapa(t.stage)}">${esc(CTL_ETAPAS[t.stage]||t.stage)}</span>
+        <div style="flex:1;min-width:180px">
+          <div style="font-weight:620;font-size:13.5px">${esc(t.title||t.id)}</div>
+          <div class="tt">${esc(ctlAgenteNome(d,t.owner))} · ${ctlQuando(t.updatedAt)}</div>
+        </div></div>`).join('')}
+    </div></div>`;
+  }
+  return h;
+}
+function ctlKpi(lb, vl, sb, cor){
+  return `<div class="kc"><div class="lb">${esc(lb)}</div>
+    <div class="vl" style="color:${cor}">${esc(String(vl))}</div>
+    <div class="sb">${esc(sb)}</div></div>`;
+}
+function ctlPillEtapa(e){
+  return {concluida:'s-ok', em_execucao:'s-pd', revisao:'s-wn',
+          bloqueada:'s-bl', planejada:'s-br', backlog:'s-nt'}[e] || 's-nt';
+}
+
+/* ------------------------------------------------------------ agentes */
+function ctlAgentes(d){
+  const ag = (d.agents && d.agents.agents) || [];
+  const hb = (d.heartbeat && d.heartbeat.agents) || {};
+  const limite = (d.heartbeat && d.heartbeat.staleAfterMinutes) || 60;
+  if(!ag.length) return ctlVazio('Nenhum agente cadastrado ainda.','ti-users');
+  return `<div class="kg" style="grid-template-columns:repeat(auto-fill,minmax(310px,1fr))">
+    ${ag.map(a=>{
+      const s = CTL_STATUS[a.status] || CTL_STATUS.offline;
+      const bat = hb[a.id];
+      /* batimento velho é sinal de agente morto sem ninguém ter percebido */
+      const velho = bat && bat.lastSeen &&
+        ((Date.now() - new Date(bat.lastSeen).getTime())/60000 > limite);
+      const st = a.stats || {};
+      return `<div class="card" style="border-left:4px solid ${esc(a.color||'var(--brand)')}"><div class="bd">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:11px;height:11px;border-radius:50%;background:${esc(a.color||'#888')};flex:none"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14.5px">${esc(a.name||a.id)}</div>
+            <div class="tt">${esc(a.role||'')}</div>
+          </div>
+          <span class="st ${s.pill}">${s.rot}</span>
+        </div>
+        ${a.description?`<div class="tt" style="margin-top:9px;line-height:1.55">${esc(a.description)}</div>`:''}
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+          ${(a.skills||[]).slice(0,4).map(k=>`<span class="st s-nt">${esc(k)}</span>`).join('')}
+        </div>
+        <div class="tt" style="margin-top:10px;line-height:1.7">
+          ${a.currentTask?`Agora em <b>${esc(a.currentTask)}</b><br>`:''}
+          Último sinal de vida: ${ctlQuando(a.lastHeartbeat)}
+          ${velho?` <span style="color:var(--red)">— passou de ${limite} min sem dar sinal</span>`:''}<br>
+          ${num(st.tasksDone)||0} concluídas · ${num(st.tasksFailed)||0} com falha
+        </div>
+      </div></div>`;
+    }).join('')}</div>`;
+}
+
+/* ------------------------------------------------------------ tarefas */
+function ctlTarefas(d){
+  const tf = (d.tasks && d.tasks.tasks) || [];
+  if(!tf.length) return ctlVazio('Nenhuma tarefa na lista.','ti-list-check');
+  const ordem = ['bloqueada','revisao','em_execucao','planejada','backlog','concluida'];
+  const lista = tf.slice().sort((a,b)=>
+    (ordem.indexOf(a.stage)-ordem.indexOf(b.stage)) ||
+    String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  return lista.map(t=>{
+    const p = clamp(num(t.progress),0,100);
+    return `<div class="card"><div class="bd">
+      <div style="display:flex;gap:11px;align-items:flex-start;flex-wrap:wrap">
+        <span class="st ${ctlPillEtapa(t.stage)}">${esc(CTL_ETAPAS[t.stage]||t.stage)}</span>
+        <div style="flex:1;min-width:240px">
+          <div style="font-weight:680;font-size:14px;line-height:1.35">${esc(t.title||t.id)}</div>
+          <div class="tt" style="margin-top:3px">${esc(t.id)} · ${esc(ctlAgenteNome(d,t.owner))}
+            ${t.eta?' · prazo '+ctlFuturo(t.eta):''} · mexido ${ctlQuando(t.updatedAt)}</div>
+        </div>
+        <button class="btn gh sm" onclick="ctlMoverTarefa('${esc(t.id)}')">
+          <i class="ti ti-arrow-right"></i>Mudar etapa</button>
+      </div>
+      <div class="pb" style="margin-top:10px"><div class="pf" style="width:${p}%"></div></div>
+      <div class="tt" style="margin-top:4px">${p}%</div>
+      ${t.evidence?`<div style="margin-top:10px;background:var(--bg3);border-radius:var(--radius);
+        padding:10px 12px;font-size:12.5px;line-height:1.6">
+        <b>De onde saiu o número:</b> ${esc(t.evidence)}</div>`:
+        (t.stage==='em_execucao'?`<div class="tt" style="margin-top:10px;color:var(--amber)">
+          Em execução sem evidência registrada — o agente devia ter dito onde está o resultado.</div>`:'')}
+      ${t.blockedBy?`<div class="al ae" style="margin-top:10px"><i class="ti ti-alert-triangle"></i>
+        <div><b>Travada:</b> ${esc(t.blockedBy)}</div></div>`:''}
+      ${t.nextStep?`<div class="tt" style="margin-top:8px"><b>Próximo passo:</b> ${esc(t.nextStep)}</div>`:''}
+    </div></div>`;
+  }).join('');
+}
+
+function ctlMoverTarefa(id){
+  const t = ((CTL.dados.tasks && CTL.dados.tasks.tasks) || []).find(x=>x.id===id);
+  if(!t) return;
+  /* a escolha vem ANTES do pedido: um clique só, nada de mandar e perguntar
+     depois. É isso que impede uma tarefa mudar de etapa por engano. */
+  modal('Mudar a etapa de '+t.id, 'ti-arrow-right',
+    `<div style="font-size:13.5px;line-height:1.6;margin-bottom:12px">${esc(t.title||'')}</div>
+     ${Object.entries(CTL_ETAPAS).map(([k,rot])=>
+       `<div onclick="ctlAplicarEtapa('${esc(id)}','${k}')"
+          style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--radius);
+          cursor:pointer;border:1px solid var(--border);margin-bottom:7px;
+          ${t.stage===k?'background:var(--bg3);font-weight:700':''}">
+          <span class="st ${ctlPillEtapa(k)}">${rot}</span>
+          ${t.stage===k?'<span class="tt">é a de agora</span>':''}
+        </div>`).join('')}`, null, 'sm');
+}
+async function ctlAplicarEtapa(id, etapa){
+  closeModal('mk-form');
+  try {
+    await ctlMudarTarefa(id, {stage:etapa});
+    toast('Etapa alterada.','ag');
+  } catch(e){ toast(e.message,'ae'); }
+  controleRender();
+}
+
+/* ------------------------------------------------------------ rotinas */
+function ctlRotinas(d){
+  const jb = (d.cron && d.cron.jobs) || [];
+  const tz = (d.cron && d.cron.timezone) || '';
+  if(!jb.length) return ctlVazio('Nenhuma rotina cadastrada.','ti-clock');
+  return `<div class="card"><div class="bd"><div class="tt">
+      Horários no fuso ${esc(tz||'do computador')}. Rotina sem comando é só um lembrete:
+      ela aparece aqui mas não executa nada.</div></div></div>` +
+    jb.map(j=>{
+      const st = j.lastStatus==='ok' ? 's-ok' : j.lastStatus==='erro' ? 's-bl'
+               : j.lastStatus==='running' ? 's-pd' : 's-nt';
+      const rot = j.lastStatus==='ok' ? 'Última: ok' : j.lastStatus==='erro' ? 'Última: com erro'
+                : j.lastStatus==='running' ? 'Rodando' : 'Nunca rodou';
+      const semComando = !j.run;
+      return `<div class="card"><div class="bd">
+        <div style="display:flex;gap:11px;align-items:flex-start;flex-wrap:wrap">
+          <i class="ti ti-clock" style="font-size:20px;color:var(--text2);margin-top:2px"></i>
+          <div style="flex:1;min-width:230px">
+            <div style="font-weight:680;font-size:14px">${esc(j.name||j.id)}</div>
+            <div class="tt" style="margin-top:3px">${esc(j.humanSchedule||j.schedule||'')}
+              ${j.agent?' · '+esc(ctlAgenteNome(d,j.agent)):''}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span class="st ${st}">${rot}</span>
+            <span class="st ${j.enabled?'s-ok':'s-nt'}">${j.enabled?'Ligada':'Desligada'}</span>
+          </div>
+        </div>
+        ${j.description?`<div class="tt" style="margin-top:8px;line-height:1.6">${esc(j.description)}</div>`:''}
+        <div class="tt" style="margin-top:8px;line-height:1.7">
+          Rodou ${ctlQuando(j.lastRun)}${j.enabled&&j.nextRun?` · próxima ${ctlFuturo(j.nextRun)}`:''}
+          ${semComando?'<br><b>Sem comando para executar</b> — esta rotina é só informativa.':''}
+          ${j.pausedReason?'<br>Pausada: '+esc(j.pausedReason):''}
+        </div>
+        ${j.lastError?`<div class="al ae" style="margin-top:9px"><i class="ti ti-alert-triangle"></i>
+          <div>${esc(j.lastError)}</div></div>`:''}
+        <div class="brow">
+          <button class="btn gh sm" onclick="ctlLigarRotina('${esc(j.id)}',${j.enabled?'false':'true'})">
+            <i class="ti ${j.enabled?'ti-x':'ti-circle-check'}"></i>${j.enabled?'Desligar':'Ligar'}</button>
+          ${semComando?'':`<button class="btn gh sm" ${j.rodandoAgora?'disabled':''}
+            onclick="ctlPedirRodar('${esc(j.id)}')">
+            <i class="ti ti-player-play"></i>${j.rodandoAgora?'Já está rodando':'Rodar agora'}</button>`}
+        </div>
+      </div></div>`;
+    }).join('');
+}
+async function ctlLigarRotina(id, ligar){
+  try { await ctlMudarRotina(id, {enabled:ligar}); toast(ligar?'Rotina ligada.':'Rotina desligada.','ai'); }
+  catch(e){ toast(e.message,'ae'); }
+  controleRender();
+}
+function ctlPedirRodar(id){
+  const j = ((CTL.dados.cron && CTL.dados.cron.jobs) || []).find(x=>x.id===id);
+  confirmar('Rodar agora?',
+    `<b>${esc(j?j.name:id)}</b> vai executar neste instante, fora do horário dela.<br><br>
+     <span style="color:var(--text2)">O comando roda na sua máquina. Nada é publicado em
+     plataforma nenhuma — o resultado fica no workspace para você conferir.</span>`,
+    async ()=>{
+      try { await ctlRodarAgora(id); toast('Mandei rodar. Acompanhe o estado aqui.','ag'); }
+      catch(e){ toast(e.message,'ae'); }
+      setTimeout(controleRender, 1200);
+    });
+}
+
+/* ----------------------------------------------------------- projetos */
+function ctlProjetos(d){
+  const pr = (d.projects && d.projects.projects) || [];
+  if(!pr.length) return ctlVazio('Nenhuma frente de trabalho cadastrada.','ti-target');
+  return pr.map(p=>{
+    const pg = clamp(num(p.progress),0,100);
+    const ms = p.milestones || [];
+    const feitos = ms.filter(m=>m.done).length;
+    return `<div class="card"><div class="hd"><i class="ti ti-target"></i>${esc(p.name||p.id)}
+      <span class="sp"></span><span class="st ${p.status==='ativo'?'s-ok':'s-nt'}">${esc(p.status||'')}</span></div>
+      <div class="bd">
+        ${p.goal?`<div style="font-size:13.5px;line-height:1.6">${esc(p.goal)}</div>`:''}
+        <div class="pb" style="margin-top:11px"><div class="pf" style="width:${pg}%"></div></div>
+        <div class="tt" style="margin-top:4px">${pg}%${ms.length?` · ${feitos} de ${ms.length} marcos`:''}
+          ${p.deadline?' · prazo '+esc(p.deadline):''}</div>
+        ${ms.length?`<div style="margin-top:12px">${ms.map(m=>
+          `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;font-size:13px">
+            <i class="ti ${m.done?'ti-circle-check':'ti-clock'}"
+               style="color:${m.done?'var(--green)':'var(--text3)'}"></i>
+            <span style="${m.done?'color:var(--text2)':''}">${esc(m.title||'')}</span>
+            ${m.date?`<span class="sp"></span><span class="tt">${esc(m.date)}</span>`:''}
+          </div>`).join('')}</div>`:''}
+        ${(p.agents||[]).length?`<div class="tt" style="margin-top:10px">Equipe:
+          ${(p.agents||[]).map(a=>esc(ctlAgenteNome(d,a))).join(', ')}</div>`:''}
+      </div></div>`;
+  }).join('');
+}
+
+/* ------------------------------------------------------------ esteira */
+function ctlEsteira(d){
+  const pl = d.pipeline || {};
+  const etapas = pl.stages || [];
+  const itens  = pl.items || [];
+  if(!itens.length) return ctlVazio('A esteira está vazia.','ti-arrow-right');
+  return `<div class="kg" style="grid-template-columns:repeat(auto-fit,minmax(215px,1fr))">
+    ${etapas.map(e=>{
+      const meus = itens.filter(i=>i.stage===e.id);
+      return `<div class="card"><div class="hd" style="font-size:13px">${esc(e.label||e.id)}
+        <span class="sp"></span><span class="st s-nt">${meus.length}</span></div>
+        <div class="bd" style="padding:10px 12px">
+        ${meus.length?meus.map(i=>
+          `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:620;line-height:1.35">${esc(i.title||i.id)}</div>
+            <div class="tt" style="margin-top:2px">${esc(i.id)}${i.format?' · '+esc(i.format):''}
+              ${i.channel?' · '+esc(i.channel):''}
+              ${i.views!=null?' · '+qtd(num(i.views),0)+' views':''}</div>
+          </div>`).join(''):'<div class="tt">vazio</div>'}
+        </div></div>`;
+    }).join('')}</div>`;
+}
+
+/* -------------------------------------------------- memórias e docs --- */
+function ctlMemorias(d){ return ctlListaMd(d.memory||[], 'Nenhuma memória guardada.', 'ti-bulb'); }
+function ctlDocs(d){     return ctlListaMd(d.docs||[],   'Nenhum documento na base.',  'ti-file-text'); }
+
+function ctlListaMd(lista, vazio, ic){
+  if(!lista.length) return ctlVazio(vazio, ic);
+  let h = lista.map(f=>`<div class="card"><div class="bd">
+      <div style="display:flex;gap:11px;align-items:flex-start;flex-wrap:wrap">
+        <i class="ti ${ic}" style="font-size:19px;color:var(--text2);margin-top:2px"></i>
+        <div style="flex:1;min-width:210px">
+          <div style="font-weight:680;font-size:14px">${esc(f.title||f.name)}</div>
+          <div class="tt" style="margin-top:3px">${esc(f.file)} · ${ctlQuando(f.updated)}</div>
+          ${f.preview?`<div class="tt" style="margin-top:6px;line-height:1.55">${esc(f.preview)}…</div>`:''}
+        </div>
+        <button class="btn gh sm" onclick="ctlVerArquivo('${esc(f.file)}')">
+          <i class="ti ti-eye"></i>Ler</button>
+      </div></div></div>`).join('');
+  if(CTL.arquivo){
+    h += `<div class="card"><div class="hd"><i class="ti ti-file-text"></i>${esc(CTL.arquivo.file)}
+      <span class="sp"></span><button class="btn gh sm" onclick="CTL.arquivo=null;controleRender()">
+      <i class="ti ti-x"></i>Fechar</button></div>
+      <div class="bd"><div class="mono" style="white-space:pre-wrap;font-size:12.5px;line-height:1.7">${esc(CTL.arquivo.content||'')}</div></div></div>`;
+  }
+  return h;
+}
+async function ctlVerArquivo(rel){
+  try { CTL.arquivo = await ctlArquivo(rel); }
+  catch(e){ toast(e.message,'ae'); return; }
+  controleRender();
+}
+
+function ctlVazio(msg, ic){
+  return `<div class="card"><div class="bd"><div class="empty">
+    <i class="ti ${ic}"></i><b>${esc(msg)}</b>
+    Quem escreve aqui são os agentes, na pasta do Mission Control.
+  </div></div></div>`;
 }
 /* =========================================================================
    INICIALIZAÇÃO
