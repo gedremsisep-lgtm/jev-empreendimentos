@@ -2,7 +2,7 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.38';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.39';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 9;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio
 const STORES = [
@@ -117,7 +117,13 @@ async function safeRender(fn,pg){
       <br><small>Recarregue a página. Se continuar, restaure o último backup.</small></div></div>`;
   }
 }
-function unidadeDaPagina(pg){ return UNIDADES.find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg)); }
+/* O Escritório entra na busca aqui, e só aqui dentro do núcleo: é isto que
+   dá a ele a barra de contexto com as duas abas. Somar ESCRITORIO dentro de
+   UNIDADES resolveria em menos linhas e estragaria o financeiro, que percorre
+   UNIDADES para ratear receita e despesa por negócio. */
+function unidadeDaPagina(pg){
+  return [...UNIDADES, ESCRITORIO].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
+}
 
 function renderCtxBar(u){
   const bar = document.getElementById('ctxbar');
@@ -141,7 +147,7 @@ function renderCtxBar(u){
 function menuNegocios(el){
   const d = document.getElementById('dropneg');
   if(d.style.display==='block'){ fecharDrops(); return; }
-  d.innerHTML = UNIDADES.filter(u=>PERMS[CU].includes(u.pg)).map(u=>
+  d.innerHTML = [...UNIDADES, ESCRITORIO].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
     `<div onclick="go('${u.pg}')" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;cursor:pointer"
        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
        <div style="width:32px;height:32px;border-radius:9px;background:${u.bg};color:${u.cor};display:flex;align-items:center;justify-content:center;font-size:18px">

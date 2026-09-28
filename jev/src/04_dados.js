@@ -26,6 +26,26 @@ const UNIDADES = [
 const UN_GERAL = {id:'geral', nome:'Administrativo / Geral', curto:'Geral', ic:'ti-building-store', cor:'#5B6260', bg:'#EFEDE7'};
 function unInfo(id){ return UNIDADES.find(u=>u.id===id) || UN_GERAL; }
 
+/* O ESCRITÓRIO — onde ficam os que trabalham sozinhos
+   ---------------------------------------------------
+   Tem a mesma cara de uma unidade e aparece no painel como mais um card, ao
+   lado de Mídia. Mas está FORA de UNIDADES de propósito, e isso é o ponto
+   inteiro desta peça: quem percorre UNIDADES é o financeiro, o relatório e o
+   rateio por negócio. Escritório não fatura nem gasta — entrar lá encheria
+   três telas de uma linha que sempre valeria zero, e um dia alguém ia somar
+   errado. Fica de fora do dinheiro e dentro da navegação.
+
+   As duas abas não são telas novas: são as telas que já existem. A barra de
+   contexto (a mesma de Obras e Mídia) as emoldura, e os dois botões da barra
+   de cima continuam levando direto para cada uma. */
+const ESCRITORIO = {
+  id:'escritorio', pg:'ctl', nome:'Escritório', curto:'Escritório',
+  ic:'ti-device-desktop-cog', cor:'#0E6E70', bg:'#E2F3F3',
+  desc:'Agentes de IA e vigias do negócio',
+  tabs:[['ctl','Controle','ti-settings-automation'],
+        ['vigias','Vigias','ti-bell-ringing']]
+};
+
 /* ---------------- Plano de contas ---------------- */
 const CAT_REC = [
   'Medição de obra','Venda de imóvel','Aluguel de imóvel','Taxa e reembolso de locação',

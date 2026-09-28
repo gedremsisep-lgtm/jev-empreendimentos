@@ -689,10 +689,13 @@ async function vigContar(){
     return achados.filter(a=>a.grave!=='baixo').length;
   } catch(e){ return 0; }
 }
-async function vigSino(){
+/* Aceita o número já contado. Quem está no painel acabou de rodar os vinte
+   vigias para encher o card do Escritório — mandar rodar de novo só para
+   acender o sino seria ler o banco inteiro duas vezes pelo mesmo número. */
+async function vigSino(n){
   const el = document.querySelector('[data-vig-badge]');
   if(!el) return;
-  const n = await vigContar();
+  if(n === undefined) n = await vigContar();
   el.textContent = n > 99 ? '99+' : String(n);
   el.classList.toggle('hide', n === 0);
 }

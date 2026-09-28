@@ -171,11 +171,15 @@ function ctlPendencias(d){
        + agentes.filter(a=>a.status==='error').length;
 }
 
-async function ctlBadge(){
+/* Aceita o número já apurado, pelo mesmo motivo do sino dos vigias: o painel
+   acaba de perguntar o estado ao Controle para encher o card do Escritório, e
+   perguntar de novo custaria outra ida à pasta com prazo de 2,5 segundos. */
+async function ctlBadge(n){
   const el = document.querySelector('[data-ctl-badge]');
   if(!el) return;
-  let n = 0;
-  try { n = ctlPendencias(await ctlEstado()); } catch { n = 0; }
+  if(n === undefined){
+    try { n = ctlPendencias(await ctlEstado()); } catch { n = 0; }
+  }
   el.textContent = n > 99 ? '99+' : String(n);
   el.classList.toggle('hide', n === 0);
 }

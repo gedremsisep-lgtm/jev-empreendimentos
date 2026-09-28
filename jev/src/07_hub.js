@@ -82,6 +82,10 @@ async function hubRender(){
           <div class="go">Abrir <i class="ti ti-arrow-right"></i></div></div>
       </div></div>`;
   }
+  /* o oitavo card, ao lado de Mídia: o Escritório. Vem depois do laço, e não
+     dentro dele, porque não é unidade de negócio — o miolo conta gente, não
+     dinheiro, e os números só entram depois que o painel já apareceu */
+  if(PERMS[CU].includes(ESCRITORIO.pg)) h += escrCard();
   h += `</div>`;
 
   // ------- atalhos -------
@@ -124,6 +128,11 @@ async function hubRender(){
       </div></div></div>`;
   }
   root.innerHTML = h;
+
+  /* SEM await de propósito: o Escritório pergunta a uma pasta fora do sistema,
+     com prazo de 2,5 segundos. Esperar aqui seria trocar o painel da família
+     por um relógio girando toda vez que o Controle estivesse desligado. */
+  if(PERMS[CU].includes(ESCRITORIO.pg)) escrPreencher();
 }
 
 /* indicadores curtos por unidade, mostrados no card do hub */
