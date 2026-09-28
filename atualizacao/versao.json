@@ -1,16 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.38",
-  "arquivo": "jev-1.0.38.html",
+  "versao": "1.0.39",
+  "arquivo": "jev-1.0.39.html",
   "data": "2026-09-28",
-  "sha256": "f30399071dc360c00a33ea042c155d492987840641e6bcde2c3d6b52cb7c5aff",
-  "tamanho": 2111032,
+  "sha256": "06ad165e4e8193c57da4aab1e4d0681bd4ad2efe5f39fce88fd51b5d66d0699e",
+  "tamanho": 2118679,
   "notas": [
-    "Controle: ficha do agente e da tarefa, criar agente pela tela e relógio que relê sozinho a cada 6 segundos",
-    "As quatro vieram da versão que já rodava na máquina de casa, juntadas com a 1.0.37 publicada"
+    "Escritório: o card dos agentes de IA, ao lado de Mídia",
+    "Controle e Vigias agora moram dentro do Escritório, com a barra das duas abas",
+    "Os dois sininhos do topo passam a acender já no painel, sem entrar nas telas"
   ],
-  "substitui": "1.0.37",
+  "substitui": "1.0.38",
   "anteriores": [
+    {
+      "versao": "1.0.38",
+      "arquivo": "jev-1.0.38.html",
+      "sha256": "f30399071dc360c00a33ea042c155d492987840641e6bcde2c3d6b52cb7c5aff",
+      "data": "2026-09-28"
+    },
     {
       "versao": "1.0.37",
       "arquivo": "jev-1.0.37.html",
@@ -39,12 +46,6 @@
       "versao": "1.0.33",
       "arquivo": "jev-1.0.33.html",
       "sha256": "cd0ba9eb13269a21d3fabf9b01c6ec124e2fb068e86043b486c53554035968ed",
-      "data": "2026-08-20"
-    },
-    {
-      "versao": "1.0.32",
-      "arquivo": "jev-1.0.32.html",
-      "sha256": "cd86852f7f640a1581428e2e7624963653d8409a7d95f990b96d0c74e26dab4a",
       "data": "2026-08-20"
     }
   ]
