@@ -30,7 +30,23 @@
 
 const CTL_URL = 'http://127.0.0.1:3020';
 
-const CTL = {aba:'painel', dados:null, carregando:false, erro:'', arquivo:null};
+const CTL = {aba:'painel', dados:null, carregando:false, erro:'', arquivo:null, relogio:null};
+
+/* O RELÓGIO — veio da versão que já estava na máquina dele, e é uma boa
+   ideia: painel de equipe que só atualiza quando alguém clica em Atualizar
+   mostra o passado e ninguém percebe. De seis em seis segundos ele relê.
+   As duas guardas importam mais do que o intervalo: não relê quando a tela
+   não é a do Controle (senão fica gastando leitura de disco à toa), e não
+   relê com um modal aberto (senão redesenha por baixo do que o dono está
+   lendo e o texto some do meio da frase). */
+function ctlLigarRelogio(){
+  clearInterval(CTL.relogio);
+  CTL.relogio = setInterval(() => {
+    if(PG !== 'ctl') { clearInterval(CTL.relogio); CTL.relogio = null; return; }
+    if(document.querySelector('.mk.on')) return;
+    controleRender();
+  }, 6000);
+}
 
 const CTL_ABAS = [
   ['painel',   'Painel',   'ti-layout-grid'],
@@ -103,6 +119,16 @@ async function ctlMudarRotina(id, dados){
 async function ctlRodarAgora(id){
   if(ctlNoApp()) return await window.JeVDesktop.ctlRodarAgora(id);
   return await ctlPedir('/api/cron/'+encodeURIComponent(id)+'/run', {method:'POST'});
+}
+async function ctlMudarAgente(id, dados){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlMudarAgente(id, dados);
+  return await ctlPedir('/api/agents/'+encodeURIComponent(id),
+    {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(dados)});
+}
+async function ctlCriarAgente(dados){
+  if(ctlNoApp()) return await window.JeVDesktop.ctlCriarAgente(dados);
+  return await ctlPedir('/api/agents',
+    {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(dados)});
 }
 async function ctlArquivo(rel){
   if(ctlNoApp()) return await window.JeVDesktop.ctlArquivo(rel);
@@ -199,6 +225,7 @@ async function controleRender(){
 
   root.innerHTML = h;
   ctlBadge();
+  ctlLigarRelogio();
 }
 
 function ctlAba(v){ CTL.aba = v; CTL.arquivo = null; controleRender(); }
@@ -327,8 +354,11 @@ function ctlAgentes(d){
   const ag = (d.agents && d.agents.agents) || [];
   const hb = (d.heartbeat && d.heartbeat.agents) || {};
   const limite = (d.heartbeat && d.heartbeat.staleAfterMinutes) || 60;
-  if(!ag.length) return ctlVazio('Nenhum agente cadastrado ainda.','ti-users');
-  return `<div class="kg" style="grid-template-columns:repeat(auto-fill,minmax(310px,1fr))">
+  const botaoNovo = `<div class="brow" style="margin:0 0 12px">
+    <button class="btn gh" onclick="ctlFormAgente(null)"><i class="ti ti-plus"></i>Novo agente</button>
+    <span class="tt" style="align-self:center">Clique num agente para abrir a ficha dele</span></div>`;
+  if(!ag.length) return botaoNovo + ctlVazio('Nenhum agente cadastrado ainda.','ti-users');
+  return botaoNovo + `<div class="kg" style="grid-template-columns:repeat(auto-fill,minmax(310px,1fr))">
     ${ag.map(a=>{
       const s = CTL_STATUS[a.status] || CTL_STATUS.offline;
       const bat = hb[a.id];
@@ -336,7 +366,8 @@ function ctlAgentes(d){
       const velho = bat && bat.lastSeen &&
         ((Date.now() - new Date(bat.lastSeen).getTime())/60000 > limite);
       const st = a.stats || {};
-      return `<div class="card" style="border-left:4px solid ${esc(a.color||'var(--brand)')}"><div class="bd">
+      return `<div class="card" style="border-left:4px solid ${esc(a.color||'var(--brand)')};cursor:pointer"
+          onclick="ctlVerAgente('${esc(a.id)}')"><div class="bd">
         <div style="display:flex;align-items:center;gap:9px">
           <div style="width:11px;height:11px;border-radius:50%;background:${esc(a.color||'#888')};flex:none"></div>
           <div style="flex:1;min-width:0">
@@ -377,6 +408,8 @@ function ctlTarefas(d){
           <div class="tt" style="margin-top:3px">${esc(t.id)} · ${esc(ctlAgenteNome(d,t.owner))}
             ${t.eta?' · prazo '+ctlFuturo(t.eta):''} · mexido ${ctlQuando(t.updatedAt)}</div>
         </div>
+        <button class="btn gh sm" onclick="ctlVerTarefa('${esc(t.id)}')">
+          <i class="ti ti-eye"></i>Abrir</button>
         <button class="btn gh sm" onclick="ctlMoverTarefa('${esc(t.id)}')">
           <i class="ti ti-arrow-right"></i>Mudar etapa</button>
       </div>
@@ -562,6 +595,166 @@ async function ctlVerArquivo(rel){
   try { CTL.arquivo = await ctlArquivo(rel); }
   catch(e){ toast(e.message,'ae'); return; }
   controleRender();
+}
+
+
+/* ====================== AS FICHAS E O FORMULÁRIO ======================= */
+/* Vieram da versão que já rodava na máquina dele, adaptadas às convenções
+   desta peça (CTL.dados em vez de CTL.estado, CTL_ETAPAS em vez de
+   CTL_ETAPA, o pill de status desta casa). O ganho é real: sem elas o
+   painel só LISTA, e para mexer em qualquer coisa era preciso abrir o
+   painel avulso por fora. */
+
+function ctlAgentePorId(id){
+  return (((CTL.dados||{}).agents||{}).agents||[]).find(x=>x.id===id);
+}
+
+function ctlVerAgente(id){
+  const a = ctlAgentePorId(id); if(!a) return;
+  const d = CTL.dados;
+  const tarefas = ((d.tasks&&d.tasks.tasks)||[]).filter(t=>t.owner===id && t.stage!=='concluida');
+  const rotinas = ((d.cron&&d.cron.jobs)||[]).filter(j=>j.agent===id);
+  const s = CTL_STATUS[a.status] || CTL_STATUS.offline;
+  modal(a.name || a.id, 'ti-user-check', `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:13px;height:13px;border-radius:50%;background:${esc(a.color||'#888')};flex:none"></div>
+      <div style="flex:1">
+        <div style="font-weight:700">${esc(a.role||'')}</div>
+        <div class="tt">${esc(a.description||'')}</div>
+      </div>
+      <span class="st ${s.pill}">${s.rot}</span>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>Situação</label>
+        <select onchange="ctlAplicarStatus('${esc(a.id)}', this.value)">
+          ${Object.keys(CTL_STATUS).map(k=>`<option value="${k}" ${k===a.status?'selected':''}>${CTL_STATUS[k].rot}</option>`).join('')}
+        </select></div>
+      <div class="fg"><label>Último sinal de vida</label>
+        <div style="padding-top:7px">${ctlQuando(a.lastHeartbeat)}</div></div>
+    </div>
+    <div style="margin-top:14px"><b style="font-size:13px">Tarefas abertas (${tarefas.length})</b>
+      ${tarefas.length ? tarefas.map(t=>`
+        <div onclick="closeModal('mk-form');ctlVerTarefa('${esc(t.id)}')"
+          style="display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
+          <span class="st ${ctlPillEtapa(t.stage)}">${esc(CTL_ETAPAS[t.stage]||t.stage)}</span>
+          <span style="flex:1;font-size:13px">${esc(t.title||t.id)}</span>
+          <span class="tt">${clamp(num(t.progress),0,100)}%</span>
+        </div>`).join('') : '<div class="tt" style="margin-top:5px">nenhuma</div>'}
+    </div>
+    <div style="margin-top:12px"><b style="font-size:13px">Rotinas (${rotinas.length})</b>
+      <div class="chips" style="margin-top:6px">${rotinas.length
+        ? rotinas.map(j=>`<span class="st ${j.enabled?'s-ok':'s-nt'}">${esc(j.name||j.id)}</span>`).join('')
+        : '<span class="tt">nenhuma</span>'}</div>
+    </div>
+    ${(a.skills||[]).length||(a.channels||[]).length ? `<div class="chips" style="margin-top:10px">
+      ${(a.skills||[]).map(k=>`<span class="st s-nt">${esc(k)}</span>`).join('')}
+      ${(a.channels||[]).map(c=>`<span class="st s-br">${esc(c)}</span>`).join('')}</div>`:''}`,
+    `<button class="btn gh" onclick="ctlFormAgente('${esc(a.id)}')"><i class="ti ti-edit"></i>Editar</button>
+     <button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>`);
+}
+
+async function ctlAplicarStatus(id, status){
+  try { await ctlMudarAgente(id, {status}); toast('Situação do agente alterada.','ag'); }
+  catch(e){ toast(e.message,'ae'); }
+  controleRender();
+}
+
+function ctlFormAgente(id){
+  const a = id ? ctlAgentePorId(id) : null;
+  const v = k => esc(a ? (a[k] || '') : '');
+  modal(a ? 'Editar '+(a.name||a.id) : 'Novo agente', 'ti-user-check', `
+    <div class="fr2">
+      <div class="fg"><label>Nome</label>
+        <input id="ctl-f-nome" value="${v('name')}" placeholder="ex.: Radar"></div>
+      <div class="fg"><label>O que ele faz</label>
+        <input id="ctl-f-papel" value="${v('role')}" placeholder="ex.: Pauta de finanças"></div>
+    </div>
+    <div class="fg" style="margin-top:11px"><label>Descrição</label>
+      <textarea id="ctl-f-desc" rows="2" placeholder="Em uma frase, o trabalho dele">${v('description')}</textarea></div>
+    <div class="fr3" style="margin-top:11px">
+      <div class="fg"><label>Situação</label><select id="ctl-f-status">
+        ${Object.keys(CTL_STATUS).map(k=>`<option value="${k}" ${a&&k===a.status?'selected':''}>${CTL_STATUS[k].rot}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Cor</label>
+        <input type="color" id="ctl-f-cor" value="${a&&a.color?esc(a.color):'#1C5872'}" style="height:38px;padding:2px"></div>
+      <div class="fg"><label>Habilidades</label>
+        <input id="ctl-f-skills" value="${esc(a?(a.skills||[]).join(', '):'')}" placeholder="separe por vírgula"></div>
+    </div>
+    <div class="fg" style="margin-top:11px"><label>Canais</label>
+      <input id="ctl-f-canais" value="${esc(a?(a.channels||[]).join(', '):'')}" placeholder="separe por vírgula"></div>
+    <div class="al ai" style="margin-top:12px"><i class="ti ti-info-circle"></i>
+      <div>Aqui ficam os dados de trabalho. A aparência do boneco no escritório 3D
+      se ajusta no painel avulso.</div></div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn" onclick="ctlSalvarAgente(${a?`'${esc(a.id)}'`:'null'})">
+       <i class="ti ti-check"></i>${a?'Salvar':'Criar agente'}</button>`);
+}
+
+async function ctlSalvarAgente(id){
+  const g = i => (document.getElementById(i)||{}).value || '';
+  const lista = t => String(t||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const dados = {
+    name: g('ctl-f-nome').trim(), role: g('ctl-f-papel').trim(),
+    description: g('ctl-f-desc').trim(), status: g('ctl-f-status'),
+    color: g('ctl-f-cor'), skills: lista(g('ctl-f-skills')), channels: lista(g('ctl-f-canais')),
+  };
+  if(!dados.name){ toast('O agente precisa de um nome.','aw'); return; }
+  try {
+    if(id) await ctlMudarAgente(id, dados); else await ctlCriarAgente(dados);
+    closeModal('mk-form');
+    toast(id ? 'Agente salvo.' : 'Agente criado.','ag');
+  } catch(e){ toast(e.message,'ae'); return; }
+  controleRender();
+}
+
+function ctlVerTarefa(id){
+  const d = CTL.dados;
+  const t = ((d.tasks&&d.tasks.tasks)||[]).find(x=>x.id===id); if(!t) return;
+  const proj = ((d.projects&&d.projects.projects)||[]).find(p=>p.id===t.project);
+  const dono = ctlAgentePorId(t.owner);
+  const p = clamp(num(t.progress),0,100);
+  modal(t.title || t.id, 'ti-list-check', `
+    <div class="fr2">
+      <div class="fg"><label>Responsável</label>
+        <div style="padding-top:7px">
+          <span style="color:${esc((dono&&dono.color)||'var(--text2)')}">●</span>
+          ${esc(ctlAgenteNome(d, t.owner))}</div></div>
+      <div class="fg"><label>Frente de trabalho</label>
+        <div style="padding-top:7px">${esc(proj?proj.name:(t.project||'—'))}</div></div>
+    </div>
+    <div class="fr2" style="margin-top:11px">
+      <div class="fg"><label>Etapa</label>
+        <select onchange="ctlAplicarEtapa('${esc(t.id)}', this.value)">
+          ${Object.entries(CTL_ETAPAS).map(([k,rot])=>`<option value="${k}" ${k===t.stage?'selected':''}>${rot}</option>`).join('')}
+        </select></div>
+      <div class="fg"><label>Andamento</label>
+        <div style="display:flex;gap:9px;align-items:center;padding-top:5px">
+          <input type="range" min="0" max="100" value="${p}" style="flex:1"
+            oninput="this.nextElementSibling.textContent=this.value+'%'"
+            onchange="ctlAplicarProgresso('${esc(t.id)}', Number(this.value))">
+          <b style="min-width:44px;text-align:right">${p}%</b></div></div>
+    </div>
+    <div class="fr2" style="margin-top:11px">
+      <div class="fg"><label>Prazo</label><div style="padding-top:7px">${ctlFuturo(t.eta)}</div></div>
+      <div class="fg"><label>Mexida</label><div style="padding-top:7px">${ctlQuando(t.updatedAt)}</div></div>
+    </div>
+    ${t.blockedBy ? `<div class="al ae" style="margin-top:12px"><i class="ti ti-alert-triangle"></i>
+      <div><b>Travada:</b> ${esc(t.blockedBy)}</div></div>`:''}
+    <div style="margin-top:12px"><b style="font-size:13px">De onde saiu o número</b>
+      <div class="tt" style="margin-top:4px;line-height:1.6">${t.evidence ? esc(t.evidence)
+        : 'Nenhuma evidência registrada — o agente devia ter dito onde está o resultado.'}</div></div>
+    <div style="margin-top:11px"><b style="font-size:13px">Próximo passo</b>
+      <div class="tt" style="margin-top:4px;line-height:1.6">${t.nextStep ? esc(t.nextStep) : '—'}</div></div>
+    <div class="chips" style="margin-top:12px">
+      ${(t.tags||[]).map(x=>`<span class="st s-nt">${esc(x)}</span>`).join('')}
+      <span class="tt">${esc(t.id)}</span></div>`);
+}
+
+async function ctlAplicarProgresso(id, valor){
+  try { await ctlMudarTarefa(id, {progress: valor}); toast('Andamento alterado.','ag'); }
+  catch(e){ toast(e.message,'ae'); }
+  /* não redesenha com o modal aberto: o dono ainda está lendo a ficha */
+  if(!document.querySelector('.mk.on')) controleRender();
 }
 
 function ctlVazio(msg, ic){
