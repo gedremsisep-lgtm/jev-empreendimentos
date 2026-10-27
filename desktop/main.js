@@ -42,6 +42,15 @@ try {
   console.error('controle indisponível:', e && e.message);
 }
 
+/* A sede dos agentes de IA (jev-agentes) — mesma porta protegida: a pasta
+   mora fora do pacote; faltando, o botão explica em vez de sumir. */
+let agentes = null;
+try {
+  agentes = require('./agentes');
+} catch (e) {
+  console.error('agentes indisponível:', e && e.message);
+}
+
 /* O garimpo pelo Kalodata — mesma porta protegida. */
 let kalodata = null;
 try {
@@ -764,6 +773,16 @@ ipcMain.handle('est-faxina', (_e, guardar) => {
   try { return estudio ? estudio.faxina(guardar) : 0; } catch (e) { return 0; }
 });
 
+/* ---------------- Sede dos agentes (jev-agentes) ---------------- */
+ipcMain.handle('ag-estado', () => agentes ? agentes.estado(app) : { rodando: false, motivo: 'o módulo da sede não foi empacotado com o programa' });
+ipcMain.handle('ag-abrir',  () => agentes ? agentes.abrir(app, BrowserWindow) : { ok: false, motivo: 'o módulo da sede não foi empacotado com o programa' });
+ipcMain.handle('ag-escolher-pasta', async () => {
+  if (!agentes) throw new Error('sede indisponível');
+  const r = await dialog.showOpenDialog({ title: 'Onde está a pasta jev-agentes (sede dos agentes)?', properties: ['openDirectory'], defaultPath: agentes.pasta || 'C:\\JeV' });
+  if (r.canceled || !r.filePaths[0]) return { cancelado: true };
+  return agentes.definirPasta(app, r.filePaths[0]);
+});
+
 /* ---------------- Controle (Mission Control) ---------------- */
 /* Nenhum destes escreve em plataforma nenhuma: o mais longe que vão é
    mudar a etapa de uma tarefa e mandar uma rotina rodar agora. */
@@ -856,3 +875,4 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('will-quit', () => { try { if (agentes) agentes.parar(); } catch (e) {} });

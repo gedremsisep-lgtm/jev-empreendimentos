@@ -115,6 +115,11 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   /* ---- o Controle: a equipe de agentes que trabalha na máquina ----
      Só leitura e dois comandos (mudar a etapa de uma tarefa, mandar uma
      rotina rodar agora). Nada aqui publica em lugar nenhum. */
+  /* ---- sede dos agentes (jev-agentes): sobe o servidor e abre o painel ---- */
+  agEstado:        () => ipcRenderer.invoke('ag-estado'),
+  agAbrir:         () => ipcRenderer.invoke('ag-abrir'),
+  agEscolherPasta: () => ipcRenderer.invoke('ag-escolher-pasta'),
+
   ctlEstado:        ()              => ipcRenderer.invoke('ctl-estado'),
   ctlArquivo:       rel             => ipcRenderer.invoke('ctl-arquivo', rel),
   ctlMudarTarefa:   (id, dados)     => ipcRenderer.invoke('ctl-mudar-tarefa', id, dados),
