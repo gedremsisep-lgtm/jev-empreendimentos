@@ -2,16 +2,17 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.39';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.40';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
-const DB_VERSION = 9;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio
+const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [
   'config','contas','financeiro','recorrencias','pessoas',
   'obras','etapas','orcamento','insumos','compras','estoque','equipe','apontamentos','rdo','projetos','medicoes',
   'imoveis','veiculos','contratos','manutencoes',
   'lotes','ciclos','produtos','vendas','canais','videos',
   'guias','lixeira','sync',
-  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias'
+  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias',
+  'impressoras3d','filamentos','movfilamento','orcamentos3d','produtos3d','producoes3d'
 ];
 let db = null;
 
@@ -78,8 +79,8 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','ver'],
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','ver'],
   c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
 
@@ -103,7 +104,10 @@ function go(pg){
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
              midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
-             ver:verRender};
+             ver:verRender,
+             i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender, i3cli:imp3dCliRender,
+             i3imp:imp3dImpRender, i3fil:imp3dFilRender, i3des:imp3dDesRender, i3prod:imp3dProdRender,
+             i3hist:imp3dHistRender, i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};
   safeRender(R[pg], pg);
 }
 async function safeRender(fn,pg){

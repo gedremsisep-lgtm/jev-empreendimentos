@@ -21,7 +21,15 @@ const UNIDADES = [
    cor:'#7B3FA0', bg:'#F2EAF9', desc:'Cursos e materiais digitais', tabs:[]},
   {id:'midia', pg:'midia', nome:'Canais de Vídeo', curto:'Mídia', ic:'ti-brand-youtube',
    cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização',
-   tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]}
+   tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]},
+  {id:'imp3d', pg:'i3pn', nome:'Impressão 3D', curto:'Impressão 3D', ic:'ti-3d-cube-sphere',
+   cor:'#16253B', bg:'#E7EBF0', desc:'Orçamento, produção e custos de impressão 3D',
+   tabs:[['i3pn','Painel','ti-layout-grid'],['i3calc','Calculadora','ti-calculator'],
+         ['i3orc','Orçamentos','ti-file-invoice'],['i3cli','Clientes','ti-address-book'],
+         ['i3imp','Impressoras','ti-printer'],['i3fil','Filamentos','ti-package'],
+         ['i3des','Despesas','ti-receipt'],['i3prod','Produtos','ti-cube'],
+         ['i3hist','Histórico','ti-history'],['i3rel','Relatórios','ti-file-analytics'],
+         ['i3cfg','Config. de cálculo','ti-adjustments']]}
 ];
 const UN_GERAL = {id:'geral', nome:'Administrativo / Geral', curto:'Geral', ic:'ti-building-store', cor:'#5B6260', bg:'#EFEDE7'};
 function unInfo(id){ return UNIDADES.find(u=>u.id===id) || UN_GERAL; }
@@ -59,7 +67,9 @@ const CAT_DESP = [
   'Insumos agrícolas','Ração e veterinário','Sementes e mudas','Energia elétrica','Água','Internet e telefone',
   'Aluguel e condomínio','IPTU e taxas','Impostos e tributos','Salários e encargos','Pró-labore e retiradas',
   'Contabilidade e serviços','Marketing e tráfego pago','Plataformas e assinaturas','Equipamentos e móveis',
-  'Custo do produto vendido','Comissões pagas','Tarifas bancárias','Juros e financiamento','Despesas administrativas','Outras despesas'
+  'Custo do produto vendido','Comissões pagas','Tarifas bancárias','Juros e financiamento','Despesas administrativas','Outras despesas',
+  'Compra de impressoras 3D','Compra de equipamentos auxiliares de impressão 3D','Compra de filamentos','Compra de resinas',
+  'Bicos e peças de reposição (impressão 3D)','Ferragens e acessórios (impressão 3D)','Ferramentas (impressão 3D)','Embalagens'
 ];
 const FORMAS = ['Pix','Dinheiro','Boleto','Transferência','Cartão de débito','Cartão de crédito','Cheque','A prazo'];
 const ST_FIN = {'Pendente':'s-wn','Pago':'s-ok','Recebido':'s-ok','Atrasado':'s-bl','Cancelado':'s-nt'};
@@ -110,3 +120,13 @@ const FONTES_REC = ['Monetização da plataforma','Publicidade / publipost','Afi
                     'Venda de infoproduto','Doações','Outra'];
 
 function platInfo(v){ return PLATS_VIDEO.find(p=>p.v===v)||PLATS_VIDEO[5]; }
+
+/* ---------------- Impressão 3D ---------------- */
+const TIPOS_TEC_3D = ['FDM (filamento)','Resina / SLA','Resina / DLP','SLS','Outra'];
+const MATERIAIS_3D = ['PLA','PETG','ABS','ASA','TPU','Nylon','PC','Fibra de carbono','Resina padrão',
+                      'Resina tenaz','Resina flexível','Resina para fundição','Outro'];
+const ST_IMPRESSORA3D = {'Ativa':'s-ok','Em manutenção':'s-pd','Inativa':'s-nt'};
+const ST_FILAMENTO = {'Em estoque':'s-ok','Baixo estoque':'s-wn','Esgotado':'s-bl'};
+const TIPOS_MOV_FILAMENTO = ['Entrada','Saída por consumo','Ajuste','Perda'];
+const ST_ORCAMENTO3D = {'Rascunho':'s-nt','Emitido':'s-pu','Enviado':'s-wn','Visualizado':'s-pd',
+                        'Aprovado':'s-ok','Recusado':'s-bl','Expirado':'s-nt','Cancelado':'s-bl'};
