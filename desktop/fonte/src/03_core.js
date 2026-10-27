@@ -2,15 +2,17 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.2';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.40';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
-const DB_VERSION = 3;   // v2: tabela 'guias' (celular) · v3: 'lixeira' e 'sync' (nuvem)
+const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [
   'config','contas','financeiro','recorrencias','pessoas',
   'obras','etapas','orcamento','insumos','compras','estoque','equipe','apontamentos','rdo','projetos','medicoes',
   'imoveis','veiculos','contratos','manutencoes',
   'lotes','ciclos','produtos','vendas','canais','videos',
-  'guias','lixeira','sync'
+  'guias','lixeira','sync',
+  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias',
+  'impressoras3d','filamentos','movfilamento','orcamentos3d','produtos3d','producoes3d'
 ];
 let db = null;
 
@@ -77,9 +79,9 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','cfg','ver'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','pes','rel','cel','nuvem','ver'],
-  c:['hub','obras','crono','mat','mo','rdo','proj','chacara','pes','cel']
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','ver'],
+  c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
 
 /* ---------------- Navegação ---------------- */
@@ -98,11 +100,14 @@ function go(pg){
   document.getElementById('bn-'+pg)?.classList.add('on');
   renderCtxBar(u);
   window.scrollTo(0,0);
-  const R = {hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
+  const R = {vigias:vigiasRender, ctl:controleRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
-             midia:midiaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
-             ver:verRender};
+             midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
+             ver:verRender,
+             i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender, i3cli:imp3dCliRender,
+             i3imp:imp3dImpRender, i3fil:imp3dFilRender, i3des:imp3dDesRender, i3prod:imp3dProdRender,
+             i3hist:imp3dHistRender, i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};
   safeRender(R[pg], pg);
 }
 async function safeRender(fn,pg){
@@ -116,7 +121,13 @@ async function safeRender(fn,pg){
       <br><small>Recarregue a página. Se continuar, restaure o último backup.</small></div></div>`;
   }
 }
-function unidadeDaPagina(pg){ return UNIDADES.find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg)); }
+/* O Escritório entra na busca aqui, e só aqui dentro do núcleo: é isto que
+   dá a ele a barra de contexto com as duas abas. Somar ESCRITORIO dentro de
+   UNIDADES resolveria em menos linhas e estragaria o financeiro, que percorre
+   UNIDADES para ratear receita e despesa por negócio. */
+function unidadeDaPagina(pg){
+  return [...UNIDADES, ESCRITORIO].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
+}
 
 function renderCtxBar(u){
   const bar = document.getElementById('ctxbar');
@@ -140,7 +151,7 @@ function renderCtxBar(u){
 function menuNegocios(el){
   const d = document.getElementById('dropneg');
   if(d.style.display==='block'){ fecharDrops(); return; }
-  d.innerHTML = UNIDADES.filter(u=>PERMS[CU].includes(u.pg)).map(u=>
+  d.innerHTML = [...UNIDADES, ESCRITORIO].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
     `<div onclick="go('${u.pg}')" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;cursor:pointer"
        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
        <div style="width:32px;height:32px;border-radius:9px;background:${u.bg};color:${u.cor};display:flex;align-items:center;justify-content:center;font-size:18px">
@@ -263,7 +274,10 @@ function confirmar(titulo,texto,fn){
 function printar(html){ document.getElementById('mkp-body').innerHTML = html; openModal('mk-print'); }
 
 function baixarArquivo(conteudo,nome,mime){
-  const blob = new Blob(['﻿'+conteudo],{type:mime||'text/plain;charset=utf-8'});
+  /* o BOM serve para o Excel abrir CSV com acento certo — mas atrapalha JSON,
+     que é lido por programa. Então ele só entra onde faz falta. */
+  const bom = /json/i.test(mime||'') ? '' : '﻿';
+  const blob = new Blob([bom+conteudo],{type:mime||'text/plain;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = nome; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);

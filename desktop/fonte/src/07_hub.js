@@ -32,6 +32,11 @@ async function hubRender(){
         <div class="v">${moedaK(des)}</div><div class="s">${doMes.filter(l=>l.tipo==='despesa').length} saída(s)</div></div>
       <div class="hg ${rec-des>=0?'pos':'neg'}"><div class="l"><i class="ti ti-report-money"></i>Resultado do mês</div>
         <div class="v">${moedaK(rec-des)}</div><div class="s">${rec?pct((rec-des)/rec*100)+' de margem':'—'}</div></div>
+    </div>
+    <div class="brow" style="margin-top:14px;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn gd" id="btn-agentes" onclick="hubVerificarAgentes(this)" title="Abre a sede dos agentes de IA: o Comandante, os gerentes e a equipe">
+        <i class="ti ti-users"></i>Verificar Agentes</button>
+      <span id="agentes-dica" style="font-size:12px;color:#A9CCC0"></span>
     </div></div>`;
 
   // ------- avisos -------
@@ -82,6 +87,10 @@ async function hubRender(){
           <div class="go">Abrir <i class="ti ti-arrow-right"></i></div></div>
       </div></div>`;
   }
+  /* o oitavo card, ao lado de Mídia: o Escritório. Vem depois do laço, e não
+     dentro dele, porque não é unidade de negócio — o miolo conta gente, não
+     dinheiro, e os números só entram depois que o painel já apareceu */
+  if(PERMS[CU].includes(ESCRITORIO.pg)) h += escrCard();
   h += `</div>`;
 
   // ------- atalhos -------
@@ -124,6 +133,11 @@ async function hubRender(){
       </div></div></div>`;
   }
   root.innerHTML = h;
+
+  /* SEM await de propósito: o Escritório pergunta a uma pasta fora do sistema,
+     com prazo de 2,5 segundos. Esperar aqui seria trocar o painel da família
+     por um relógio girando toda vez que o Controle estivesse desligado. */
+  if(PERMS[CU].includes(ESCRITORIO.pg)) escrPreencher();
 }
 
 /* indicadores curtos por unidade, mostrados no card do hub */
@@ -232,4 +246,43 @@ async function buscaGlobalRun(q){
          align-items:center;justify-content:center;font-size:17px"><i class="ti ${r.ic}"></i></div>
        <div><b style="font-size:13px;display:block">${esc(r.tit)}</b><span class="tt">${esc(r.sub)}</span></div></div>`).join('')
     : `<div class="tt">Nada encontrado para "${esc(q)}".</div>`;
+}
+
+
+/* =========================================================================
+   VERIFICAR AGENTES — o botão da tela inicial.
+
+   A sede dos agentes (jev-agentes) é um programa à parte, com o próprio
+   servidor em 127.0.0.1:3030. No aplicativo, o JeV sobe esse servidor
+   sozinho (se ele não estiver no ar) e abre o painel numa janela própria.
+   No navegador, só dá para abrir se a sede já estiver ligada pelo
+   INICIAR.bat — e a tela explica isso em vez de abrir uma aba quebrada.
+   Nenhuma chave de IA passa por aqui.                                      */
+const AGENTES_URL = 'http://127.0.0.1:3030';
+async function hubVerificarAgentes(btn){
+  const dica = document.getElementById('agentes-dica');
+  const diz = (t, cor) => { if(dica){ dica.textContent = t; dica.style.color = cor || '#A9CCC0'; } };
+  const app = (window.JeVDesktop && window.JeVDesktop.ehAplicativo && window.JeVDesktop.agAbrir) ? window.JeVDesktop : null;
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>Ligando a sede…'; }
+  try{
+    if(app){
+      diz('Subindo o servidor da sede, aguarde…');
+      const r = await app.agAbrir();
+      if(r && r.ok){ diz(r.jaEstava ? 'Sede já estava no ar — painel aberto.' : 'Sede ligada — painel aberto em outra janela.'); }
+      else {
+        diz(r && r.motivo ? r.motivo : 'Não consegui abrir a sede.', '#FFB3A7');
+        if(r && /não encontrei/i.test(r.motivo||'')){
+          const esc = await app.agEscolherPasta();
+          if(esc && esc.ok){ diz('Pasta definida: ' + esc.pasta + '. Clique de novo em Verificar Agentes.'); }
+        }
+      }
+    } else {
+      /* navegador: só consigo abrir se o servidor já estiver no ar */
+      let noAr = false;
+      try{ await fetch(AGENTES_URL + '/api/state', {mode:'no-cors', cache:'no-store'}); noAr = true; }catch(e){}
+      if(noAr){ window.open(AGENTES_URL, '_blank'); diz('Painel aberto em outra aba.'); }
+      else diz('A sede não está ligada. Abra C:\\JeV\\jev-agentes\\INICIAR.bat e clique de novo.', '#FFB3A7');
+    }
+  }catch(e){ diz('Não consegui abrir a sede: ' + (e && e.message ? e.message : e), '#FFB3A7'); }
+  finally{ if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-users"></i>Verificar Agentes'; } }
 }
