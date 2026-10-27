@@ -131,14 +131,14 @@ const ESTADO = {
     const meu = cards.find(c => /Escrit/i.test(c.querySelector('h3').textContent));
     return {
       quantos: cards.length,
+      totalUnidades: UNIDADES.length,
       ultimo: cards.indexOf(meu) === cards.length - 1,
-      depoisDeMidia: cards.indexOf(meu) === cards.findIndex(c=>/Mídia/.test(c.querySelector('h3').textContent)) + 1,
       leva: (meu.getAttribute('onclick')||''),
       texto: meu.innerText,
     };
   });
-  t('o card do Escritório está na fileira', card.quantos === 8, card.quantos + ' cards');
-  t('é o último, depois de Mídia', card.ultimo && card.depoisDeMidia);
+  t('o card do Escritório está na fileira', card.quantos === card.totalUnidades + 1, card.quantos + ' cards');
+  t('é o último, depois de todos os negócios', card.ultimo);
   t('e clicar nele abre o Controle', /go\('ctl'\)/.test(card.leva), card.leva);
   t('não fala em receita, despesa nem resultado do mês',
     !/Receita do mês|Despesa do mês|Resultado do mês/.test(card.texto));

@@ -788,6 +788,17 @@ tfoot td{padding:10px;font-weight:800;background:var(--bg3);border-top:2px solid
   <div class="pg" id="pg-info"><div id="info-root"></div></div>
   <div class="pg" id="pg-midia"><div id="midia-root"></div></div>
   <div class="pg" id="pg-galeria"><div id="galeria-root"></div></div>
+  <div class="pg" id="pg-i3pn"><div id="i3pn-root"></div></div>
+  <div class="pg" id="pg-i3calc"><div id="i3calc-root"></div></div>
+  <div class="pg" id="pg-i3orc"><div id="i3orc-root"></div></div>
+  <div class="pg" id="pg-i3cli"><div id="i3cli-root"></div></div>
+  <div class="pg" id="pg-i3imp"><div id="i3imp-root"></div></div>
+  <div class="pg" id="pg-i3fil"><div id="i3fil-root"></div></div>
+  <div class="pg" id="pg-i3des"><div id="i3des-root"></div></div>
+  <div class="pg" id="pg-i3prod"><div id="i3prod-root"></div></div>
+  <div class="pg" id="pg-i3hist"><div id="i3hist-root"></div></div>
+  <div class="pg" id="pg-i3rel"><div id="i3rel-root"></div></div>
+  <div class="pg" id="pg-i3cfg"><div id="i3cfg-root"></div></div>
 
   <div class="pg" id="pg-ctl"><div id="ctl-root"></div></div>
   <div class="pg" id="pg-vigias"><div id="vigias-root"></div></div>
@@ -893,16 +904,17 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.39';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.40';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
-const DB_VERSION = 9;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio
+const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [
   'config','contas','financeiro','recorrencias','pessoas',
   'obras','etapas','orcamento','insumos','compras','estoque','equipe','apontamentos','rdo','projetos','medicoes',
   'imoveis','veiculos','contratos','manutencoes',
   'lotes','ciclos','produtos','vendas','canais','videos',
   'guias','lixeira','sync',
-  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias'
+  'programas','roteiros','publicacoes','garimpos','cortes','producoes','midiateca','vigias',
+  'impressoras3d','filamentos','movfilamento','orcamentos3d','produtos3d','producoes3d'
 ];
 let db = null;
 
@@ -969,8 +981,8 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','pes','rel','vigias','ctl','cel','nuvem','ver'],
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','ver'],
   c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
 
@@ -994,7 +1006,10 @@ function go(pg){
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
              midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
-             ver:verRender};
+             ver:verRender,
+             i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender, i3cli:imp3dCliRender,
+             i3imp:imp3dImpRender, i3fil:imp3dFilRender, i3des:imp3dDesRender, i3prod:imp3dProdRender,
+             i3hist:imp3dHistRender, i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};
   safeRender(R[pg], pg);
 }
 async function safeRender(fn,pg){
@@ -1346,7 +1361,15 @@ const UNIDADES = [
    cor:'#7B3FA0', bg:'#F2EAF9', desc:'Cursos e materiais digitais', tabs:[]},
   {id:'midia', pg:'midia', nome:'Canais de Vídeo', curto:'Mídia', ic:'ti-brand-youtube',
    cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização',
-   tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]}
+   tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]},
+  {id:'imp3d', pg:'i3pn', nome:'Impressão 3D', curto:'Impressão 3D', ic:'ti-3d-cube-sphere',
+   cor:'#16253B', bg:'#E7EBF0', desc:'Orçamento, produção e custos de impressão 3D',
+   tabs:[['i3pn','Painel','ti-layout-grid'],['i3calc','Calculadora','ti-calculator'],
+         ['i3orc','Orçamentos','ti-file-invoice'],['i3cli','Clientes','ti-address-book'],
+         ['i3imp','Impressoras','ti-printer'],['i3fil','Filamentos','ti-package'],
+         ['i3des','Despesas','ti-receipt'],['i3prod','Produtos','ti-cube'],
+         ['i3hist','Histórico','ti-history'],['i3rel','Relatórios','ti-file-analytics'],
+         ['i3cfg','Config. de cálculo','ti-adjustments']]}
 ];
 const UN_GERAL = {id:'geral', nome:'Administrativo / Geral', curto:'Geral', ic:'ti-building-store', cor:'#5B6260', bg:'#EFEDE7'};
 function unInfo(id){ return UNIDADES.find(u=>u.id===id) || UN_GERAL; }
@@ -1384,7 +1407,9 @@ const CAT_DESP = [
   'Insumos agrícolas','Ração e veterinário','Sementes e mudas','Energia elétrica','Água','Internet e telefone',
   'Aluguel e condomínio','IPTU e taxas','Impostos e tributos','Salários e encargos','Pró-labore e retiradas',
   'Contabilidade e serviços','Marketing e tráfego pago','Plataformas e assinaturas','Equipamentos e móveis',
-  'Custo do produto vendido','Comissões pagas','Tarifas bancárias','Juros e financiamento','Despesas administrativas','Outras despesas'
+  'Custo do produto vendido','Comissões pagas','Tarifas bancárias','Juros e financiamento','Despesas administrativas','Outras despesas',
+  'Compra de impressoras 3D','Compra de equipamentos auxiliares de impressão 3D','Compra de filamentos','Compra de resinas',
+  'Bicos e peças de reposição (impressão 3D)','Ferragens e acessórios (impressão 3D)','Ferramentas (impressão 3D)','Embalagens'
 ];
 const FORMAS = ['Pix','Dinheiro','Boleto','Transferência','Cartão de débito','Cartão de crédito','Cheque','A prazo'];
 const ST_FIN = {'Pendente':'s-wn','Pago':'s-ok','Recebido':'s-ok','Atrasado':'s-bl','Cancelado':'s-nt'};
@@ -1435,6 +1460,16 @@ const FONTES_REC = ['Monetização da plataforma','Publicidade / publipost','Afi
                     'Venda de infoproduto','Doações','Outra'];
 
 function platInfo(v){ return PLATS_VIDEO.find(p=>p.v===v)||PLATS_VIDEO[5]; }
+
+/* ---------------- Impressão 3D ---------------- */
+const TIPOS_TEC_3D = ['FDM (filamento)','Resina / SLA','Resina / DLP','SLS','Outra'];
+const MATERIAIS_3D = ['PLA','PETG','ABS','ASA','TPU','Nylon','PC','Fibra de carbono','Resina padrão',
+                      'Resina tenaz','Resina flexível','Resina para fundição','Outro'];
+const ST_IMPRESSORA3D = {'Ativa':'s-ok','Em manutenção':'s-pd','Inativa':'s-nt'};
+const ST_FILAMENTO = {'Em estoque':'s-ok','Baixo estoque':'s-wn','Esgotado':'s-bl'};
+const TIPOS_MOV_FILAMENTO = ['Entrada','Saída por consumo','Ajuste','Perda'];
+const ST_ORCAMENTO3D = {'Rascunho':'s-nt','Emitido':'s-pu','Enviado':'s-wn','Visualizado':'s-pd',
+                        'Aprovado':'s-ok','Recusado':'s-bl','Expirado':'s-nt','Cancelado':'s-bl'};
 /* =========================================================================
    Bases de referência — etapas padrão, catálogo de insumos e composições
    ATENÇÃO: os preços abaixo são VALORES DE REFERÊNCIA para partida do sistema.
@@ -2525,6 +2560,11 @@ async function hubRender(){
         <div class="v">${moedaK(des)}</div><div class="s">${doMes.filter(l=>l.tipo==='despesa').length} saída(s)</div></div>
       <div class="hg ${rec-des>=0?'pos':'neg'}"><div class="l"><i class="ti ti-report-money"></i>Resultado do mês</div>
         <div class="v">${moedaK(rec-des)}</div><div class="s">${rec?pct((rec-des)/rec*100)+' de margem':'—'}</div></div>
+    </div>
+    <div class="brow" style="margin-top:14px;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn gd" id="btn-agentes" onclick="hubVerificarAgentes(this)" title="Abre a sede dos agentes de IA: o Comandante, os gerentes e a equipe">
+        <i class="ti ti-users"></i>Verificar Agentes</button>
+      <span id="agentes-dica" style="font-size:12px;color:#A9CCC0"></span>
     </div></div>`;
 
   // ------- avisos -------
@@ -2734,6 +2774,45 @@ async function buscaGlobalRun(q){
          align-items:center;justify-content:center;font-size:17px"><i class="ti ${r.ic}"></i></div>
        <div><b style="font-size:13px;display:block">${esc(r.tit)}</b><span class="tt">${esc(r.sub)}</span></div></div>`).join('')
     : `<div class="tt">Nada encontrado para "${esc(q)}".</div>`;
+}
+
+
+/* =========================================================================
+   VERIFICAR AGENTES — o botão da tela inicial.
+
+   A sede dos agentes (jev-agentes) é um programa à parte, com o próprio
+   servidor em 127.0.0.1:3030. No aplicativo, o JeV sobe esse servidor
+   sozinho (se ele não estiver no ar) e abre o painel numa janela própria.
+   No navegador, só dá para abrir se a sede já estiver ligada pelo
+   INICIAR.bat — e a tela explica isso em vez de abrir uma aba quebrada.
+   Nenhuma chave de IA passa por aqui.                                      */
+const AGENTES_URL = 'http://127.0.0.1:3030';
+async function hubVerificarAgentes(btn){
+  const dica = document.getElementById('agentes-dica');
+  const diz = (t, cor) => { if(dica){ dica.textContent = t; dica.style.color = cor || '#A9CCC0'; } };
+  const app = (window.JeVDesktop && window.JeVDesktop.ehAplicativo && window.JeVDesktop.agAbrir) ? window.JeVDesktop : null;
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>Ligando a sede…'; }
+  try{
+    if(app){
+      diz('Subindo o servidor da sede, aguarde…');
+      const r = await app.agAbrir();
+      if(r && r.ok){ diz(r.jaEstava ? 'Sede já estava no ar — painel aberto.' : 'Sede ligada — painel aberto em outra janela.'); }
+      else {
+        diz(r && r.motivo ? r.motivo : 'Não consegui abrir a sede.', '#FFB3A7');
+        if(r && /não encontrei/i.test(r.motivo||'')){
+          const esc = await app.agEscolherPasta();
+          if(esc && esc.ok){ diz('Pasta definida: ' + esc.pasta + '. Clique de novo em Verificar Agentes.'); }
+        }
+      }
+    } else {
+      /* navegador: só consigo abrir se o servidor já estiver no ar */
+      let noAr = false;
+      try{ await fetch(AGENTES_URL + '/api/state', {mode:'no-cors', cache:'no-store'}); noAr = true; }catch(e){}
+      if(noAr){ window.open(AGENTES_URL, '_blank'); diz('Painel aberto em outra aba.'); }
+      else diz('A sede não está ligada. Abra C:\\JeV\\jev-agentes\\INICIAR.bat e clique de novo.', '#FFB3A7');
+    }
+  }catch(e){ diz('Não consegui abrir a sede: ' + (e && e.message ? e.message : e), '#FFB3A7'); }
+  finally{ if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-users"></i>Verificar Agentes'; } }
 }
 /* =========================================================================
    MÓDULO: OBRAS — cadastro, cartões, ficha e seleção da obra ativa
@@ -11413,7 +11492,11 @@ async function verAutoteste(){
                      proj:projRender, mat:matRender, mo:moRender, rdo:rdoRender, med:medRender,
                      imoveis:imoveisRender, veiculos:veiculosRender, chacara:chacaraRender,
                      produtos:produtosRender, info:infoRender, midia:midiaRender, pes:pesRender,
-                     rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender, ver:verRender};
+                     rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender, ver:verRender,
+                     i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender,
+                     i3cli:imp3dCliRender, i3imp:imp3dImpRender, i3fil:imp3dFilRender,
+                     i3des:imp3dDesRender, i3prod:imp3dProdRender, i3hist:imp3dHistRender,
+                     i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};
           if(typeof R[p] === 'function') await R[p]();
         }catch(err){
           falhas.push('a tela "'+p+'" deu erro: '+((err && err.message) || err));
@@ -23019,6 +23102,546 @@ async function escrPreencher(){
 
   escrPor('espera', String(espera), espera ? 'var(--amber)' : 'var(--green)');
 }
+const IMP3D_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAIAAAAErfB6AAAWfmNhQlgAABZ+anVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNjMnBhAAAAFlhqdW1iAAAAR2p1bWRjMm1hABEAEIAAAKoAOJtxA3VybjpjMnBhOjRlNGUxOTZhLWU0ZmEtNGY0OS1iOTZlLTU0ZTZjMzBhNWNkZgAAAAOTanVtYgAAAClqdW1kYzJhcwARABCAAACqADibcQNjMnBhLmFzc2VydGlvbnMAAAAAuGp1bWIAAABEanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5pbmdyZWRpZW50LnYzAAAAABhjMnNoGnMajke62yKouY+H/byy/QAAAGxjYm9yo2lkYzpmb3JtYXRpaW1hZ2UvcG5namluc3RhbmNlSUR4LHhtcDppaWQ6NThhODlkM2EtNGY4My00M2JjLTk5Y2UtMDY0ZTlmNDI3YzhmbHJlbGF0aW9uc2hpcGhwYXJlbnRPZgAAAeJqdW1iAAAAQWp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuYWN0aW9ucy52MgAAAAAYYzJzaE3vxiQLYIeDV2ixoc7HIlgAAAGZY2JvcqJnYWN0aW9uc4KiZmFjdGlvbmtjMnBhLm9wZW5lZGpwYXJhbWV0ZXJzoWtpbmdyZWRpZW50c4GiY3VybHgtc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5pbmdyZWRpZW50LnYzZGhhc2hYIIkhXX46p/AemfkJ/jnDIL/gRON5J21V7/qBz9HRlLCkpGZhY3Rpb254HWNvbS5hbnRocm9waWMuY2xhdWRlLnByb3ZpZGVkanBhcmFtZXRlcnOheB9jb20uYW50aHJvcGljLm9yaWdpbi1jb25maWRlbmNlZ3Vua25vd25rZGVzY3JpcHRpb254ZkNsYXVkZSBwcm92aWRlZCB0aGlzIGZpbGUgYXQgdGhlIHJlcXVlc3Qgb2YgYSB1c2VyIGFuZCBtYXkgaGF2ZSBjcmVhdGVkIG9yIG1vZGlmaWVkIHRoZSBmaWxlIGNvbnRlbnRzLm1zb2Z0d2FyZUFnZW50oWRuYW1lZkNsYXVkZXJhbGxBY3Rpb25zSW5jbHVkZWT1AAAAyGp1bWIAAABAanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5oYXNoLmRhdGEAAAAAGGMyc2iWQG6Ls7kldojo3t4NsZkvAAAAgGNib3KlY2FsZ2ZzaGEyNTZjcGFkTQAAAAAAAAAAAAAAAABkaGFzaFggDnejpmfUSjpik17iaYHPZIi3khb9L3+nrXQHu/lNL8JkbmFtZW5qdW1iZiBtYW5pZmVzdGpleGNsdXNpb25zgaJlc3RhcnQYIWZsZW5ndGgZFooAAAI+anVtYgAAACdqdW1kYzJjbAARABCAAACqADibcQNjMnBhLmNsYWltLnYyAAAAAg9jYm9ypWNhbGdmc2hhMjU2aXNpZ25hdHVyZXhNc2VsZiNqdW1iZj0vYzJwYS91cm46YzJwYTo0ZTRlMTk2YS1lNGZhLTRmNDktYjk2ZS01NGU2YzMwYTVjZGYvYzJwYS5zaWduYXR1cmVqaW5zdGFuY2VJRHgseG1wOmlpZDo3MTdiOWE2ZC01NzQ1LTRjZTAtOTIwZi1iOWMyNjMxNWY2MDJyY3JlYXRlZF9hc3NlcnRpb25zg6JjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggiSFdfjqn8B6Z+Qn+OcMgv+BE43knbVXv+oHP0dGUsKSiY3VybHgqc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5hY3Rpb25zLnYyZGhhc2hYIB4LdhpEQG8mLMX+rNUaMMY6Q5jMIcDucn1nP8H+lEZqomN1cmx4KXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaGFzaC5kYXRhZGhhc2hYIBM2iObvMKEAF35z/GnAOhDufaPjsbvj4c83xODQZfDbdGNsYWltX2dlbmVyYXRvcl9pbmZvo2RuYW1lb0FudGhyb3BpYyBGaWxlc2d2ZXJzaW9uZTEuMC4wa3NwZWNWZXJzaW9uZTIuNC4wAAAQOGp1bWIAAAAoanVtZGMyY3MAEQAQgAAAqgA4m3EDYzJwYS5zaWduYXR1cmUAAAAQCGNib3LShFkCEqIBJhghWQIKMIICBjCCAY2gAwIBAgIUQOWgCu7COdC+uIP6BkIFPWdVEwAwCgYIKoZIzj0EAwMwSTEXMBUGA1UEChMOQW50aHJvcGljLCBQQkMxLjAsBgNVBAMTJUFudGhyb3BpYyBDb250ZW50IENyZWRlbnRpYWxzIFJvb3QgQ0EwHhcNMjYwODA3MTg0MzU2WhcNMjgwODA2MTk0MzU2WjBEMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEpMCcGA1UEAxMgQW50aHJvcGljIENsYXVkZSBDb250ZW50IFNpZ25pbmcwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASYegpry1AYBRTVNL1CpTlbROnY3dey+UrsF9C3phYrATN3ZHf93Mo8RQN0KOUuOn19P4oWNFWe5n2/She9N7eTo1gwVjAOBgNVHQ8BAf8EBAMCB4AwFQYDVR0lBA4wDAYKKwYBBAGD6F4CATAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFM5R4gSBTmRbI/jjxM+aPpzB11zCMAoGCCqGSM49BAMDA2cAMGQCMDFzHRSeAXrSy1WOzkbhPZ6Km2wGTmZ/2gK18k8BQGXyqz88Rdrz6CTX9flAnYNVxgIwcF9c3fVhqmJKpi+UhasNUMko69cyX6STPfta3Q8EjyzDjzoyrol46FP6VFHhvUcJoWNwYWRZDZ4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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';
+
+/* =========================================================================
+   IMPRESSÃO 3D — orçamento, produção e custos
+   -------------------------------------------------------------------------
+   Módulo nativo, integrado ao JeV Empreendimentos: usa as mesmas tabelas
+   (financeiro, pessoas) onde faz sentido e tabelas próprias só para o que é
+   específico de impressão 3D (impressoras3d, filamentos, movfilamento,
+   orcamentos3d, produtos3d, producoes3d — ver STORES em 03_core.js).
+
+   Identidade visual: este módulo usa a marca "J&V Artigos 3D" (a logo
+   embutida em IMP3D_LOGO, acima) nos cartões e cabeçalhos de suas próprias
+   telas — o resto do sistema continua com a identidade JeV normalmente.
+   A cor de contexto do módulo (--uc / --ucb) vem da UNIDADE 'imp3d' em
+   04_dados.js.
+
+   Esta primeira versão entrega a fundação: navegação, banco de dados e o
+   esqueleto das 11 telas. Cada tela é completada numa etapa seguinte,
+   testada antes de avançar — conforme combinado.
+   ========================================================================= */
+
+
+function imp3dCabecalho(titulo, subtitulo){
+  const U = unInfo('imp3d');
+  return `<div class="ph">
+    <div class="ico" style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex:none;
+      display:flex;align-items:center;justify-content:center;background:${U.bg}">
+      <img src="${IMP3D_LOGO}" alt="J&amp;V Artigos 3D" style="width:100%;height:100%;object-fit:cover">
+    </div>
+    <div><h1>${esc(titulo)}</h1><p>${esc(subtitulo)}</p></div></div>`;
+}
+
+function imp3dEmConstrucao(raizId, titulo, subtitulo){
+  document.getElementById(raizId).innerHTML = imp3dCabecalho(titulo, subtitulo) +
+    `<div class="al ai"><i class="ti ti-tool"></i>Esta tela ainda está sendo construída — chega numa próxima etapa.</div>`;
+}
+
+async function imp3dPainelRender(){ imp3dEmConstrucao('i3pn-root', 'Painel geral', 'Indicadores de impressão 3D a partir dos dados registrados'); }
+async function imp3dCalcRender(){ imp3dEmConstrucao('i3calc-root', 'Calculadora de custos e preços', 'Formação de preço com as fórmulas da metodologia nativa'); }
+async function imp3dOrcRender(){ imp3dEmConstrucao('i3orc-root', 'Orçamentos', 'Propostas comerciais de impressão 3D'); }
+async function imp3dCliRender(){ imp3dEmConstrucao('i3cli-root', 'Clientes', 'Pessoas com papel de cliente, para orçamentos e vendas de impressão 3D'); }
+/* ---------------------------------------------------------------- Serviço de cálculo
+   Motor de formação de preço da Impressão 3D — função pura, sem tocar o banco
+   nem a tela, para poder ser testada isoladamente (ver test_imp3d_calc.js).
+   Segue as fórmulas A–K definidas na especificação do módulo; cada bloco do
+   código cita a letra correspondente. Nunca lê os números já formatados na
+   tela como entrada — trabalha só com os valores numéricos recebidos. */
+function imp3dCalcular(p){
+  const g = (v)=> isNaN(parseFloat(v)) ? 0 : parseFloat(v); // num() local, sem depender do DOM
+  const avisos = [];
+
+  // --------- A. Custo de material (peso consumido × custo por grama do filamento)
+  const custoMaterial = g(p.pesoConsumidoG) * g(p.custoPorGramaMaterial);
+
+  // --------- B. Custo de energia
+  const custoEnergia = (g(p.potenciaW)/1000) * g(p.tempoHoras) * g(p.tarifaKwh);
+
+  // --------- C. Depreciação da impressora (custo de depreciação/h já calculado por
+  // imp3dDeprecInfo, a partir do cadastro da impressora) × tempo de impressão
+  const custoDeprec = g(p.custoDeprecHora) * g(p.tempoHoras);
+
+  // --------- D. Manutenção — por hora OU fixa por peça, nunca as duas (evita cobrar em dobro)
+  const manutModo = p.manutModo === 'fixo' ? 'fixo' : 'hora';
+  const custoManut = manutModo==='fixo' ? g(p.custoManutFixoPeca) : g(p.custoManutHora) * g(p.tempoHoras);
+
+  // --------- E. Mão de obra (soma dos tempos manuais aplicáveis × valor da hora)
+  const horasManuais = g(p.tempoPreparoH)+g(p.tempoRemocaoH)+g(p.tempoAcabamentoH)+g(p.tempoMontagemH)+g(p.tempoEmbalagemH);
+  const custoMaoObra = horasManuais * g(p.valorHoraTrabalho);
+
+  // --------- F. Outros custos diretos — materiais adicionais, desperdício não incluído no
+  // peso consumido, suportes/ferragens, embalagem e demais custos diretos aplicáveis.
+  // (o peso consumido informado já deve trazer suportes/purga/brim do fatiador — este
+  // "desperdício adicional" é só o que NÃO estiver incluído nesse peso, para não contar
+  // a mesma perda duas vezes)
+  const custoDesperdicioAdicional = g(p.desperdicioAdicionalG) * g(p.custoPorGramaMaterial);
+  const outrosCustosDiretos = g(p.materiaisAdicionais) + custoDesperdicioAdicional + g(p.custoSuportesFerragens) +
+                              g(p.embalagem) + g(p.custosAdicionaisDiretos);
+
+  // --------- G. Custo-base de produção
+  const custoBase = custoMaterial + custoEnergia + custoDeprec + custoManut + custoMaoObra + outrosCustosDiretos;
+
+  // --------- H. Reserva para falhas — aproximação de orçamento, não garantia de cobertura total
+  const reservaFalhasPct = g(p.reservaFalhasPct);
+  const reservaFalhas = custoBase * reservaFalhasPct/100;
+
+  // --------- I. Custo de produção ajustado
+  const custoAjustado = custoBase + reservaFalhas;
+
+  // percentuais cobrados sobre o preço de venda (receita), não sobre o custo
+  const taxasVendaPct = g(p.taxasPagamentoPct) + g(p.comissaoMarketplacePct) + g(p.impostosVendaPct);
+
+  const modoPreco = p.modoPreco === 'margem' ? 'margem' : 'markup';
+  let precoVendaUnitario = null;
+  let precoAntesTaxas = null;
+
+  if(modoPreco==='markup'){
+    // --------- J. Preço com markup — resultado é o preço ANTES das taxas sobre a venda
+    precoAntesTaxas = custoAjustado * (1 + g(p.markupPct)/100);
+    if(taxasVendaPct > 0){
+      // há comissão/taxa/imposto percentual sobre a venda: não basta somar um percentual
+      // sobre o CUSTO — a cobrança é sobre a RECEITA, então o preço precisa ser "regrossado"
+      // para que, depois de pagas essas taxas, o markup pedido ainda sobre intacto.
+      if(taxasVendaPct >= 100){
+        avisos.push('A soma das taxas sobre a venda (pagamento + comissão + impostos) é igual ou maior que 100% — não é possível calcular um preço válido com essas taxas.');
+        precoVendaUnitario = null;
+      } else {
+        precoVendaUnitario = precoAntesTaxas / (1 - taxasVendaPct/100);
+      }
+    } else {
+      precoVendaUnitario = precoAntesTaxas;
+    }
+  } else {
+    // --------- K. Preço com margem sobre a receita
+    const margemPct = g(p.margemDesejadaPct);
+    const somaPct = margemPct + taxasVendaPct;
+    const custosFixosPorUnidade = custoAjustado + g(p.custosFixosAdicionaisVenda);
+    if(somaPct >= 100){
+      avisos.push('A soma da margem desejada com as taxas percentuais sobre a venda é igual ou maior que 100% — não é possível calcular um preço válido com essa margem.');
+      precoVendaUnitario = null;
+    } else {
+      precoVendaUnitario = custosFixosPorUnidade / (1 - somaPct/100);
+    }
+  }
+
+  // desconto comercial — aplicado sobre o preço já calculado, depois de tudo
+  let precoFinalUnitario = precoVendaUnitario;
+  if(precoFinalUnitario != null && g(p.descontoComercial) > 0){
+    precoFinalUnitario = p.descontoComercialModo === 'percentual'
+      ? precoFinalUnitario * (1 - g(p.descontoComercial)/100)
+      : Math.max(0, precoFinalUnitario - g(p.descontoComercial));
+  }
+
+  const quantidade = g(p.quantidade) || 1;
+  const lucroUnitario = precoFinalUnitario!=null ? precoFinalUnitario - custoAjustado : null;
+  const margemEstimadaPct = (precoFinalUnitario && precoFinalUnitario>0) ? (lucroUnitario/precoFinalUnitario*100) : null;
+
+  return {
+    custoMaterial, custoEnergia, custoDeprec, custoManut, custoMaoObra, outrosCustosDiretos,
+    custoBase, reservaFalhas, custoAjustado,
+    modoPreco, precoAntesTaxas, taxasVendaPct, precoVendaUnitario, precoFinalUnitario,
+    quantidade, custoTotalLote: custoAjustado*quantidade,
+    valorTotalOrcamento: precoFinalUnitario!=null ? precoFinalUnitario*quantidade : null,
+    lucroUnitario, resultadoLote: lucroUnitario!=null ? lucroUnitario*quantidade : null,
+    margemEstimadaPct,
+    tempoTotalMaquinaH: g(p.tempoHoras) * quantidade,
+    materialTotalG: g(p.pesoConsumidoG) * quantidade,
+    avisos
+  };
+}
+/* arredonda só na APRESENTAÇÃO — nunca usar o valor arredondado como entrada de outro cálculo */
+function imp3dMoedaCalc(v){ return v==null ? '—' : moeda(v); }
+
+/* ---------------------------------------------------------------- Impressoras 3D
+   Depreciação por hora = (valor de compra - valor residual) / vida útil em horas
+   (usa a vida útil revisada quando informada). Nunca divide por zero: sem vida
+   útil válida, a depreciação fica indefinida (null) e a tela avisa, em vez de
+   mostrar um número inventado. */
+function imp3dDeprecInfo(imp){
+  const compra = num(imp.valorCompra);
+  const residual = num(imp.valorResidual);
+  const vidaUtil = num(imp.vidaUtilRevisada) > 0 ? num(imp.vidaUtilRevisada) : num(imp.vidaUtilHoras);
+  const depreciavel = Math.max(0, compra - residual);
+  if(vidaUtil <= 0) return { valida:false, custoHora:null, depreciavel, vidaUtil };
+  return { valida:true, custoHora: depreciavel / vidaUtil, depreciavel, vidaUtil };
+}
+/* custo de manutenção considerado na formação de preço: por hora OU fixo por
+   peça — nunca os dois juntos, para não cobrar a manutenção em dobro (ver 8.2-D) */
+function imp3dManutInfo(imp){
+  const modo = imp.manutModo === 'fixo' ? 'fixo' : 'hora';
+  return modo==='fixo'
+    ? { modo, custoHora:0, custoFixoPeca: num(imp.manutFixoPeca) }
+    : { modo, custoHora: num(imp.manutPorHora), custoFixoPeca: 0 };
+}
+
+let IMP3D_IMP_TAB = 'ativas';
+async function imp3dImpRender(){
+  const root = document.getElementById('i3imp-root');
+  const todas = await dbGetAll('impressoras3d');
+  const ativas = todas.filter(i=>i.status!=='Inativa');
+  const valorFrota = todas.reduce((s,i)=>s+num(i.valorCompra),0);
+  const comDeprec = ativas.map(i=>imp3dDeprecInfo(i)).filter(d=>d.valida);
+  const deprecMedia = comDeprec.length ? comDeprec.reduce((s,d)=>s+d.custoHora,0)/comDeprec.length : 0;
+  const semVidaUtil = ativas.filter(i=>!imp3dDeprecInfo(i).valida);
+
+  let h = imp3dCabecalho('Impressoras 3D', 'Equipamentos, depreciação e custo por hora');
+
+  h += `<div class="kg" style="margin-bottom:16px">
+    <div class="kc br"><div class="lb"><i class="ti ti-printer"></i>Impressoras</div>
+      <div class="vl">${todas.length}</div><div class="sb">${ativas.length} ativa(s)</div></div>
+    <div class="kc gd"><div class="lb"><i class="ti ti-currency-real"></i>Valor investido</div>
+      <div class="vl">${moedaK(valorFrota)}</div><div class="sb">soma do valor de compra</div></div>
+    <div class="kc gn"><div class="lb"><i class="ti ti-trending-down"></i>Depreciação média/h</div>
+      <div class="vl">${comDeprec.length?moeda(deprecMedia):'—'}</div><div class="sb">entre as impressoras ativas</div></div>
+    <div class="kc ${semVidaUtil.length?'am':'tl'}"><div class="lb"><i class="ti ti-alert-triangle"></i>Sem vida útil informada</div>
+      <div class="vl">${semVidaUtil.length}</div><div class="sb">não entram no cálculo de depreciação</div></div>
+  </div>`;
+
+  h += `<div class="brow" style="margin-bottom:12px">
+    <button class="btn gh ${IMP3D_IMP_TAB==='ativas'?'on':''}" onclick="IMP3D_IMP_TAB='ativas';imp3dImpRender()">Ativas e em manutenção</button>
+    <button class="btn gh ${IMP3D_IMP_TAB==='todas'?'on':''}" onclick="IMP3D_IMP_TAB='todas';imp3dImpRender()">Todas</button>
+    <div class="sp"></div>
+    <button class="btn" style="background:#16253B" onclick="imp3dImpForm()"><i class="ti ti-plus"></i>Nova impressora</button>
+  </div>`;
+
+  const lista = IMP3D_IMP_TAB==='ativas' ? todas.filter(i=>i.status!=='Inativa') : todas;
+
+  if(!todas.length){
+    h += `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-printer"></i>
+      <b>Nenhuma impressora cadastrada</b>Cadastre suas impressoras para calcular depreciação, custo por hora
+      e usar na calculadora de preços.
+      <div class="brow" style="justify-content:center;margin-top:14px">
+      <button class="btn" style="background:#16253B" onclick="imp3dImpForm()"><i class="ti ti-plus"></i>Cadastrar impressora</button></div></div></div></div>`;
+  } else if(!lista.length){
+    h += `<div class="al ai"><i class="ti ti-info-circle"></i>Nenhuma impressora ${IMP3D_IMP_TAB==='ativas'?'ativa':''} nesse filtro.</div>`;
+  } else {
+    h += `<div class="mgrid">`;
+    lista.forEach(i=>{
+      const d = imp3dDeprecInfo(i);
+      h += `<div class="ocard" onclick="imp3dImpForm(${i.id})">
+        <div class="oh"><div class="oi" style="background:#E7EBF0;color:#16253B"><i class="ti ti-printer"></i></div>
+          <div style="flex:1;min-width:0"><b style="display:block;font-size:13.5px">${esc(i.nome)}</b>
+            <span class="tt">${esc(i.fabricante||'')} ${esc(i.modelo||'')}</span></div>
+          <span class="st ${ST_IMPRESSORA3D[i.status]||'s-nt'}">${esc(i.status||'Ativa')}</span></div>
+        <div class="ob">
+          <div class="row"><span>Tecnologia</span><b>${esc(i.tecnologia||'—')}</b></div>
+          <div class="row"><span>Valor de compra</span><b>${moeda(i.valorCompra)}</b></div>
+          <div class="row"><span>Depreciação/h</span><b>${d.valida?moeda(d.custoHora):'—'}</b></div>
+          <div class="row"><span>Potência média</span><b>${i.potenciaW?num(i.potenciaW)+' W':'—'}</b></div>
+        </div></div>`;
+    });
+    h += `</div>`;
+  }
+
+  root.innerHTML = h;
+}
+
+async function imp3dImpForm(id){
+  const i = id ? await dbGet('impressoras3d',id) : null;
+  const b = `<div class="fr3">
+      <div class="fg" style="grid-column:span 2"><label>Nome do equipamento <span class="rq">*</span></label>
+        <input id="ip-nome" value="${esc(i?i.nome:'')}" placeholder="Ex.: Bambu Lab P2S #1"></div>
+      <div class="fg"><label>Situação</label><select id="ip-status">${Object.keys(ST_IMPRESSORA3D).map(s=>`<option ${i&&i.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
+    <div class="fr4">
+      <div class="fg"><label>Fabricante</label><input id="ip-fab" value="${esc(i?i.fabricante:'')}"></div>
+      <div class="fg"><label>Modelo</label><input id="ip-modelo" value="${esc(i?i.modelo:'')}"></div>
+      <div class="fg"><label>Número de série</label><input id="ip-serie" value="${esc(i?i.serie:'')}"></div>
+      <div class="fg"><label>Data de aquisição</label><input id="ip-data" type="date" value="${i?i.dataAquisicao:''}"></div></div>
+    <div class="fr4">
+      <div class="fg"><label>Valor de compra (R$)</label><input id="ip-compra" type="number" step="0.01" value="${i?i.valorCompra:''}"></div>
+      <div class="fg"><label>Valor residual (R$)</label><input id="ip-residual" type="number" step="0.01" value="${i?i.valorResidual:'0'}"></div>
+      <div class="fg"><label>Vida útil estimada (horas)</label><input id="ip-vida" type="number" value="${i?i.vidaUtilHoras:''}"></div>
+      <div class="fg"><label>Vida útil revisada (opcional)</label><input id="ip-vidarev" type="number" value="${i?i.vidaUtilRevisada:''}"></div></div>
+    <div class="fr4">
+      <div class="fg"><label>Consumo médio (W)</label><input id="ip-watts" type="number" value="${i?i.potenciaW:''}"></div>
+      <div class="fg"><label>Manutenção considerada</label>
+        <select id="ip-manutmodo" onchange="imp3dToggleManut(this.value)">
+          <option value="hora" ${!i||i.manutModo!=='fixo'?'selected':''}>Por hora de uso</option>
+          <option value="fixo" ${i&&i.manutModo==='fixo'?'selected':''}>Valor fixo por peça</option></select></div>
+      <div class="fg" id="ip-manuthora-wrap"><label>Custo de manutenção (R$/h)</label><input id="ip-manuthora" type="number" step="0.01" value="${i?i.manutPorHora:''}"></div>
+      <div class="fg" id="ip-manutfixo-wrap"><label>Manutenção fixa por peça (R$)</label><input id="ip-manutfixo" type="number" step="0.01" value="${i?i.manutFixoPeca:''}"></div></div>
+    <div class="fr3">
+      <div class="fg"><label>Custo adicional por hora (R$)</label><input id="ip-custoadic" type="number" step="0.01" value="${i?i.custoAdicionalHora:''}">
+        <small class="tt">Qualquer outro custo fixo por hora de máquina, fora energia, depreciação e manutenção</small></div>
+      <div class="fg"><label>Tecnologia de impressão</label><select id="ip-tec">${TIPOS_TEC_3D.map(t=>`<option ${i&&i.tecnologia===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label>Capacidade / dimensões máx.</label><input id="ip-dim" value="${esc(i?i.dimensoes:'')}" placeholder="Ex.: 256×256×256 mm"></div></div>
+    <div class="fg"><label>Materiais compatíveis</label>
+      <div class="chips" id="ip-materiais">${MATERIAIS_3D.map(m=>`<span class="chip ${i&&(i.materiais||[]).includes(m)?'on':''}" data-mat="${esc(m)}" onclick="this.classList.toggle('on')">${esc(m)}</span>`).join('')}</div></div>
+    <div class="fg"><label>Observações</label><textarea id="ip-obs">${esc(i?i.obs:'')}</textarea></div>
+    <div id="ip-err"></div>`;
+  modal(id?'Editar impressora':'Nova impressora','ti-printer',b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     ${id?`<button class="btn rd" onclick="imp3dImpDel(${id})"><i class="ti ti-trash"></i>Excluir</button>`:''}
+     <button class="btn" style="background:#16253B" onclick="imp3dImpSave(${id||'null'})"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+  imp3dToggleManut(i&&i.manutModo==='fixo'?'fixo':'hora');
+}
+function imp3dToggleManut(modo){
+  const h = document.getElementById('ip-manuthora-wrap'), f = document.getElementById('ip-manutfixo-wrap');
+  if(!h||!f) return;
+  h.style.display = modo==='fixo' ? 'none' : '';
+  f.style.display = modo==='fixo' ? '' : 'none';
+}
+async function imp3dImpSave(id){
+  const nome = val('ip-nome');
+  if(!nome){ document.getElementById('ip-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o nome do equipamento.</div>`; return; }
+  const vidaUtil = num(val('ip-vida'));
+  if(val('ip-vida') && vidaUtil <= 0){ document.getElementById('ip-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Vida útil tem de ser maior que zero.</div>`; return; }
+  const materiais = [...document.querySelectorAll('#ip-materiais .chip.on')].map(c=>c.dataset.mat);
+  const d = { nome, fabricante:val('ip-fab'), modelo:val('ip-modelo'), serie:val('ip-serie'),
+    dataAquisicao:val('ip-data'), valorCompra:num(val('ip-compra')), valorResidual:num(val('ip-residual')),
+    vidaUtilHoras:vidaUtil, vidaUtilRevisada:num(val('ip-vidarev')), potenciaW:num(val('ip-watts')),
+    manutModo: val('ip-manutmodo'), manutPorHora:num(val('ip-manuthora')), manutFixoPeca:num(val('ip-manutfixo')),
+    custoAdicionalHora:num(val('ip-custoadic')), tecnologia:val('ip-tec'), dimensoes:val('ip-dim'),
+    materiais, status:val('ip-status'), obs:val('ip-obs') };
+  if(id){ const old = await dbGet('impressoras3d',id); await dbPut('impressoras3d',{...old,...d}); }
+  else await dbAdd('impressoras3d',d);
+  closeModal('mk-form'); toast('Impressora salva.'); imp3dImpRender();
+}
+async function imp3dImpEmUso(id){
+  const orc = (await dbGetAll('orcamentos3d')).some(o=>Number(o.impressoraId)===Number(id));
+  const prod = (await dbGetAll('producoes3d')).some(p=>Number(p.impressoraId)===Number(id));
+  return orc || prod;
+}
+async function imp3dImpDel(id){
+  if(await imp3dImpEmUso(id)){
+    document.getElementById('ip-err') && (document.getElementById('ip-err').innerHTML =
+      `<div class="al ae"><i class="ti ti-alert-circle"></i>Esta impressora já tem orçamentos ou produções vinculadas — inative-a em vez de excluir, para não perder o histórico.</div>`);
+    return;
+  }
+  confirmar('Excluir impressora','A impressora será removida do cadastro. Isto não afeta lançamentos financeiros já feitos.',
+    async()=>{ await dbDel('impressoras3d',id); closeModal('mk-form'); toast('Impressora removida.','aw'); imp3dImpRender(); });
+}
+
+/* ---------------------------------------------------------------- Filamentos e materiais
+   Cada registro é um LOTE comprado (mesma lógica de custo do início ao fim):
+   custo/g = (preço + frete + custos adicionais) ÷ peso líquido adquirido.
+   O estoque do lote só muda por movimentação (entrada/saída/ajuste/perda),
+   nunca escrevendo peso disponível direto — assim sobra sempre um rastro, e
+   uma saída maior que o estoque é barrada antes de confirmar, nunca vira
+   saldo negativo silencioso. */
+function imp3dFilCustoGrama(f){
+  const total = num(f.precoAquisicao) + num(f.frete) + num(f.custosAdicionais);
+  const peso = num(f.pesoLiquidoG);
+  if(peso <= 0) return { valido:false, custoGrama:null };
+  return { valido:true, custoGrama: total/peso };
+}
+function imp3dFilStatus(f){
+  const disp = num(f.pesoDisponivelG);
+  if(disp <= 0) return 'Esgotado';
+  if(disp <= num(f.pesoMinimoAlerta||0)) return 'Baixo estoque';
+  return 'Em estoque';
+}
+
+let IMP3D_FIL_TAB = 'disponivel';
+async function imp3dFilRender(){
+  const root = document.getElementById('i3fil-root');
+  const todos = await dbGetAll('filamentos');
+  const comEstoque = todos.filter(f=>num(f.pesoDisponivelG)>0);
+  const pesoTotal = todos.reduce((s,f)=>s+num(f.pesoDisponivelG),0);
+  const valorEstoque = todos.reduce((s,f)=>{ const c=imp3dFilCustoGrama(f); return s+(c.valido?c.custoGrama*num(f.pesoDisponivelG):0); },0);
+  const baixoEstoque = todos.filter(f=>imp3dFilStatus(f)==='Baixo estoque');
+  const esgotados = todos.filter(f=>imp3dFilStatus(f)==='Esgotado');
+
+  let h = imp3dCabecalho('Filamentos e materiais', 'Estoque e custo por grama');
+
+  h += `<div class="kg" style="margin-bottom:16px">
+    <div class="kc br"><div class="lb"><i class="ti ti-package"></i>Lotes cadastrados</div>
+      <div class="vl">${todos.length}</div><div class="sb">${comEstoque.length} com saldo</div></div>
+    <div class="kc gd"><div class="lb"><i class="ti ti-scale"></i>Peso em estoque</div>
+      <div class="vl">${(pesoTotal/1000).toLocaleString('pt-BR',{maximumFractionDigits:2})} kg</div><div class="sb">soma de todos os lotes</div></div>
+    <div class="kc gn"><div class="lb"><i class="ti ti-currency-real"></i>Valor em estoque</div>
+      <div class="vl">${moedaK(valorEstoque)}</div><div class="sb">pelo custo de aquisição</div></div>
+    <div class="kc ${baixoEstoque.length||esgotados.length?'am':'tl'}"><div class="lb"><i class="ti ti-alert-triangle"></i>Atenção</div>
+      <div class="vl">${baixoEstoque.length+esgotados.length}</div>
+      <div class="sb">${baixoEstoque.length} baixo(s) · ${esgotados.length} esgotado(s)</div></div>
+  </div>`;
+
+  h += `<div class="brow" style="margin-bottom:12px">
+    <button class="btn gh ${IMP3D_FIL_TAB==='disponivel'?'on':''}" onclick="IMP3D_FIL_TAB='disponivel';imp3dFilRender()">Com saldo</button>
+    <button class="btn gh ${IMP3D_FIL_TAB==='todos'?'on':''}" onclick="IMP3D_FIL_TAB='todos';imp3dFilRender()">Todos os lotes</button>
+    <div class="sp"></div>
+    <button class="btn" style="background:#16253B" onclick="imp3dFilForm()"><i class="ti ti-plus"></i>Novo lote</button>
+  </div>`;
+
+  const lista = IMP3D_FIL_TAB==='disponivel' ? comEstoque : todos;
+
+  if(!todos.length){
+    h += `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-package-off"></i>
+      <b>Nenhum filamento cadastrado</b>Cadastre os lotes comprados para controlar estoque e calcular o custo
+      real por grama, usado na calculadora de preços.
+      <div class="brow" style="justify-content:center;margin-top:14px">
+      <button class="btn" style="background:#16253B" onclick="imp3dFilForm()"><i class="ti ti-plus"></i>Cadastrar lote</button></div></div></div></div>`;
+  } else if(!lista.length){
+    h += `<div class="al ai"><i class="ti ti-info-circle"></i>Nenhum lote nesse filtro.</div>`;
+  } else {
+    h += `<div class="mgrid">`;
+    lista.forEach(f=>{
+      const c = imp3dFilCustoGrama(f);
+      const st = imp3dFilStatus(f);
+      h += `<div class="ocard" onclick="imp3dFilDetalhe(${f.id})">
+        <div class="oh"><div class="oi" style="background:#E7EBF0;color:#16253B"><i class="ti ti-package"></i></div>
+          <div style="flex:1;min-width:0"><b style="display:block;font-size:13.5px">${esc(f.nome)}</b>
+            <span class="tt">${esc(f.tipo||'')} ${esc(f.cor?'· '+f.cor:'')}</span></div>
+          <span class="st ${ST_FILAMENTO[st]||'s-nt'}">${esc(st)}</span></div>
+        <div class="ob">
+          <div class="row"><span>Disponível</span><b>${num(f.pesoDisponivelG).toLocaleString('pt-BR')} g</b></div>
+          <div class="row"><span>Custo/g</span><b>${c.valido?('R$ '+c.custoGrama.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4})):'—'}</b></div>
+          <div class="row"><span>Lote</span><b>${esc(f.lote||'—')}</b></div>
+        </div></div>`;
+    });
+    h += `</div>`;
+  }
+
+  root.innerHTML = h;
+}
+
+async function imp3dFilForm(id){
+  const f = id ? await dbGet('filamentos',id) : null;
+  const b = `<div class="fr3">
+      <div class="fg" style="grid-column:span 2"><label>Nome do filamento <span class="rq">*</span></label>
+        <input id="fl-nome" value="${esc(f?f.nome:'')}" placeholder="Ex.: PLA Preto 1kg — Fornecedor X"></div>
+      <div class="fg"><label>Tipo de material</label><select id="fl-tipo">${MATERIAIS_3D.map(t=>`<option ${f&&f.tipo===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
+    <div class="fr4">
+      <div class="fg"><label>Fabricante</label><input id="fl-fab" value="${esc(f?f.fabricante:'')}"></div>
+      <div class="fg"><label>Cor</label><input id="fl-cor" value="${esc(f?f.cor:'')}"></div>
+      <div class="fg"><label>Diâmetro</label><input id="fl-diam" value="${esc(f?f.diametro:'1,75mm')}"></div>
+      <div class="fg"><label>Fornecedor</label><input id="fl-forn" value="${esc(f?f.fornecedor:'')}"></div></div>
+    <div class="fr4">
+      <div class="fg"><label>Peso líquido adquirido (g) <span class="rq">*</span></label><input id="fl-pesoliq" type="number" value="${f?f.pesoLiquidoG:''}" placeholder="Ex.: 1000"></div>
+      <div class="fg"><label>Peso do carretel vazio (g)</label><input id="fl-pesocarretel" type="number" value="${f?f.pesoCarretelG:''}"></div>
+      <div class="fg"><label>Quantidade adquirida</label><input id="fl-qtd" type="number" value="${f?f.quantidadeAdquirida:'1'}"></div>
+      <div class="fg"><label>Data de compra</label><input id="fl-data" type="date" value="${f?f.dataCompra:hoje()}"></div></div>
+    <div class="fr4">
+      <div class="fg"><label>Preço de aquisição (R$) <span class="rq">*</span></label><input id="fl-preco" type="number" step="0.01" value="${f?f.precoAquisicao:''}"></div>
+      <div class="fg"><label>Frete de compra (R$)</label><input id="fl-frete" type="number" step="0.01" value="${f?f.frete:''}"></div>
+      <div class="fg"><label>Impostos/custos adicionais (R$)</label><input id="fl-custosadic" type="number" step="0.01" value="${f?f.custosAdicionais:''}"></div>
+      <div class="fg"><label>Alertar com estoque abaixo de (g)</label><input id="fl-min" type="number" value="${f?f.pesoMinimoAlerta:'100'}"></div></div>
+    <div class="fr3">
+      <div class="fg"><label>Lote</label><input id="fl-lote" value="${esc(f?f.lote:'')}"></div>
+      <div class="fg" style="grid-column:span 2"><label>Local de armazenamento</label><input id="fl-local" value="${esc(f?f.localArmazenamento:'')}"></div></div>
+    <div class="fg"><label>Observações</label><textarea id="fl-obs">${esc(f?f.obs:'')}</textarea></div>
+    <div id="fl-err"></div>`;
+  modal(id?'Editar lote de filamento':'Novo lote de filamento','ti-package',b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     ${id?`<button class="btn rd" onclick="imp3dFilDel(${id})"><i class="ti ti-trash"></i>Excluir</button>`:''}
+     <button class="btn" style="background:#16253B" onclick="imp3dFilSave(${id||'null'})"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function imp3dFilSave(id){
+  const nome = val('fl-nome');
+  const pesoLiquido = num(val('fl-pesoliq'));
+  if(!nome){ document.getElementById('fl-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o nome do filamento.</div>`; return; }
+  if(pesoLiquido <= 0){ document.getElementById('fl-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o peso líquido adquirido (maior que zero).</div>`; return; }
+  const d = { nome, tipo:val('fl-tipo'), fabricante:val('fl-fab'), cor:val('fl-cor'), diametro:val('fl-diam'),
+    fornecedor:val('fl-forn'), pesoLiquidoG:pesoLiquido, pesoCarretelG:num(val('fl-pesocarretel')),
+    quantidadeAdquirida:num(val('fl-qtd'))||1, dataCompra:val('fl-data'),
+    precoAquisicao:num(val('fl-preco')), frete:num(val('fl-frete')), custosAdicionais:num(val('fl-custosadic')),
+    pesoMinimoAlerta:num(val('fl-min')), lote:val('fl-lote'), localArmazenamento:val('fl-local'), obs:val('fl-obs') };
+  if(id){
+    const old = await dbGet('filamentos',id);
+    await dbPut('filamentos',{...old,...d});
+  } else {
+    await dbAdd('filamentos',{...d, pesoDisponivelG:pesoLiquido});
+  }
+  closeModal('mk-form'); toast('Lote de filamento salvo.'); imp3dFilRender();
+}
+async function imp3dFilEmUso(id){
+  const prod = (await dbGetAll('producoes3d')).some(p=>Number(p.filamentoId)===Number(id));
+  const mov = (await dbGetAll('movfilamento')).some(m=>Number(m.filamentoId)===Number(id));
+  return prod || mov;
+}
+async function imp3dFilDel(id){
+  if(await imp3dFilEmUso(id)){
+    const el = document.getElementById('fl-err');
+    if(el) el.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Este lote já tem movimentações ou produções registradas — não pode ser excluído, para manter o histórico. Zere o estoque por uma movimentação, se for o caso.</div>`;
+    return;
+  }
+  confirmar('Excluir lote','O lote de filamento será removido do cadastro.',
+    async()=>{ await dbDel('filamentos',id); closeModal('mk-form'); toast('Lote removido.','aw'); imp3dFilRender(); });
+}
+
+async function imp3dFilDetalhe(id){
+  const f = await dbGet('filamentos',id);
+  const c = imp3dFilCustoGrama(f);
+  const movs = (await dbGetAll('movfilamento')).filter(m=>Number(m.filamentoId)===Number(id))
+                 .sort((a,b)=>String(b.data).localeCompare(String(a.data))||b.id-a.id);
+  const b = `<div class="kg" style="margin-bottom:14px">
+      <div class="kc br"><div class="lb">Disponível</div><div class="vl">${num(f.pesoDisponivelG).toLocaleString('pt-BR')} g</div></div>
+      <div class="kc gd"><div class="lb">Custo por grama</div><div class="vl">${c.valido?('R$ '+c.custoGrama.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4})):'—'}</div></div>
+      <div class="kc gn"><div class="lb">Situação</div><div class="vl" style="font-size:16px">${esc(imp3dFilStatus(f))}</div></div></div>
+    <div class="card" style="margin-bottom:14px"><div class="hd"><i class="ti ti-info-circle"></i>Dados do lote</div><div class="bd">
+      <div class="fr3" style="gap:9px 16px">
+        ${[['Tipo',f.tipo],['Fabricante',f.fabricante],['Cor',f.cor],['Diâmetro',f.diametro],['Fornecedor',f.fornecedor],
+           ['Lote',f.lote],['Local',f.localArmazenamento],['Peso líquido adquirido',num(f.pesoLiquidoG)+' g'],
+           ['Data de compra',dbr(f.dataCompra)]]
+          .map(([l,v])=>`<div><div class="tt">${l}</div><b>${esc(v||'—')}</b></div>`).join('')}
+      </div></div></div>
+    <div class="brow" style="margin-bottom:10px">
+      <b style="flex:1">Movimentações</b>
+      <button class="btn xs" style="background:#16253B" onclick="imp3dFilMovForm(${id})"><i class="ti ti-arrow-up-circle"></i>Registrar movimentação</button></div>
+    <div class="card"><div class="bd">
+      ${!movs.length?`<div class="empty"><i class="ti ti-list"></i><b>Sem movimentações ainda</b></div>`:
+        movs.map(m=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--border)">
+          <span>${dbr(m.data)} · ${esc(m.tipo)}${m.motivo?' — '+esc(m.motivo):''}</span>
+          <b style="color:${['Entrada','Ajuste'].includes(m.tipo)&&m.saldoApos>=m.saldoAntes?'var(--green)':'var(--red)'}">
+            ${m.saldoApos>=m.saldoAntes?'+':''}${(m.saldoApos-m.saldoAntes).toLocaleString('pt-BR')} g
+            <span class="tt" style="font-weight:400">(saldo: ${num(m.saldoApos).toLocaleString('pt-BR')} g)</span></b></div>`).join('')}
+    </div></div>`;
+  modal('Lote: '+f.nome,'ti-package',b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>
+     <button class="btn" style="background:#16253B" onclick="closeModal('mk-form');imp3dFilForm(${id})"><i class="ti ti-edit"></i>Editar lote</button>`,
+    'lg');
+}
+
+async function imp3dFilMovForm(filamentoId){
+  const f = await dbGet('filamentos',filamentoId);
+  const b = `<div class="al ai"><i class="ti ti-info-circle"></i>Disponível agora: <b>${num(f.pesoDisponivelG).toLocaleString('pt-BR')} g</b></div>
+    <div class="fr2">
+      <div class="fg"><label>Tipo de movimentação</label><select id="fm-tipo" onchange="imp3dFilMovTipoMudou()">${TIPOS_MOV_FILAMENTO.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label id="fm-label-valor">Quantidade (g) <span class="rq">*</span></label><input id="fm-valor" type="number" step="0.01"></div></div>
+    <div class="fr2">
+      <div class="fg"><label>Data</label><input id="fm-data" type="date" value="${hoje()}"></div>
+      <div class="fg"><label>Motivo / referência</label><input id="fm-motivo" placeholder="Ex.: consumo no orçamento #12"></div></div>
+    <div id="fm-err"></div>`;
+  modal('Registrar movimentação','ti-arrow-up-circle',b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn" style="background:#16253B" onclick="imp3dFilMovSave(${filamentoId})"><i class="ti ti-device-floppy"></i>Registrar</button>`);
+  imp3dFilMovTipoMudou();
+}
+function imp3dFilMovTipoMudou(){
+  const tipo = val('fm-tipo'); const lbl = document.getElementById('fm-label-valor');
+  if(!lbl) return;
+  lbl.innerHTML = tipo==='Ajuste' ? 'Novo saldo total (g) <span class="rq">*</span>' : 'Quantidade (g) <span class="rq">*</span>';
+}
+async function imp3dFilMovSave(filamentoId){
+  const tipo = val('fm-tipo');
+  const valor = num(val('fm-valor'));
+  const errEl = document.getElementById('fm-err');
+  if(valor < 0 || (tipo!=='Ajuste' && valor<=0)){
+    errEl.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe uma quantidade válida.</div>`; return;
+  }
+  const f = await dbGet('filamentos',filamentoId);
+  const saldoAntes = num(f.pesoDisponivelG);
+  let saldoApos;
+  if(tipo==='Ajuste') saldoApos = valor;
+  else if(tipo==='Entrada') saldoApos = saldoAntes + valor;
+  else saldoApos = saldoAntes - valor; // Saída por consumo · Perda
+
+  if(saldoApos < 0){
+    errEl.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Estoque insuficiente: disponível ${saldoAntes.toLocaleString('pt-BR')} g, solicitado ${valor.toLocaleString('pt-BR')} g. Operação não registrada.</div>`;
+    return;
+  }
+  await dbAdd('movfilamento', { filamentoId, tipo, data:val('fm-data')||hoje(), motivo:val('fm-motivo'), saldoAntes, saldoApos });
+  await dbPut('filamentos', {...f, pesoDisponivelG: saldoApos});
+  closeModal('mk-form'); toast('Movimentação registrada.'); imp3dFilRender();
+}
+
+async function imp3dDesRender(){ imp3dEmConstrucao('i3des-root', 'Despesas e investimentos', 'Lançamentos financeiros da unidade Impressão 3D'); }
+async function imp3dProdRender(){ imp3dEmConstrucao('i3prod-root', 'Produtos e projetos', 'Catálogo de peças e projetos impressos'); }
+async function imp3dHistRender(){ imp3dEmConstrucao('i3hist-root', 'Histórico de produção', 'Impressões em andamento e concluídas'); }
+async function imp3dRelRender(){ imp3dEmConstrucao('i3rel-root', 'Relatórios financeiros', 'Faturamento, custos e resultado da unidade'); }
+async function imp3dCfgRender(){ imp3dEmConstrucao('i3cfg-root', 'Configurações de cálculo', 'Percentual padrão de falhas e demais parâmetros'); }
 /* =========================================================================
    INICIALIZAÇÃO
    ========================================================================= */

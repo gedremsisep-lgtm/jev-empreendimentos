@@ -45,7 +45,7 @@ const t = (nome, cond, extra) => {
     areas: [...new Set(VIGIAS.map(a => a.area))].sort(),
   }));
   t('vigias está na lista de tabelas', reg.noStores);
-  t('a versão do banco subiu para 9', reg.versao === 9, 'v' + reg.versao);
+  t('a versão do banco subiu para 9 (ou mais, se um módulo mais novo subiu de novo)', reg.versao >= 9, 'v' + reg.versao);
   t('a tela existe e está na rota', reg.naRota && reg.temPagina);
   t('o sino apareceu no topo', reg.temSino);
   t('Gestão e Campo enxergam a tela', reg.permG && reg.permC);
