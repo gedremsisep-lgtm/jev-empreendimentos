@@ -1,17 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.39",
-  "arquivo": "jev-1.0.39.html",
-  "data": "2026-09-28",
-  "sha256": "06ad165e4e8193c57da4aab1e4d0681bd4ad2efe5f39fce88fd51b5d66d0699e",
-  "tamanho": 2118679,
+  "versao": "1.0.40",
+  "arquivo": "jev-1.0.40.html",
+  "data": "2026-10-27",
+  "sha256": "81a26b7cb33e8807406eea4df28ddf6d8a7fec137c52b390d21961919cfe161f",
+  "tamanho": 2204312,
   "notas": [
-    "Escritório: o card dos agentes de IA, ao lado de Mídia",
-    "Controle e Vigias agora moram dentro do Escritório, com a barra das duas abas",
-    "Os dois sininhos do topo passam a acender já no painel, sem entrar nas telas"
+    "Novo: módulo de Impressão 3D (calculadora de custos, impressoras, filamentos e estoque)",
+    "Novo: botão Verificar Agentes no painel inicial"
   ],
-  "substitui": "1.0.38",
+  "substitui": "1.0.39",
   "anteriores": [
+    {
+      "versao": "1.0.39",
+      "arquivo": "jev-1.0.39.html",
+      "sha256": "06ad165e4e8193c57da4aab1e4d0681bd4ad2efe5f39fce88fd51b5d66d0699e",
+      "data": "2026-09-28"
+    },
     {
       "versao": "1.0.38",
       "arquivo": "jev-1.0.38.html",
@@ -41,12 +46,6 @@
       "arquivo": "jev-1.0.34.html",
       "sha256": "c1b9cc2f3efc123fa9ada4a1248773fa4be10f8815b440a0166b827927f0b7d8",
       "data": "2026-08-25"
-    },
-    {
-      "versao": "1.0.33",
-      "arquivo": "jev-1.0.33.html",
-      "sha256": "cd0ba9eb13269a21d3fabf9b01c6ec124e2fb068e86043b486c53554035968ed",
-      "data": "2026-08-20"
     }
   ]
 }
