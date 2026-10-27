@@ -254,6 +254,21 @@ fs.writeFileSync(EMBUTIDO,
   ok('e o motor de visuais desenhados por código',
     html.includes('function visualHTML') && html.includes('function visContador') ? true : 'não veio');
 
+  /* 1.0.40 — o módulo de Impressão 3D e o botão Verificar Agentes */
+  ok('a calculadora de custos da Impressão 3D veio',
+    html.includes('function imp3dCalcular') && html.includes('function imp3dDeprecInfo') ? true : 'não veio');
+  ok('o custo por grama do filamento veio',
+    html.includes('function imp3dFilCustoGrama') ? true : 'não veio');
+  ok('a unidade Impressão 3D entrou no painel, com as onze telas',
+    html.includes("id:'imp3d', pg:'i3pn'") &&
+    html.includes("['i3imp','Impressoras','ti-printer']") &&
+    html.includes("['i3fil','Filamentos','ti-package']") ? true : 'não veio');
+  ok('o botão Verificar Agentes veio no painel inicial',
+    html.includes('function hubVerificarAgentes') &&
+    html.includes("AGENTES_URL = 'http://127.0.0.1:3030'") ? true : 'não veio');
+  ok('e o botão mostra o texto certo, não só o onclick',
+    html.includes('>Verificar Agentes</button>') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();
