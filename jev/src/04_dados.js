@@ -99,9 +99,16 @@ const UND_PROD = ['kg','saca','ton','caixa','dúzia','litro','cabeça','unidade'
 const ST_CICLO = {'Planejado':'s-nt','Em andamento':'s-pd','Colhido':'s-ok','Vendido':'s-br','Perdido':'s-bl'};
 
 /* ---------------- Produtos e infoprodutos ---------------- */
-const TIPOS_PRODUTO = ['Produto físico','Produto da chácara','Infoproduto','Serviço','Assinatura'];
-const CAT_PRODUTO = ['Alimentos','Bebidas','Artesanato','Insumos','Ferramentas','Curso online','E-book',
-                     'Mentoria','Planilha / template','Consultoria','Outro'];
+const TIPOS_PRODUTO = ['Produto físico','Produto 3D','Produto da chácara','Infoproduto','Serviço','Assinatura'];
+const CAT_PRODUTO = [
+  // Produtos físicos
+  'Alimentos','Bebidas','Artesanato','Impressão 3D','Insumos','Ferramentas',
+  // Digitais / infoprodutos
+  'Curso online','E-book','Planilha / template',
+  // Serviços
+  'Mentoria','Consultoria',
+  'Outro'
+];
 const PLATAFORMAS = ['Venda direta','WhatsApp','Instagram','Mercado Livre','Shopee','Hotmart','Kiwify',
                      'Eduzz','Monetizze','Braip','Site próprio','Feira / presencial','Outro'];
 const ST_VENDA = {'Pedido':'s-nt','Confirmada':'s-pd','Entregue':'s-ok','Paga':'s-br','Cancelada':'s-bl','Reembolsada':'s-wn'};

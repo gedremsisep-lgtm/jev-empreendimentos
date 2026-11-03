@@ -86,6 +86,7 @@ async function midiaRender(){
   if(MID_TAB==='gar')    await midTabGarimpo();
   if(MID_TAB==='cort')   await midTabCortes();
   if(MID_TAB==='gerar')  await midTabGerar();
+  if(MID_TAB==='pia')    await piaTabRender();
   if(MID_TAB==='pub')    await midTabPublicar();
   if(MID_TAB==='plat')   await midTabPlataformas();
   if(MID_TAB==='des')    await midTabDesempenho(canais,videos);

@@ -30,6 +30,7 @@ const MENU_GRUPOS = [
       { id: 'gar',    nome: 'Garimpar produto', ic: 'ti-pick' },
       { id: 'videos', nome: 'Pauta e vídeos',   ic: 'ti-video' },
       { id: 'gerar',  nome: 'Montar do zero',   ic: 'ti-sparkles' },
+      { id: 'pia',    nome: 'Produção IA Local', ic: 'ti-cpu' },
       { id: 'cort',   nome: 'Cortes de vídeo longo', ic: 'ti-scissors' }
     ] },
   { id: 'publicar', nome: 'Publicar', ic: 'ti-send',
