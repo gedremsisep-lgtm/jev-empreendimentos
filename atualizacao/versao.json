@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.40",
-  "arquivo": "jev-1.0.40.html",
-  "data": "2026-10-27",
-  "sha256": "81a26b7cb33e8807406eea4df28ddf6d8a7fec137c52b390d21961919cfe161f",
-  "tamanho": 2204312,
+  "versao": "1.0.41",
+  "arquivo": "jev-1.0.41.html",
+  "data": "2026-11-03",
+  "sha256": "759ea4e83d1db209fd8e572229c6a89543ee3b879ac69bc34ff20fc5251bc065",
+  "tamanho": 2216143,
   "notas": [
-    "Novo: módulo de Impressão 3D (calculadora de custos, impressoras, filamentos e estoque)",
-    "Novo: botão Verificar Agentes no painel inicial"
+    "Novo: Produção IA Local — gera episódio do zero a partir de texto, com narração em português, rodando no seu próprio computador (ComfyUI + Piper + FFmpeg)",
+    "Produtos e Vendas: nova categoria e tipo de produto para peças de Impressão 3D, e lista de categorias reorganizada"
   ],
-  "substitui": "1.0.39",
+  "substitui": "1.0.40",
   "anteriores": [
+    {
+      "versao": "1.0.40",
+      "arquivo": "jev-1.0.40.html",
+      "sha256": "81a26b7cb33e8807406eea4df28ddf6d8a7fec137c52b390d21961919cfe161f",
+      "data": "2026-10-27"
+    },
     {
       "versao": "1.0.39",
       "arquivo": "jev-1.0.39.html",
@@ -40,12 +46,6 @@
       "arquivo": "jev-1.0.35.html",
       "sha256": "4cb8bb8a959383c43dec45a739840043231421f5834ce7105c76b26f7f4f46a1",
       "data": "2026-09-08"
-    },
-    {
-      "versao": "1.0.34",
-      "arquivo": "jev-1.0.34.html",
-      "sha256": "c1b9cc2f3efc123fa9ada4a1248773fa4be10f8815b440a0166b827927f0b7d8",
-      "data": "2026-08-25"
     }
   ]
 }
