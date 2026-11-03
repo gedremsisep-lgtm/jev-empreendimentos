@@ -4,6 +4,21 @@
 let MID_TAB = 'canais';
 function midStab(t){ MID_TAB = t; midiaRender(); }
 
+/* Para que serve cada canal. Não é enfeite: é o que decide o que acontece
+   quando você clica em postar. Um canal de cortes começa por um link do
+   YouTube; um de afiliado começa por um produto e um link que paga.      */
+const MID_FINALIDADES = {
+  proprio:  { n:'Conteúdo próprio', ic:'ti-video',    cor:'#2D6CDF',
+              desc:'Vídeos que você mesmo grava e publica.' },
+  cortes:   { n:'Cortes',           ic:'ti-scissors', cor:'#7C4DBE',
+              desc:'Pega um vídeo longo e vira vários cortes de um minuto.' },
+  afiliado: { n:'Afiliado',         ic:'ti-link',     cor:'#1F7A44',
+              desc:'Divulga produtos com o seu link de comissão.' }
+};
+function midFinalidade(c){
+  return MID_FINALIDADES[(c && c.finalidade) || 'proprio'] || MID_FINALIDADES.proprio;
+}
+
 async function midiaRender(){
   const root = document.getElementById('midia-root');
   await finLoad();
@@ -18,12 +33,27 @@ async function midiaRender(){
   const views = publicados.reduce((s,v)=>s+num(v.views),0);
   const naFila = videos.filter(v=>['Ideia','Roteiro','Gravado','Editado'].includes(v.status));
 
-  let h = `<div class="ph"><div class="ic" style="background:#FBEAE8;color:#C0392B"><i class="ti ti-brand-youtube"></i></div>
-    <div><h1>Canais de Vídeo</h1><p>Plataformas digitais, produção de conteúdo e monetização</p></div>
-    <div class="sp"></div>
-    <button class="btn gh" onclick="midReceita()"><i class="ti ti-cash"></i>Lançar monetização</button>
-    <button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Novo canal</button></div>`;
+  /* O CABEÇALHO SÓ COM O QUE É DESTA TELA.
 
+     "Lançar monetização" é dinheiro que entrou: só faz sentido em Resultados.
+     "Novo canal" é cadastro: só faz sentido em Cadastros. Os dois ficavam no
+     alto de TODAS as telas, inclusive na de montar vídeo, onde nenhum dos
+     dois tem o que fazer. E a linha de subtítulo repetia, em outras palavras,
+     o nome que já está escrito logo acima dela. */
+  const grupoAgora = menuGrupoDe(MID_TAB).id;
+  let h = `<div class="ph" style="margin-bottom:10px"><div class="ic" style="background:#FBEAE8;color:#C0392B"><i class="ti ti-brand-youtube"></i></div>
+    <div><h1>Canais de Vídeo</h1>${grupoAgora==='cadastros'?'<p>Plataformas digitais, produção de conteúdo e monetização</p>':''}</div>
+    <div class="sp"></div>
+    ${grupoAgora==='resultado'?'<button class="btn gh" onclick="midReceita()"><i class="ti ti-cash"></i>Lançar monetização</button>':''}
+    ${grupoAgora==='cadastros'?'<button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Novo canal</button>':''}</div>`;
+
+  /* OS SEIS QUADRADOS SÓ EM "RESULTADOS".
+
+     Inscritos, visualizações, receita do mês: é tudo verdade e tudo útil —
+     uma vez por semana. Mas eles ocupavam o terço de cima da tela em TODAS
+     as abas, inclusive naquela em que a pessoa entrou para montar um vídeo.
+     Número que não muda o que você vai clicar agora é decoração cara. */
+  if (menuGrupoDe(MID_TAB).id === 'resultado')
   h += `<div class="kg" style="margin-bottom:16px">
     <div class="kc rd"><div class="lb"><i class="ti ti-device-tv"></i>Canais</div><div class="vl">${canais.length}</div>
       <div class="sb">${canais.filter(c=>c.monetizado).length} monetizado(s)</div></div>
@@ -47,15 +77,18 @@ async function midiaRender(){
       <button class="btn xs gh" style="margin-left:8px" onclick="midStab('videos')">Ver pauta</button></div></div>`;
   }
 
-  h += `<div class="tabs">
-    <button class="tab ${MID_TAB==='canais'?'on':''}" onclick="midStab('canais')"><i class="ti ti-device-tv"></i>Canais</button>
-    <button class="tab ${MID_TAB==='videos'?'on':''}" onclick="midStab('videos')"><i class="ti ti-video"></i>Vídeos e pauta</button>
-    <button class="tab ${MID_TAB==='des'?'on':''}" onclick="midStab('des')"><i class="ti ti-chart-bar"></i>Desempenho</button>
-  </div><div id="mid-body"></div>`;
+  h += menuBarraHTML(MID_TAB) + `<div id="mid-body"></div>`;
   root.innerHTML = h;
 
   if(MID_TAB==='canais') await midTabCanais(canais,videos);
   if(MID_TAB==='videos') await midTabVideos(canais,videos);
+  if(MID_TAB==='afil')   await midTabAfiliados();
+  if(MID_TAB==='gar')    await midTabGarimpo();
+  if(MID_TAB==='cort')   await midTabCortes();
+  if(MID_TAB==='gerar')  await midTabGerar();
+  if(MID_TAB==='pia')    await piaTabRender();
+  if(MID_TAB==='pub')    await midTabPublicar();
+  if(MID_TAB==='plat')   await midTabPlataformas();
   if(MID_TAB==='des')    await midTabDesempenho(canais,videos);
 }
 
@@ -80,7 +113,8 @@ async function midTabCanais(canais,videos){
     h += `<div class="ocard" onclick="canalDetalhe(${c.id})">
       <div class="oh"><div class="oi" style="background:${pi.cor}1A;color:${pi.cor}"><i class="ti ${pi.ic}"></i></div>
         <div style="flex:1;min-width:0"><b style="display:block;font-size:13.5px">${esc(c.nome)}</b>
-          <span class="tt">${esc(c.plataforma)}${c.nicho?' · '+esc(c.nicho):''}</span></div>
+          <span class="tt"><i class="ti ${midFinalidade(c).ic}" style="color:${midFinalidade(c).cor}"></i>
+            ${esc(midFinalidade(c).n)} · ${esc(c.plataforma)}${c.nicho?' · '+esc(c.nicho):''}</span></div>
         ${c.monetizado?'<span class="st s-ok">Monetizado</span>':'<span class="st s-nt">Sem monetização</span>'}</div>
       <div class="ob">
         <div class="row"><span>Inscritos</span><b>${num(c.inscritos).toLocaleString('pt-BR')}</b></div>
@@ -92,11 +126,33 @@ async function midTabCanais(canais,videos){
         <div style="border-top:1px solid var(--bg3);margin-top:6px;padding-top:7px;display:flex;justify-content:space-between">
           <span style="font-size:12px;color:var(--text2);font-weight:700">Resultado</span>
           <b style="color:${rec-des>=0?'var(--green)':'var(--red)'}">${moedaK(rec-des)}</b></div>
+        <div class="no-print" style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap">
+          ${c.finalidade==='cortes'
+            ? `<button class="btn sm pu" style="flex:1" onclick="canalIrCortes(${c.id}, event)">
+                 <i class="ti ti-scissors"></i>Fazer cortes</button>`
+            : c.finalidade==='afiliado'
+            ? `<button class="btn sm gn" style="flex:1" onclick="canalIrAfiliado(${c.id}, event)">
+                 <i class="ti ti-pick"></i>Garimpar produto</button>`
+            : ''}
+          <button class="btn sm gn blk" style="flex:1" onclick="postAbrir(${c.id}, event)">
+            <i class="ti ti-send"></i>Postar</button></div>
       </div></div>`;
   });
   h += `</div>`;
   body.innerHTML = h;
 }
+function canalIrCortes(id, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  CORT.canalId = Number(id); CORT.manifesto = null;
+  midStab('cort');
+}
+function canalIrAfiliado(id, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  AFIL_CANAL = Number(id);
+  midStab('gar');
+}
+let AFIL_CANAL = null;
+
 async function canalForm(id){
   const c = id ? await dbGet('canais',id) : null;
   const b = `<div class="fr3">
@@ -104,6 +160,12 @@ async function canalForm(id){
         <input id="cn-nome" value="${esc(c?c.nome:'')}" placeholder="Ex.: JeV Construção na Prática"></div>
       <div class="fg"><label>Plataforma</label><select id="cn-plat">
         ${PLATS_VIDEO.map(p=>`<option ${c&&c.plataforma===p.v?'selected':''}>${p.v}</option>`).join('')}</select></div></div>
+    <div class="fg"><label>Para que serve este canal</label>
+      <div class="chips" id="cn-fins">
+        ${Object.entries(MID_FINALIDADES).map(([k,f])=>`<span class="chip ${((c&&c.finalidade)||'proprio')===k?'on':''}"
+          data-fin="${k}" onclick="canalFinalidade('${k}')"><i class="ti ${f.ic}"></i> ${f.n}</span>`).join('')}</div>
+      <input type="hidden" id="cn-fin" value="${esc((c&&c.finalidade)||'proprio')}">
+      <div class="hint" id="cn-finh">${esc(midFinalidade(c).desc)}</div></div>
     <div class="fr3">
       <div class="fg"><label>Nicho / tema</label><input id="cn-nicho" value="${esc(c?c.nicho:'')}" placeholder="Ex.: obras, vida na chácara"></div>
       <div class="fg"><label>Inscritos / seguidores</label><input id="cn-insc" type="number" value="${c?c.inscritos:0}"></div>
@@ -112,6 +174,10 @@ async function canalForm(id){
       <div class="fg" style="grid-column:span 2"><label>Endereço do canal</label><input id="cn-url" value="${esc(c?c.url:'')}" placeholder="https://"></div>
       <div class="fg"><label style="display:flex;gap:8px;align-items:center;margin-top:22px;cursor:pointer">
         <input type="checkbox" id="cn-mon" ${c&&c.monetizado?'checked':''} style="width:16px;height:16px">Canal monetizado</label></div></div>
+    <div class="fg"><label>Endereço exato para postar (opcional)</label>
+      <input id="cn-urlp" value="${esc(c&&c.urlPostar?c.urlPostar:'')}" placeholder="https://… a tela de envio deste canal">
+      <div class="hint">Se preencher, o botão <b>Postar</b> vai direto para cá, sem adivinhar. Serve para
+        quando a plataforma muda de endereço ou quando você administra mais de uma conta.</div></div>
     <div class="fg"><label>Observações (estratégia, frequência de postagem, parcerias)</label><textarea id="cn-obs">${esc(c?c.obs:'')}</textarea></div>
     <div id="cn-err"></div>`;
   modal(id?'Editar canal':'Novo canal','ti-device-tv',b,
@@ -123,10 +189,21 @@ async function canalSave(id){
   const nome = val('cn-nome');
   if(!nome){ document.getElementById('cn-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o nome do canal.</div>`; return; }
   const d = {nome, plataforma:val('cn-plat'), nicho:val('cn-nicho'), inscritos:num(val('cn-insc')),
-             dtInicio:val('cn-ini'), url:val('cn-url'), monetizado:chk('cn-mon'), obs:val('cn-obs')};
+             dtInicio:val('cn-ini'), url:val('cn-url'), urlPostar:val('cn-urlp'),
+             finalidade:val('cn-fin')||'proprio',
+             monetizado:chk('cn-mon'), obs:val('cn-obs')};
   if(id){ const old = await dbGet('canais',id); await dbPut('canais',{...old,...d}); }
   else await dbAdd('canais',d);
   closeModal('mk-form'); toast('Canal salvo.'); midiaRender();
+}
+function canalFinalidade(k){
+  setVal('cn-fin', k);
+  const cx = document.getElementById('cn-fins');
+  if(cx) Array.from(cx.querySelectorAll('.chip')).forEach(el=>{
+    el.classList.toggle('on', el.getAttribute('data-fin')===k);
+  });
+  const hint = document.getElementById('cn-finh');
+  if(hint && MID_FINALIDADES[k]) hint.textContent = MID_FINALIDADES[k].desc;
 }
 function canalDel(id){
   confirmar('Excluir canal','Os vídeos do canal também serão removidos. O financeiro é mantido.',
@@ -163,6 +240,7 @@ async function canalDetalhe(id){
       </tbody></table></div></div>`;
   modal(c.nome+' — '+c.plataforma,'ti-device-tv',b,
     `<button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>
+     <button class="btn gn" onclick="postAbrir(${id})"><i class="ti ti-send"></i>Postar</button>
      <button class="btn rd" onclick="videoForm(null,${id})"><i class="ti ti-video-plus"></i>Novo vídeo</button>
      <button class="btn gn" onclick="midReceita(${id})"><i class="ti ti-cash"></i>Lançar receita</button>
      <button class="btn" onclick="canalForm(${id})"><i class="ti ti-edit"></i>Editar</button>`,'lg');
@@ -172,12 +250,24 @@ async function midTabVideos(canais,videos){
   const body = document.getElementById('mid-body');
   const mapC = {}; canais.forEach(c=>mapC[c.id]=c);
   if(!canais.length){
-    body.innerHTML = `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-video-off"></i>
-      <b>Cadastre um canal primeiro</b>Os vídeos ficam ligados a um canal.</div></div></div>`;
+    /* sem canal ainda dá para garimpar, ver o prompt e montar o vídeo —
+       o canal só faz falta na hora de publicar */
+    /* Antes vinha aqui um cartão inteiro de "vazio", com ícone gigante, para
+       dizer uma coisa que não impede nada: falta cadastrar canal. Virou uma
+       linha embaixo dos produtos. Cartão de tela vazia embaixo de uma tela
+       cheia é só barulho. */
+    body.innerHTML = await pautaSecaoHTML() +
+      `<div class="tt" style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <i class="ti ti-info-circle"></i>Você ainda não cadastrou canal. Dá para garimpar e montar
+      o vídeo assim mesmo — o canal só faz falta na hora de publicar.
+      <button class="btn xs gh" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar canal</button></div>`;
     return;
   }
   const fases = ['Ideia','Roteiro','Gravado','Editado','Publicado'];
-  let h = `<div class="card"><div class="hd"><i class="ti ti-video"></i>Pauta e vídeos<span class="sp"></span>
+  /* os produtos garimpados vêm primeiro: é neles que o trabalho acontece */
+  let h = await pautaSecaoHTML();
+  h += `<div class="card"><div class="hd"><i class="ti ti-video"></i>Pauta e vídeos<span class="sp"></span>
+      <button class="btn sm gh" onclick="hggCriarVideo()"><i class="ti ti-user-check"></i>Criar vídeo no Higgsfield</button>
       <button class="btn sm rd" onclick="videoForm()"><i class="ti ti-plus"></i>Novo vídeo</button></div><div class="bd">
       <div class="chips">${fases.map(f=>{
         const n = videos.filter(v=>v.status===f).length;
