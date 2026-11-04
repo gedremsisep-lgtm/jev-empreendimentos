@@ -36,9 +36,622 @@ function imp3dEmConstrucao(raizId, titulo, subtitulo){
 }
 
 async function imp3dPainelRender(){ imp3dEmConstrucao('i3pn-root', 'Painel geral', 'Indicadores de impressão 3D a partir dos dados registrados'); }
-async function imp3dCalcRender(){ imp3dEmConstrucao('i3calc-root', 'Calculadora de custos e preços', 'Formação de preço com as fórmulas da metodologia nativa'); }
-async function imp3dOrcRender(){ imp3dEmConstrucao('i3orc-root', 'Orçamentos', 'Propostas comerciais de impressão 3D'); }
-async function imp3dCliRender(){ imp3dEmConstrucao('i3cli-root', 'Clientes', 'Pessoas com papel de cliente, para orçamentos e vendas de impressão 3D'); }
+/* ---------------------------------------------------------------- Calculadora de custos e preços
+   Reproduz a metodologia do calc3d.com.br (material + energia + máquina + trabalho,
+   reserva de falhas sobre essa soma, preço = custo × (1+margem)) como MODO RÁPIDO do
+   motor nativo (imp3dCalcular, A–K acima) — que é um superconjunto: também cobre
+   manutenção além da cadastrada, outros custos diretos, taxas de venda e desconto
+   comercial (MODO COMPLETO).
+   Os mesmos campos (prefixados por `pref`) alimentam tanto a tela da Calculadora
+   (pref='ic') quanto o formulário de Orçamento dentro do modal (pref='of') — nunca
+   os dois ao mesmo tempo no DOM (só existe um modal por vez), mas o prefixo evita
+   qualquer colisão de id se um dia coexistirem. */
+let IMP3D_CALC_MODO = {};
+
+function imp3dCalcD(v, d){ return (v===undefined || v===null || v==='') ? d : v; }
+
+function imp3dCalcModoSet(pref, modo){ IMP3D_CALC_MODO[pref] = modo; imp3dCalcCamposRefresh(pref); }
+
+/* lê os campos exatamente como o usuário digitou (sem resolver cadastro nenhum) —
+   serve para repopular o formulário depois de trocar de modo, duplicar um orçamento
+   ou reabrir um rascunho salvo */
+function imp3dCalcCapturarCampos(pref){
+  return {
+    pesoConsumidoG: val(pref+'-peso'), precoFilamentoKg: val(pref+'-filkg'),
+    tempoHoras: val(pref+'-tempo'), potenciaW: val(pref+'-pot'),
+    maqValor: val(pref+'-maqvalor'), maqVida: val(pref+'-maqvida'),
+    manutHoraManual: val(pref+'-manuthora'),
+    tarifaKwh: val(pref+'-tarifa'), horasManuais: val(pref+'-horasmanuais'),
+    valorHoraTrabalho: val(pref+'-valorhora'), quantidade: val(pref+'-qtd'),
+    reservaFalhasPct: val(pref+'-risco'), margemPct: val(pref+'-margem'),
+    materiaisAdicionais: val(pref+'-materiaisadic'), custoSuportesFerragens: val(pref+'-suportes'),
+    embalagem: val(pref+'-embalagem'), custosAdicionaisDiretos: val(pref+'-outroscustos'),
+    modoPreco: val(pref+'-modopreco'), taxasVendaPct: val(pref+'-taxasvenda'),
+    descontoComercial: val(pref+'-desconto'),
+    impressoraId: val(pref+'-impsel') || null, filamentoId: val(pref+'-filsel') || null
+  };
+}
+
+async function imp3dCalcCamposHTML(pref, e){
+  e = e || {};
+  const D = imp3dCalcD;
+  const modo = IMP3D_CALC_MODO[pref] || 'rapido';
+  const impressoras = (await dbGetAll('impressoras3d')).filter(i=>i.status!=='Inativa');
+  const filamentos = (await dbGetAll('filamentos')).filter(f=>num(f.pesoDisponivelG)>0);
+  const impSel = e.impressoraId ? String(e.impressoraId) : '';
+  const filSel = e.filamentoId ? String(e.filamentoId) : '';
+
+  let h = `<div class="brow" style="margin-bottom:10px">
+    <button type="button" class="btn gh ${modo==='rapido'?'on':''}" onclick="imp3dCalcModoSet('${pref}','rapido')">Modo rápido</button>
+    <button type="button" class="btn gh ${modo==='completo'?'on':''}" onclick="imp3dCalcModoSet('${pref}','completo')">Modo completo</button>
+  </div>`;
+
+  h += `<div class="fr3">
+      <div class="fg"><label>Peso da peça (g)</label>
+        <input id="${pref}-peso" type="number" step="0.1" value="${esc(D(e.pesoConsumidoG,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg" style="grid-column:span 2"><label>Filamento</label>
+        <select id="${pref}-filsel" onchange="imp3dCalcSelFil('${pref}')">
+          <option value="">Preço manual (R$/kg)</option>
+          ${filamentos.map(f=>`<option value="${f.id}" ${filSel===String(f.id)?'selected':''}>${esc(f.marca||'')} ${esc(f.material||'')} ${esc(f.cor||'')} — ${num(f.pesoDisponivelG).toFixed(0)}g disp.</option>`).join('')}
+        </select></div></div>
+    <div class="fr3" id="${pref}-filmanual-wrap" style="${filSel?'display:none':''}">
+      <div class="fg"><label>Preço do filamento (R$/kg)</label>
+        <input id="${pref}-filkg" type="number" step="0.01" value="${esc(D(e.precoFilamentoKg,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+    </div>
+    <div class="fr3">
+      <div class="fg"><label>Tempo de impressão (h)</label>
+        <input id="${pref}-tempo" type="number" step="0.01" value="${esc(D(e.tempoHoras,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg" style="grid-column:span 2"><label>Impressora</label>
+        <select id="${pref}-impsel" onchange="imp3dCalcSelImp('${pref}')">
+          <option value="">Dados manuais</option>
+          ${impressoras.map(i=>`<option value="${i.id}" ${impSel===String(i.id)?'selected':''}>${esc(i.nome)}</option>`).join('')}
+        </select></div></div>
+    <div class="fr3" id="${pref}-impmanual-wrap" style="${impSel?'display:none':''}">
+      <div class="fg"><label>Potência média (W)</label>
+        <input id="${pref}-pot" type="number" step="1" value="${esc(D(e.potenciaW,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Valor da máquina (R$)</label>
+        <input id="${pref}-maqvalor" type="number" step="0.01" value="${esc(D(e.maqValor,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Vida útil (h)</label>
+        <input id="${pref}-maqvida" type="number" step="1" value="${esc(D(e.maqVida,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+    </div>
+    <div class="fr4">
+      <div class="fg"><label>Tarifa de energia (R$/kWh)</label>
+        <input id="${pref}-tarifa" type="number" step="0.01" value="${esc(D(e.tarifaKwh,'0.95'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Horas manuais (h)</label>
+        <input id="${pref}-horasmanuais" type="number" step="0.01" value="${esc(D(e.horasManuais,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Hora de trabalho (R$/h)</label>
+        <input id="${pref}-valorhora" type="number" step="0.01" value="${esc(D(e.valorHoraTrabalho,''))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Quantidade (un)</label>
+        <input id="${pref}-qtd" type="number" step="1" min="1" value="${esc(D(e.quantidade,'1'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>Risco de falha (%)</label>
+        <input id="${pref}-risco" type="number" step="0.1" value="${esc(D(e.reservaFalhasPct,'5'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Margem de lucro (%)</label>
+        <input id="${pref}-margem" type="number" step="1" value="${esc(D(e.margemPct,'100'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+    </div>`;
+
+  if(modo==='completo'){
+    h += `<div class="al ai"><i class="ti ti-adjustments"></i>Modo completo: soma manutenção (se a impressora escolhida tiver manutenção cadastrada, ela já entra sozinha — o campo abaixo é só para quando não tiver), outros custos diretos, taxas de venda e desconto comercial.</div>
+    <div class="fr4">
+      <div class="fg"><label>Manutenção manual (R$/h)</label>
+        <input id="${pref}-manuthora" type="number" step="0.01" value="${esc(D(e.manutHoraManual,'0'))}" oninput="imp3dCalcAtualizar('${pref}')">
+        <small class="tt">Só é usada quando a impressora não tem manutenção cadastrada</small></div>
+      <div class="fg"><label>Materiais adicionais (R$)</label><input id="${pref}-materiaisadic" type="number" step="0.01" value="${esc(D(e.materiaisAdicionais,'0'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Suportes / ferragens (R$)</label><input id="${pref}-suportes" type="number" step="0.01" value="${esc(D(e.custoSuportesFerragens,'0'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg"><label>Embalagem (R$)</label><input id="${pref}-embalagem" type="number" step="0.01" value="${esc(D(e.embalagem,'0'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+    </div>
+    <div class="fr4">
+      <div class="fg"><label>Outros custos diretos (R$)</label><input id="${pref}-outroscustos" type="number" step="0.01" value="${esc(D(e.custosAdicionaisDiretos,'0'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+      <div class="fg" style="grid-column:span 2"><label>Forma de precificar</label>
+        <select id="${pref}-modopreco" onchange="imp3dCalcAtualizar('${pref}')">
+          <option value="markup" ${D(e.modoPreco,'markup')==='markup'?'selected':''}>Markup sobre o custo (usa a Margem de lucro acima)</option>
+          <option value="margem" ${e.modoPreco==='margem'?'selected':''}>Margem sobre o preço de venda</option></select></div>
+      <div class="fg"><label>Taxas sobre a venda (%)</label>
+        <input id="${pref}-taxasvenda" type="number" step="0.1" value="${esc(D(e.taxasVendaPct,'0'))}" oninput="imp3dCalcAtualizar('${pref}')">
+        <small class="tt">Taxa de pagamento + comissão + impostos, somadas</small></div>
+    </div>
+    <div class="fr3">
+      <div class="fg"><label>Desconto comercial (%)</label>
+        <input id="${pref}-desconto" type="number" step="0.1" value="${esc(D(e.descontoComercial,'0'))}" oninput="imp3dCalcAtualizar('${pref}')"></div>
+    </div>`;
+  }
+
+  h += `<div id="${pref}-resultado" style="margin-top:14px"></div>`;
+  return h;
+}
+
+function imp3dCalcSelFil(pref){
+  const sel = val(pref+'-filsel');
+  const wrap = document.getElementById(pref+'-filmanual-wrap');
+  if(wrap) wrap.style.display = sel ? 'none' : '';
+  imp3dCalcAtualizar(pref);
+}
+function imp3dCalcSelImp(pref){
+  const sel = val(pref+'-impsel');
+  const wrap = document.getElementById(pref+'-impmanual-wrap');
+  if(wrap) wrap.style.display = sel ? 'none' : '';
+  imp3dCalcAtualizar(pref);
+}
+async function imp3dCalcCamposRefresh(pref){
+  const container = document.getElementById(pref+'-campos');
+  if(!container) return;
+  const e = imp3dCalcCapturarCampos(pref);
+  container.innerHTML = await imp3dCalcCamposHTML(pref, e);
+  imp3dCalcAtualizar(pref);
+}
+
+/* converte os campos crus (o que está na tela) nos parâmetros que imp3dCalcular espera,
+   resolvendo impressora/filamento cadastrados quando escolhidos */
+async function imp3dCalcLer(pref){
+  const filId = val(pref+'-filsel');
+  let custoPorGramaMaterial;
+  if(filId){ const f = await dbGet('filamentos', Number(filId)); custoPorGramaMaterial = f ? (imp3dFilCustoGrama(f).custoGrama||0) : 0; }
+  else custoPorGramaMaterial = num(val(pref+'-filkg'))/1000;
+
+  const impId = val(pref+'-impsel');
+  let custoDeprecHora=0, manutModo='hora', custoManutHora=0, custoManutFixoPeca=0, potenciaW=num(val(pref+'-pot'));
+  if(impId){
+    const imp = await dbGet('impressoras3d', Number(impId));
+    if(imp){
+      const d = imp3dDeprecInfo(imp); custoDeprecHora = d.valida ? d.custoHora : 0;
+      const m = imp3dManutInfo(imp); manutModo = m.modo; custoManutHora = m.custoHora; custoManutFixoPeca = m.custoFixoPeca;
+      potenciaW = num(imp.potenciaW);
+      if(manutModo==='hora' && custoManutHora===0) custoManutHora = num(val(pref+'-manuthora'));
+    }
+  } else {
+    const valorMaq = num(val(pref+'-maqvalor')), vidaMaq = num(val(pref+'-maqvida'));
+    custoDeprecHora = vidaMaq>0 ? valorMaq/vidaMaq : 0;
+    custoManutHora = num(val(pref+'-manuthora'));
+  }
+
+  const modo = IMP3D_CALC_MODO[pref] || 'rapido';
+  const modoPreco = modo==='completo' ? (val(pref+'-modopreco')||'markup') : 'markup';
+  const margemCampo = num(val(pref+'-margem'));
+
+  return {
+    pesoConsumidoG: num(val(pref+'-peso')),
+    custoPorGramaMaterial,
+    tempoHoras: num(val(pref+'-tempo')),
+    potenciaW,
+    tarifaKwh: num(val(pref+'-tarifa')),
+    custoDeprecHora,
+    manutModo, custoManutHora, custoManutFixoPeca,
+    tempoPreparoH: num(val(pref+'-horasmanuais')), tempoRemocaoH:0, tempoAcabamentoH:0, tempoMontagemH:0, tempoEmbalagemH:0,
+    valorHoraTrabalho: num(val(pref+'-valorhora')),
+    materiaisAdicionais: modo==='completo' ? num(val(pref+'-materiaisadic')) : 0,
+    desperdicioAdicionalG: 0,
+    custoSuportesFerragens: modo==='completo' ? num(val(pref+'-suportes')) : 0,
+    embalagem: modo==='completo' ? num(val(pref+'-embalagem')) : 0,
+    custosAdicionaisDiretos: modo==='completo' ? num(val(pref+'-outroscustos')) : 0,
+    reservaFalhasPct: num(val(pref+'-risco')),
+    modoPreco,
+    markupPct: margemCampo,
+    margemDesejadaPct: margemCampo,
+    taxasPagamentoPct: 0, comissaoMarketplacePct: 0,
+    impostosVendaPct: modo==='completo' ? num(val(pref+'-taxasvenda')) : 0,
+    custosFixosAdicionaisVenda: 0,
+    descontoComercial: modo==='completo' ? num(val(pref+'-desconto')) : 0,
+    descontoComercialModo: 'percentual',
+    quantidade: num(val(pref+'-qtd')) || 1,
+    impressoraId: impId ? Number(impId) : null,
+    filamentoId: filId ? Number(filId) : null
+  };
+}
+
+async function imp3dCalcAtualizar(pref){
+  const entrada = await imp3dCalcLer(pref);
+  const r = imp3dCalcular(entrada);
+  const el = document.getElementById(pref+'-resultado');
+  if(el) el.innerHTML = imp3dCalcResultadoHTML(r, IMP3D_CALC_MODO[pref] || 'rapido');
+}
+
+function imp3dCalcResultadoHTML(r, modo){
+  if(!r) return '';
+  const linha = (lbl,v)=> `<div class="row"><span>${lbl}</span><b>${v==null?'—':imp3dMoedaCalc(v)}</b></div>`;
+  let h = `<div class="card"><div class="hd"><i class="ti ti-calculator"></i>Anatomia do custo (unitário)</div><div class="bd">`;
+  h += linha('Material (filamento)', r.custoMaterial);
+  h += linha('Energia', r.custoEnergia);
+  h += linha('Máquina (depreciação)', r.custoDeprec);
+  h += linha('Trabalho (mão de obra)', r.custoMaoObra);
+  if(modo==='completo'){
+    h += linha('Manutenção', r.custoManut);
+    h += linha('Outros custos diretos', r.outrosCustosDiretos);
+  }
+  h += linha('Reserva para falhas', r.reservaFalhas);
+  h += `<div class="row" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:8px">
+    <span><b>Custo unitário</b></span><b style="font-size:15px">${imp3dMoedaCalc(r.custoAjustado)}</b></div>`;
+  h += `</div></div>`;
+
+  h += `<div class="kg" style="margin-top:10px">
+    <div class="kc gn"><div class="lb"><i class="ti ti-tag"></i>Preço sugerido (unitário)</div>
+      <div class="vl">${imp3dMoedaCalc(r.precoFinalUnitario)}</div>
+      <div class="sb">${r.lucroUnitario!=null?'lucro '+imp3dMoedaCalc(r.lucroUnitario)+' por peça':''}</div></div>
+    <div class="kc br"><div class="lb"><i class="ti ti-package"></i>Preço do lote (${r.quantidade}×)</div>
+      <div class="vl">${imp3dMoedaCalc(r.valorTotalOrcamento)}</div>
+      <div class="sb">${r.resultadoLote!=null?'lucro total '+imp3dMoedaCalc(r.resultadoLote):''}</div></div>
+    <div class="kc tl"><div class="lb"><i class="ti ti-percentage"></i>Margem sobre o preço</div>
+      <div class="vl">${r.margemEstimadaPct!=null?r.margemEstimadaPct.toFixed(1)+'%':'—'}</div></div>
+    <div class="kc tl"><div class="lb"><i class="ti ti-clock"></i>Tempo total de máquina</div>
+      <div class="vl">${r.tempoTotalMaquinaH.toFixed(1)} h</div></div>
+  </div>`;
+
+  if(r.avisos && r.avisos.length) h += r.avisos.map(a=>`<div class="al ae"><i class="ti ti-alert-circle"></i>${esc(a)}</div>`).join('');
+  return h;
+}
+
+async function imp3dCalcRender(){
+  const root = document.getElementById('i3calc-root');
+  let h = imp3dCabecalho('Calculadora de custos e preços',
+    'Formação de preço com as fórmulas da metodologia nativa — o mesmo raciocínio do calc3d.com.br (material, energia, máquina, trabalho e reserva de falhas), com mais detalhe quando precisar');
+  h += `<div class="card"><div class="bd"><div id="ic-campos">${await imp3dCalcCamposHTML('ic', {})}</div></div></div>`;
+  h += `<div class="brow" style="margin-top:12px">
+    <button class="btn" style="background:#16253B" onclick="imp3dCalcUsarEmOrcamento('ic')"><i class="ti ti-file-invoice"></i>Usar este cálculo num orçamento</button>
+  </div>`;
+  root.innerHTML = h;
+  await imp3dCalcAtualizar('ic');
+}
+
+async function imp3dCalcUsarEmOrcamento(pref){
+  const raw = imp3dCalcCapturarCampos(pref);
+  await imp3dOrcForm(null, raw);
+}
+
+/* ---------------------------------------------------------------- Orçamentos
+   Um orçamento = uma peça (com quantidade), calculada com o mesmo motor da
+   Calculadora, e uma proposta de preço para um cliente. A partir de "Emitido"
+   os números ficam congelados — o resultado é salvo junto com a entrada que o
+   gerou, nunca recalculado depois, para o preço não mudar sozinho depois de
+   enviado ao cliente (se o custo do filamento mudar amanhã, o orçamento já
+   emitido continua mostrando o que foi prometido). */
+function imp3dOrcValidadeVencida(o){
+  if(!o.validade) return false;
+  return o.validade < hoje() && !['Aprovado','Recusado','Cancelado'].includes(o.status);
+}
+function imp3dOrcStatusExibir(o){
+  return imp3dOrcValidadeVencida(o) ? 'Expirado' : (o.status || 'Rascunho');
+}
+
+let IMP3D_ORC_FILTRO = '';
+async function imp3dOrcRender(){
+  const root = document.getElementById('i3orc-root');
+  const todos = (await dbGetAll('orcamentos3d')).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const pessoas = await dbGetAll('pessoas');
+  const nomeCliente = id => { const p = pessoas.find(x=>x.id===Number(id)); return p ? p.nome : '—'; };
+
+  const abertos = todos.filter(o=>['Rascunho','Emitido','Enviado','Visualizado'].includes(imp3dOrcStatusExibir(o)));
+  const aprovados = todos.filter(o=>imp3dOrcStatusExibir(o)==='Aprovado');
+  const decididos = todos.filter(o=>['Aprovado','Recusado'].includes(imp3dOrcStatusExibir(o)));
+  const valorEmAberto = abertos.reduce((s,o)=>s+num(o.resultado && o.resultado.valorTotalOrcamento),0);
+  const taxaAprovacao = decididos.length ? (aprovados.length/decididos.length*100) : null;
+
+  let h = imp3dCabecalho('Orçamentos', 'Propostas comerciais de impressão 3D');
+
+  h += `<div class="kg" style="margin-bottom:16px">
+    <div class="kc br"><div class="lb"><i class="ti ti-file-invoice"></i>Orçamentos</div>
+      <div class="vl">${todos.length}</div><div class="sb">${abertos.length} em aberto</div></div>
+    <div class="kc am"><div class="lb"><i class="ti ti-currency-real"></i>Valor em aberto</div>
+      <div class="vl">${moedaK(valorEmAberto)}</div></div>
+    <div class="kc gn"><div class="lb"><i class="ti ti-circle-check"></i>Aprovados</div>
+      <div class="vl">${aprovados.length}</div>
+      <div class="sb">${taxaAprovacao!=null?taxaAprovacao.toFixed(0)+'% de aprovação':'sem decisão ainda'}</div></div>
+  </div>`;
+
+  h += `<div class="brow" style="margin-bottom:12px;flex-wrap:wrap">
+    ${['','Rascunho','Emitido','Enviado','Aprovado','Recusado','Cancelado'].map(s=>
+      `<button class="btn gh ${IMP3D_ORC_FILTRO===s?'on':''}" onclick="IMP3D_ORC_FILTRO='${s}';imp3dOrcRender()">${s||'Todos'}</button>`).join('')}
+    <div class="sp"></div>
+    <button class="btn" style="background:#16253B" onclick="imp3dOrcForm()"><i class="ti ti-plus"></i>Novo orçamento</button>
+  </div>`;
+
+  const lista = todos.filter(o=>!IMP3D_ORC_FILTRO || imp3dOrcStatusExibir(o)===IMP3D_ORC_FILTRO);
+
+  if(!todos.length){
+    h += `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-file-invoice"></i>
+      <b>Nenhum orçamento ainda</b>Monte o primeiro a partir da calculadora de custos e preços.
+      <div class="brow" style="justify-content:center;margin-top:14px">
+      <button class="btn" style="background:#16253B" onclick="imp3dOrcForm()"><i class="ti ti-plus"></i>Novo orçamento</button></div></div></div></div>`;
+  } else if(!lista.length){
+    h += `<div class="al ai"><i class="ti ti-info-circle"></i>Nenhum orçamento nesse filtro.</div>`;
+  } else {
+    h += `<div class="mgrid">`;
+    lista.forEach(o=>{
+      const st = imp3dOrcStatusExibir(o);
+      h += `<div class="ocard" onclick="imp3dOrcDetalhe(${o.id})">
+        <div class="oh"><div class="oi" style="background:#E7EBF0;color:#16253B"><i class="ti ti-file-invoice"></i></div>
+          <div style="flex:1;min-width:0"><b style="display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.descricao||'Peça sem descrição')}</b>
+            <span class="tt">${esc(nomeCliente(o.pessoaId))}</span></div>
+          <span class="st ${ST_ORCAMENTO3D[st]||'s-nt'}">${esc(st)}</span></div>
+        <div class="ob">
+          <div class="row"><span>Data</span><b>${dbr(o.data)}</b></div>
+          <div class="row"><span>Quantidade</span><b>${(o.resultado&&o.resultado.quantidade)||1}</b></div>
+          <div class="row"><span>Valor do lote</span><b>${imp3dMoedaCalc(o.resultado && o.resultado.valorTotalOrcamento)}</b></div>
+        </div></div>`;
+    });
+    h += `</div>`;
+  }
+  root.innerHTML = h;
+}
+
+function imp3dOrcClienteRapidoToggle(){
+  const box = document.getElementById('of-cliente-rapido-box');
+  if(box) box.style.display = box.style.display==='none' ? '' : 'none';
+}
+async function imp3dOrcClienteRapidoSalvar(){
+  const nome = val('of-cr-nome');
+  if(!nome) return;
+  const id = await dbAdd('pessoas', { nome, tel: val('of-cr-tel'), papeis:['Cliente'] });
+  const sel = document.getElementById('of-cliente');
+  const opt = document.createElement('option'); opt.value = String(id); opt.textContent = nome;
+  sel.appendChild(opt); sel.value = String(id);
+  document.getElementById('of-cliente-rapido-box').style.display = 'none';
+  setVal('of-cr-nome',''); setVal('of-cr-tel','');
+  toast('Cliente cadastrado.');
+}
+
+async function imp3dOrcForm(id, prefill){
+  const o = id ? await dbGet('orcamentos3d', id) : null;
+  const pessoas = (await dbGetAll('pessoas')).filter(p=>(p.papeis||[]).includes('Cliente'))
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome)));
+  const pessoaIdAtual = o ? o.pessoaId : ((prefill && prefill.pessoaId) || null);
+  const entradaInicial = o ? (o.camposRaw||{}) : (prefill || {});
+  const bloqueado = !!(o && o.status!=='Rascunho');
+
+  IMP3D_CALC_MODO.of = 'rapido';
+
+  const b = `
+    ${bloqueado?`<div class="al aw"><i class="ti ti-lock"></i>Este orçamento já foi emitido — os valores ficam travados para manter a proposta enviada ao cliente. Para mudar o preço, duplique e crie um novo.</div>`:''}
+    <div class="fr3">
+      <div class="fg" style="grid-column:span 2"><label>Descrição da peça <span class="rq">*</span></label>
+        <input id="of-desc" value="${esc(o?o.descricao:'')}" placeholder="Ex.: Vaso geométrico 15cm" ${bloqueado?'disabled':''}></div>
+      <div class="fg"><label>Validade da proposta</label><input id="of-validade" type="date" value="${o?(o.validade||''):''}" ${bloqueado?'disabled':''}></div></div>
+    <div class="fg"><label>Cliente <span class="rq">*</span></label>
+      <select id="of-cliente" ${bloqueado?'disabled':''}>
+        <option value="">Selecione um cliente</option>
+        ${pessoas.map(p=>`<option value="${p.id}" ${String(pessoaIdAtual)===String(p.id)?'selected':''}>${esc(p.nome)}</option>`).join('')}
+      </select>
+      ${!bloqueado?`<div style="margin-top:6px">
+        <a href="javascript:void(0)" onclick="imp3dOrcClienteRapidoToggle()" style="font-size:12px">+ cadastrar cliente rápido</a>
+        <div id="of-cliente-rapido-box" style="display:none;margin-top:6px" class="fr3">
+          <div class="fg"><input id="of-cr-nome" placeholder="Nome do cliente"></div>
+          <div class="fg"><input id="of-cr-tel" placeholder="Telefone / WhatsApp"></div>
+          <div class="fg"><button type="button" class="btn gh" onclick="imp3dOrcClienteRapidoSalvar()">Criar e selecionar</button></div>
+        </div></div>`:''}</div>
+    <div id="of-campos" style="${bloqueado?'opacity:.6;pointer-events:none':''}">${await imp3dCalcCamposHTML('of', entradaInicial)}</div>
+    <div class="fg"><label>Observações para o cliente</label><textarea id="of-obs" ${bloqueado?'disabled':''}>${esc(o?o.obs:'')}</textarea></div>
+    <div id="of-err"></div>`;
+
+  modal(id?'Orçamento':'Novo orçamento','ti-file-invoice', b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     ${bloqueado?'':`<button class="btn" style="background:#16253B" onclick="imp3dOrcSalvar(${id||'null'},'Rascunho')"><i class="ti ti-device-floppy"></i>Salvar rascunho</button>
+       <button class="btn gn" onclick="imp3dOrcSalvar(${id||'null'},'Emitido')"><i class="ti ti-send"></i>Emitir orçamento</button>`}`,'lg');
+
+  await imp3dCalcAtualizar('of');
+}
+
+async function imp3dOrcSalvar(id, novoStatus){
+  const descricao = val('of-desc');
+  if(!descricao){ document.getElementById('of-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Descreva a peça do orçamento.</div>`; return; }
+  const pessoaId = val('of-cliente');
+  if(!pessoaId){ document.getElementById('of-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Selecione o cliente.</div>`; return; }
+  const camposRaw = imp3dCalcCapturarCampos('of');
+  const entrada = await imp3dCalcLer('of');
+  const resultado = imp3dCalcular(entrada);
+  if(resultado.avisos && resultado.avisos.length){
+    document.getElementById('of-err').innerHTML = resultado.avisos.map(a=>`<div class="al ae"><i class="ti ti-alert-circle"></i>${esc(a)}</div>`).join('');
+    return;
+  }
+  const d = { descricao, validade: val('of-validade'), pessoaId: Number(pessoaId), obs: val('of-obs'),
+    status: novoStatus, camposRaw, entrada, resultado };
+  if(id){
+    const old = await dbGet('orcamentos3d', id);
+    await dbPut('orcamentos3d', {...old, ...d, data: old.data});
+  } else {
+    await dbAdd('orcamentos3d', {...d, data: hoje()});
+  }
+  closeModal('mk-form'); toast(novoStatus==='Emitido'?'Orçamento emitido.':'Rascunho salvo.'); imp3dOrcRender();
+}
+
+function imp3dOrcTexto(o, pessoa){
+  const r = o.resultado || {};
+  let t = `*Orçamento — Impressão 3D*\n`;
+  t += `Peça: ${o.descricao}\n`;
+  if(pessoa) t += `Cliente: ${pessoa.nome}\n`;
+  if(num(r.quantidade)>1) t += `Quantidade: ${r.quantidade}\n`;
+  t += `\nValor: ${imp3dMoedaCalc(num(r.quantidade)>1 ? r.valorTotalOrcamento : r.precoFinalUnitario)}\n`;
+  if(o.validade) t += `Válido até: ${dbr(o.validade)}\n`;
+  if(o.obs) t += `\n${o.obs}\n`;
+  return t;
+}
+async function imp3dOrcCopiarTexto(id){
+  const o = await dbGet('orcamentos3d', id);
+  const pessoa = o.pessoaId ? await dbGet('pessoas', o.pessoaId) : null;
+  const texto = imp3dOrcTexto(o, pessoa);
+  try{ await navigator.clipboard.writeText(texto); toast('Texto copiado — cole no WhatsApp ou onde preferir.'); }
+  catch(e){ toast('Não consegui copiar automaticamente — copie manualmente.','aw'); }
+}
+async function imp3dOrcMudarStatus(id, status){
+  const old = await dbGet('orcamentos3d', id);
+  await dbPut('orcamentos3d', {...old, status});
+  toast('Situação atualizada: '+status);
+  await imp3dOrcDetalhe(id);
+}
+async function imp3dOrcDuplicar(id){
+  const old = await dbGet('orcamentos3d', id);
+  closeModal('mk-form');
+  const prefill = {...(old.camposRaw||{}), pessoaId: old.pessoaId};
+  await imp3dOrcForm(null, prefill);
+  const descEl = document.getElementById('of-desc'); if(descEl) descEl.value = old.descricao+' (cópia)';
+}
+function imp3dOrcExcluir(id){
+  confirmar('Excluir orçamento','O orçamento será removido. Isto não pode ser desfeito.',
+    async()=>{ await dbDel('orcamentos3d', id); closeModal('mk-form'); toast('Orçamento removido.','aw'); imp3dOrcRender(); });
+}
+async function imp3dOrcDetalhe(id){
+  const o = await dbGet('orcamentos3d', id);
+  const pessoa = o.pessoaId ? await dbGet('pessoas', o.pessoaId) : null;
+  const st = imp3dOrcStatusExibir(o);
+  const r = o.resultado || {};
+  const cls = ST_ORCAMENTO3D[st]==='s-ok' ? 'ai' : (ST_ORCAMENTO3D[st]==='s-bl' ? 'ae' : 'aw');
+  const b = `<div class="al ${cls}" style="margin-bottom:12px"><i class="ti ti-info-circle"></i>Situação: <b>${esc(st)}</b>${o.validade?' · válido até '+dbr(o.validade):''}</div>
+    <div class="card"><div class="hd"><i class="ti ti-box"></i>${esc(o.descricao)}</div><div class="bd">
+      <div class="fr3" style="gap:9px 16px;margin-bottom:10px">
+        <div><span class="tt" style="display:block">Cliente</span><b>${esc(pessoa?pessoa.nome:'—')}</b></div>
+        <div><span class="tt" style="display:block">Data</span><b>${dbr(o.data)}</b></div>
+        <div><span class="tt" style="display:block">Quantidade</span><b>${r.quantidade||1}</b></div>
+      </div>
+      ${imp3dCalcResultadoHTML(r, 'completo')}
+      ${o.obs?`<div class="al ai" style="margin-top:10px"><i class="ti ti-note"></i><div>${esc(o.obs)}</div></div>`:''}
+    </div></div>`;
+
+  const acoes = [];
+  if(st==='Emitido') acoes.push(`<button class="btn gn" onclick="imp3dOrcMudarStatus(${id},'Enviado')"><i class="ti ti-send"></i>Marcar como enviado</button>`);
+  if(['Emitido','Enviado','Visualizado'].includes(st)){
+    acoes.push(`<button class="btn gn" onclick="imp3dOrcMudarStatus(${id},'Aprovado')"><i class="ti ti-circle-check"></i>Aprovado</button>`);
+    acoes.push(`<button class="btn rd" onclick="imp3dOrcMudarStatus(${id},'Recusado')"><i class="ti ti-x"></i>Recusado</button>`);
+  }
+
+  modal(o.descricao,'ti-file-invoice', b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>
+     ${pessoa&&pessoa.tel?`<a class="btn gh" href="https://wa.me/55${String(pessoa.tel).replace(/\D/g,'')}" target="_blank" onclick="imp3dOrcCopiarTexto(${id})"><i class="ti ti-brand-whatsapp"></i>WhatsApp</a>`:''}
+     <button class="btn gh" onclick="imp3dOrcCopiarTexto(${id})"><i class="ti ti-copy"></i>Copiar texto</button>
+     <button class="btn gh" onclick="imp3dOrcDuplicar(${id})"><i class="ti ti-copy"></i>Duplicar</button>
+     ${acoes.join('')}
+     ${st==='Rascunho'?`<button class="btn" style="background:#16253B" onclick="closeModal('mk-form');imp3dOrcForm(${id})"><i class="ti ti-edit"></i>Editar</button>
+       <button class="btn rd" onclick="imp3dOrcExcluir(${id})"><i class="ti ti-trash"></i>Excluir</button>`:''}`,'lg');
+}
+
+/* ---------------------------------------------------------------- Clientes
+   Atalho do módulo para os Cadastros gerais da JeV (store 'pessoas'): mostra só
+   quem tem o papel "Cliente" marcado — a mesma pessoa pode já existir como
+   inquilino, fornecedor etc. em outro lugar do sistema, e continua sendo a
+   mesma pessoa aqui. Nunca duplica o cadastro. */
+let IMP3D_CLI_BUSCA = '';
+async function imp3dCliRender(){
+  const root = document.getElementById('i3cli-root');
+  const todos = (await dbGetAll('pessoas')).filter(p=>(p.papeis||[]).includes('Cliente'))
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome)));
+  const lista = IMP3D_CLI_BUSCA ? todos.filter(p=>{
+    const t = (p.nome+' '+(p.tel||'')+' '+(p.email||'')).toLowerCase();
+    return t.includes(IMP3D_CLI_BUSCA.toLowerCase());
+  }) : todos;
+  const orcamentos = await dbGetAll('orcamentos3d');
+
+  let h = imp3dCabecalho('Clientes', 'Pessoas com papel de cliente, para orçamentos e vendas de impressão 3D');
+  h += `<div class="card"><div class="bd">
+    <div class="sbar"><div class="srch"><i class="ti ti-search"></i>
+      <input type="search" placeholder="Buscar por nome, telefone ou e-mail" value="${esc(IMP3D_CLI_BUSCA)}"
+        oninput="IMP3D_CLI_BUSCA=this.value;clearTimeout(window.__i3cb);window.__i3cb=setTimeout(imp3dCliRender,350)"></div></div>
+  </div></div>`;
+  h += `<div class="brow" style="margin:12px 0"><div class="sp"></div>
+    <button class="btn" style="background:#16253B" onclick="imp3dCliForm()"><i class="ti ti-user-plus"></i>Novo cliente</button></div>`;
+
+  if(!todos.length){
+    h += `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-users"></i>
+      <b>Nenhum cliente cadastrado</b>Cadastre quem compra suas peças para usar nos orçamentos.
+      Se a pessoa já estiver nos Cadastros gerais da JeV, basta marcar o papel "Cliente" nela.
+      <div class="brow" style="justify-content:center;margin-top:14px">
+      <button class="btn" style="background:#16253B" onclick="imp3dCliForm()"><i class="ti ti-user-plus"></i>Cadastrar cliente</button></div></div></div></div>`;
+  } else if(!lista.length){
+    h += `<div class="al ai"><i class="ti ti-search-off"></i>Nada encontrado.</div>`;
+  } else {
+    h += `<div class="mgrid">`;
+    lista.forEach(p=>{
+      const orcs = orcamentos.filter(o=>o.pessoaId===p.id);
+      h += `<div class="ocard" onclick="imp3dCliDetalhe(${p.id})">
+        <div class="oh"><div class="oi" style="background:var(--brand-bg);color:var(--brand);font-size:13px;font-weight:900">${esc(iniciais(p.nome))}</div>
+          <div style="flex:1;min-width:0"><b style="display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nome)}</b>
+            <span class="tt">${esc(p.tel||p.email||'')}</span></div></div>
+        <div class="ob">
+          <div class="row"><span>Orçamentos</span><b>${orcs.length}</b></div>
+          ${orcs.length?`<div class="row"><span>Aprovados</span><b>${orcs.filter(o=>imp3dOrcStatusExibir(o)==='Aprovado').length}</b></div>`:''}
+        </div></div>`;
+    });
+    h += `</div>`;
+  }
+  root.innerHTML = h;
+}
+
+async function imp3dCliForm(id){
+  const p = id ? await dbGet('pessoas', id) : null;
+  const b = `<div class="fr3">
+      <div class="fg" style="grid-column:span 2"><label>Nome <span class="rq">*</span></label>
+        <input id="cf-nome" value="${esc(p?p.nome:'')}"></div>
+      <div class="fg"><label>CPF / CNPJ</label><input id="cf-doc" value="${esc(p?p.doc:'')}"></div></div>
+    <div class="fr3">
+      <div class="fg"><label>Telefone / WhatsApp</label><input id="cf-tel" value="${esc(p?p.tel:'')}"></div>
+      <div class="fg"><label>E-mail</label><input id="cf-email" value="${esc(p?p.email:'')}"></div>
+      <div class="fg"><label>Cidade / UF</label><input id="cf-cidade" value="${esc(p?p.cidade:'')}"></div></div>
+    <div class="fg"><label>Endereço</label><input id="cf-endereco" value="${esc(p?p.endereco:'')}"></div>
+    <div class="fg"><label>Observações</label><textarea id="cf-obs">${esc(p?p.obs:'')}</textarea></div>
+    ${p&&(p.papeis||[]).filter(x=>x!=='Cliente').length?`<div class="al ai"><i class="ti ti-info-circle"></i>Esta pessoa também tem outro(s) papel(is) no sistema: ${esc((p.papeis||[]).filter(x=>x!=='Cliente').join(', '))}. Isso não muda ao salvar aqui.</div>`:''}
+    <div id="cf-err"></div>`;
+  modal(id?'Editar cliente':'Novo cliente','ti-user-plus',b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     ${id?`<button class="btn rd" onclick="imp3dCliDel(${id})"><i class="ti ti-trash"></i>Excluir</button>`:''}
+     <button class="btn gn" onclick="imp3dCliSalvar(${id||'null'})"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function imp3dCliSalvar(id){
+  const nome = val('cf-nome');
+  if(!nome){ document.getElementById('cf-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o nome.</div>`; return; }
+  const dados = { nome, doc:val('cf-doc'), tel:val('cf-tel'), email:val('cf-email'), cidade:val('cf-cidade'),
+    endereco:val('cf-endereco'), obs:val('cf-obs') };
+  if(id){
+    const old = await dbGet('pessoas', id);
+    const papeis = (old.papeis||[]).includes('Cliente') ? old.papeis : [...(old.papeis||[]), 'Cliente'];
+    await dbPut('pessoas', {...old, ...dados, papeis});
+  } else {
+    await dbAdd('pessoas', {...dados, papeis:['Cliente']});
+  }
+  closeModal('mk-form'); toast('Cliente salvo.'); imp3dCliRender();
+}
+async function imp3dCliEmUso(id){
+  return (await dbGetAll('orcamentos3d')).some(o=>Number(o.pessoaId)===Number(id));
+}
+async function imp3dCliDel(id){
+  const p = await dbGet('pessoas', id);
+  if(await imp3dCliEmUso(id)){
+    const errEl = document.getElementById('cf-err');
+    if(errEl) errEl.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Este cliente já tem orçamentos vinculados — para não perder o histórico, não é possível excluir.</div>`;
+    return;
+  }
+  const outrosPapeis = (p.papeis||[]).filter(x=>x!=='Cliente');
+  confirmar('Remover cliente', outrosPapeis.length
+    ? 'A pessoa continua cadastrada com os outros papéis que tem ('+outrosPapeis.join(', ')+'), só deixa de aparecer como cliente de Impressão 3D.'
+    : 'A pessoa será removida do cadastro geral da JeV.',
+    async()=>{
+      if(outrosPapeis.length) await dbPut('pessoas', {...p, papeis:outrosPapeis});
+      else await dbDel('pessoas', id);
+      closeModal('mk-form'); toast('Cliente removido.','aw'); imp3dCliRender();
+    });
+}
+async function imp3dCliDetalhe(id){
+  const p = await dbGet('pessoas', id);
+  const orcamentos = (await dbGetAll('orcamentos3d')).filter(o=>o.pessoaId===id)
+    .sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const aprovados = orcamentos.filter(o=>imp3dOrcStatusExibir(o)==='Aprovado');
+  const valorAprovado = aprovados.reduce((s,o)=>s+num(o.resultado && o.resultado.valorTotalOrcamento),0);
+  const b = `<div class="kg" style="margin-bottom:14px">
+      <div class="kc br"><div class="lb">Orçamentos</div><div class="vl">${orcamentos.length}</div></div>
+      <div class="kc gn"><div class="lb">Aprovados</div><div class="vl">${aprovados.length}</div><div class="sb">${moedaK(valorAprovado)}</div></div>
+    </div>
+    <div class="card"><div class="hd"><i class="ti ti-user"></i>Dados</div><div class="bd">
+      <div class="fr3" style="gap:9px 16px">
+        ${[['Telefone',p.tel],['E-mail',p.email],['Documento',p.doc],['Cidade',p.cidade],['Endereço',p.endereco]]
+          .map(([k,v])=>`<div style="font-size:12.5px"><span class="tt" style="display:block">${k}</span><b>${esc(v||'—')}</b></div>`).join('')}
+      </div>${p.obs?`<div class="al ai" style="margin-bottom:0"><i class="ti ti-note"></i><div>${esc(p.obs)}</div></div>`:''}</div></div>
+    ${orcamentos.length?`<div class="card tw"><div class="hd"><i class="ti ti-file-invoice"></i>Orçamentos</div><div class="bd"><table>
+      <thead><tr><th>Data</th><th>Peça</th><th class="c">Situação</th><th class="r">Valor</th></tr></thead><tbody>
+      ${orcamentos.map(o=>`<tr style="cursor:pointer" onclick="imp3dOrcDetalhe(${o.id})"><td class="n">${dbr(o.data)}</td><td>${esc(o.descricao)}</td>
+        <td class="c"><span class="st ${ST_ORCAMENTO3D[imp3dOrcStatusExibir(o)]||'s-nt'}">${esc(imp3dOrcStatusExibir(o))}</span></td>
+        <td class="r n">${imp3dMoedaCalc(o.resultado && o.resultado.valorTotalOrcamento)}</td></tr>`).join('')}
+      </tbody></table></div></div>`:''}`;
+  modal(p.nome,'ti-user',b,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>
+     ${p.tel?`<a class="btn gh" href="https://wa.me/55${String(p.tel).replace(/\D/g,'')}" target="_blank"><i class="ti ti-brand-whatsapp"></i>WhatsApp</a>`:''}
+     <button class="btn" style="background:#16253B" onclick="closeModal('mk-form');imp3dOrcForm(null,{pessoaId:${id}})"><i class="ti ti-plus"></i>Novo orçamento</button>
+     <button class="btn" onclick="imp3dCliForm(${id})"><i class="ti ti-edit"></i>Editar</button>`,'lg');
+}
 /* ---------------------------------------------------------------- Serviço de cálculo
    Motor de formação de preço da Impressão 3D — função pura, sem tocar o banco
    nem a tela, para poder ser testada isoladamente (ver test_imp3d_calc.js).
