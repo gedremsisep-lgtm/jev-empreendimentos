@@ -1,16 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.42",
-  "arquivo": "jev-1.0.42.html",
+  "versao": "1.0.43",
+  "arquivo": "jev-1.0.43.html",
   "data": "2026-11-04",
-  "sha256": "cfdd165f8ffc103dbae4d3d362d3e1f6ca01b5da76afa5280a8b3ecf150ee19e",
-  "tamanho": 2254339,
+  "sha256": "af2396ee4d385fe34e8779621d8b4334e57de9dc9b2623ac0b553786436fd67d",
+  "tamanho": 2263061,
   "notas": [
-    "Calculadora de Impressão 3D com modo rápido (metodologia do calc3d.com.br) além do modo completo",
+    "Produtos e Vendas: aba Afiliados, com todos os produtos filiados, a plataforma de cada um e envio das ofertas para o grupo do WhatsApp",
+    "Calculadora de Impressão 3D com modo rápido (metodologia calc3d.com.br) além do modo completo",
     "Orçamentos completos ligados a clientes, com lista salva e fluxo de status (rascunho, emitido, aprovado, recusado)"
   ],
-  "substitui": "1.0.41",
+  "substitui": "1.0.42",
   "anteriores": [
+    {
+      "versao": "1.0.42",
+      "arquivo": "jev-1.0.42.html",
+      "sha256": "cfdd165f8ffc103dbae4d3d362d3e1f6ca01b5da76afa5280a8b3ecf150ee19e",
+      "data": "2026-11-04"
+    },
     {
       "versao": "1.0.41",
       "arquivo": "jev-1.0.41.html",
@@ -40,12 +47,6 @@
       "arquivo": "jev-1.0.37.html",
       "sha256": "612ed9105b6128564b1acec3936a600e7f3bc44d8fc9c114f172312a86863418",
       "data": "2026-09-28"
-    },
-    {
-      "versao": "1.0.36",
-      "arquivo": "jev-1.0.36.html",
-      "sha256": "87f88a0f3104acf21bdf28beb304613afcb24d6b094c0e3e4e1808f9f4373d15",
-      "data": "2026-09-16"
     }
   ]
 }
