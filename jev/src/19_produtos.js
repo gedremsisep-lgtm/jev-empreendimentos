@@ -2,6 +2,7 @@
    NEGÓCIOS: PRODUTOS FÍSICOS E INFOPRODUTOS (mesmo módulo, contextos diferentes)
    ========================================================================= */
 let PRD_TAB = {produtos:'cat', info:'cat'};
+let PRD_AFIL = { deck:[], i:0, aberto:false, editandoGrupo:false };
 function prdStab(un,t){ PRD_TAB[un] = t; un==='info'?infoRender():produtosRender(); }
 async function produtosRender(){ return prodRender('produtos'); }
 async function infoRender(){ return prodRender('info'); }
@@ -60,12 +61,14 @@ async function prodRender(un){
     <button class="tab ${tab==='cat'?'on':''}" onclick="prdStab('${un}','cat')"><i class="ti ti-list"></i>${ehInfo(un)?'Infoprodutos':'Catálogo e estoque'}</button>
     <button class="tab ${tab==='ven'?'on':''}" onclick="prdStab('${un}','ven')"><i class="ti ti-shopping-cart"></i>Vendas</button>
     <button class="tab ${tab==='ana'?'on':''}" onclick="prdStab('${un}','ana')"><i class="ti ti-chart-bar"></i>Desempenho</button>
+    ${!ehInfo(un)?`<button class="tab ${tab==='afil'?'on':''}" onclick="prdStab('${un}','afil')"><i class="ti ti-brand-whatsapp"></i>Afiliados</button>`:''}
   </div><div id="prd-body-${un}"></div>`;
   root.innerHTML = h;
 
   if(tab==='cat') await prodTabCatalogo(un,prods,vendas);
   if(tab==='ven') await prodTabVendas(un,prods,vendas);
   if(tab==='ana') await prodTabAnalise(un,prods,vendas);
+  if(tab==='afil' && !ehInfo(un)) await prodTabAfiliados(un);
 }
 
 async function prodTabCatalogo(un,prods,vendas){
@@ -397,4 +400,158 @@ async function prodTabAnalise(un,prods,vendas){
       <td class="r n">${v.fat?pct(v.liq/v.fat*100):'—'}</td><td class="r n">${pct(v.fat/tot*100)}</td></tr>`).join('')}
     </tbody></table></div></div>`;
   body.innerHTML = h;
+}
+
+/* ---------------- Afiliados: produtos filiados e envio ao grupo do WhatsApp ----------------
+   Reaproveita o que já existe no Canal de Afiliado (ficha em 'programas', aba 33_afiliado.js)
+   e na fila/mensagem prontas de 41_zap.js e 42_ofertas.js — aqui é só uma vitrine, dentro de
+   Produtos e Vendas, com tudo o que já foi filiado e um jeito de mandar para o grupo. Os
+   grupos cadastrados são os MESMOS do módulo Ofertas (Mídia), guardados em CFG.ofertas.grupos,
+   para não duplicar cadastro. */
+function prodAfilEndereco(texto){
+  return (typeof ofEndereco==='function') ? ofEndereco(texto)
+       : 'https://api.whatsapp.com/send?text='+encodeURIComponent(texto);
+}
+function prodAfilGrupos(){ return (typeof ofGrupos==='function') ? ofGrupos() : []; }
+
+async function prodTabAfiliados(un){
+  const body = document.getElementById('prd-body-'+un);
+  const f = (typeof zapFila==='function') ? await zapFila() : {prontos:[],semLink:[]};
+  const grupos = prodAfilGrupos();
+
+  let h = `<div class="card tw" style="margin-bottom:14px"><div class="hd"><i class="ti ti-brand-whatsapp" style="color:#25D366"></i>
+    Grupos do WhatsApp${grupos.length?`<span class="st s-ok">${grupos.length} cadastrado(s)</span>`:''}
+    <span class="sp"></span>
+    <button class="btn sm gh" onclick="PRD_AFIL.editandoGrupo=!PRD_AFIL.editandoGrupo;prodTabAfiliados('${un}')">
+      <i class="ti ti-settings"></i>Gerenciar grupos</button></div><div class="bd">`;
+
+  if(PRD_AFIL.editandoGrupo){
+    if(grupos.length) h += grupos.map((g,i)=>`<div class="brow" style="margin-bottom:6px">
+        <span class="chip">${esc(g.nome)}</span>${g.link?`<span class="tt mono">${esc(g.link)}</span>`:''}
+        <span class="sp"></span>
+        ${g.link?`<button class="ib bl" title="Abrir grupo" onclick="ofAbrirGrupo(${i})"><i class="ti ti-external-link"></i></button>`:''}
+        <button class="ib rd" title="Remover" onclick="prodTirarGrupoAfil(${i},'${un}')"><i class="ti ti-trash"></i></button>
+      </div>`).join('');
+    h += `<div class="fr2" style="margin-top:8px">
+        <div class="fg"><label>Nome do grupo</label><input id="prd-gnome" placeholder="Grupo de ofertas"></div>
+        <div class="fg"><label>Link de convite (opcional)</label><input id="prd-glink" placeholder="https://chat.whatsapp.com/XXXXXXXX"></div></div>
+      <div style="margin-top:8px"><button class="btn gn sm" onclick="prodAddGrupoAfil('${un}')"><i class="ti ti-plus"></i>Adicionar grupo</button></div>
+      <div class="tt" style="margin-top:8px">O link de convite é opcional — ele só serve para abrir o grupo direto daqui.
+        Para enviar a oferta, o WhatsApp sempre deixa você escolher o grupo na hora, na tela que abre.</div>`;
+  } else if(grupos.length){
+    h += grupos.map(g=>`<span class="chip">${esc(g.nome)}</span>`).join(' ');
+  } else {
+    h += `<div class="tt">Nenhum grupo cadastrado ainda. Clique em "Gerenciar grupos" para adicionar.</div>`;
+  }
+  h += `</div></div>`;
+
+  h += `<div class="card"><div class="hd"><i class="ti ti-link"></i>Produtos filiados
+    ${f.prontos.length?`<span class="st s-ok">${f.prontos.length} pronto(s)</span>`:''}
+    ${f.semLink.length?`<span class="st s-aw">${f.semLink.length} sem link</span>`:''}
+    <span class="sp"></span>
+    ${f.prontos.length?`<button class="btn gn sm" onclick="prodEnviarTodasAfiliados('${un}')">
+      <i class="ti ti-brand-whatsapp"></i>Enviar todas ao grupo</button>`:''}
+    </div><div class="bd">`;
+
+  if(!f.prontos.length && !f.semLink.length){
+    h += `<div class="empty"><i class="ti ti-link-off"></i><b>Nenhum produto filiado ainda</b>
+      Cadastre seus produtos de afiliado no Canal de Afiliado (Mídia → Afiliados) — assim que tiverem
+      o link, eles aparecem aqui prontos para enviar ao grupo.</div>`;
+  } else {
+    h += `<table><thead><tr><th>Produto</th><th>Plataforma</th><th class="c">Status</th>
+      <th class="c no-print"></th></tr></thead><tbody>`;
+    f.prontos.forEach(p=>{
+      h += `<tr><td><b>${esc(p.nome)}</b></td><td class="tt">${esc(p.ficha.plataforma||'—')}</td>
+        <td class="c"><span class="st s-ok">Link pronto</span></td>
+        <td class="c no-print nowrap"><button class="btn xs gn" onclick="prodEnviarAfiliado('${p.id}','${un}')">
+          <i class="ti ti-brand-whatsapp"></i>Enviar</button></td></tr>`;
+    });
+    f.semLink.forEach(x=>{
+      h += `<tr style="opacity:.7"><td><b>${esc(x.produto)}</b></td><td class="tt">${esc(x.plataforma||'—')}</td>
+        <td class="c"><span class="st s-aw">Sem link</span></td>
+        <td class="c no-print tt">Gere o link no Canal de Afiliado</td></tr>`;
+    });
+    h += `</tbody></table>`;
+  }
+  h += `</div></div>`;
+
+  if(PRD_AFIL.aberto && PRD_AFIL.deck.length) h += prodAfilDeckHTML(un);
+
+  body.innerHTML = h;
+}
+
+async function prodAddGrupoAfil(un){
+  const nome = (val('prd-gnome')||'').trim();
+  const link = (val('prd-glink')||'').trim();
+  if(!nome){ toast('Dê um nome ao grupo.','aw'); return; }
+  if(link && typeof ofLinkDeGrupoValido==='function' && !ofLinkDeGrupoValido(link)){
+    toast('O link de convite do grupo é assim: https://chat.whatsapp.com/XXXXXXXX. Você pega em Dados do grupo → Convidar por link.','aw');
+    return;
+  }
+  const c = (typeof ofCfg==='function') ? ofCfg() : {grupos:[]};
+  const grupos = (c.grupos||[]).concat([{nome, link}]);
+  await ofSalvar(Object.assign({}, c, {grupos}));
+  PRD_AFIL.editandoGrupo = false;
+  toast('Grupo guardado.','ag');
+  prodTabAfiliados(un);
+}
+async function prodTirarGrupoAfil(i,un){
+  const c = ofCfg();
+  const g = (c.grupos||[]).slice();
+  g.splice(Number(i),1);
+  await ofSalvar(Object.assign({}, c, {grupos:g}));
+  prodTabAfiliados(un);
+}
+
+async function prodEnviarAfiliado(id,un){
+  const f = await zapFila();
+  const item = f.prontos.find(x=>String(x.id)===String(id));
+  if(!item) return;
+  try{ await navigator.clipboard.writeText(item.texto); }catch(e){}
+  window.open(prodAfilEndereco(item.texto), '_blank', 'noopener');
+  toast('WhatsApp aberto com a oferta escrita. Escolha o grupo e aperte enviar.','ag');
+}
+
+async function prodEnviarTodasAfiliados(un){
+  const f = await zapFila();
+  if(!f.prontos.length){ toast('Nenhum produto filiado com link pronto.','aw'); return; }
+  PRD_AFIL.deck = f.prontos;
+  PRD_AFIL.i = 0;
+  PRD_AFIL.aberto = true;
+  try{ await navigator.clipboard.writeText(PRD_AFIL.deck[0].texto); }catch(e){}
+  window.open(prodAfilEndereco(PRD_AFIL.deck[0].texto), '_blank', 'noopener');
+  toast('WhatsApp aberto com a 1ª oferta copiada. Escolha o grupo, envie, e avance aqui para a próxima.','ag');
+  prodTabAfiliados(un);
+}
+
+function prodAfilDeckHTML(un){
+  const n = PRD_AFIL.deck.length;
+  const m = PRD_AFIL.deck[PRD_AFIL.i];
+  if(!m) return '';
+  const ultima = PRD_AFIL.i === n-1;
+  return `<div class="card" style="margin-top:14px"><div class="bd">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <b>Oferta ${PRD_AFIL.i+1} de ${n}</b><span class="st s-nt">${esc(m.nome)}</span>
+      <span class="sp"></span>
+      <button class="btn xs gh" onclick="PRD_AFIL.aberto=false;prodTabAfiliados('${un}')"><i class="ti ti-x"></i>Fechar</button>
+    </div>
+    <textarea readonly rows="8" style="width:100%;box-sizing:border-box;white-space:pre-wrap;font-size:12.5px">${esc(m.texto)}</textarea>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${PRD_AFIL.i>0?`<button class="btn xs gh" onclick="prodAfilIr(${PRD_AFIL.i-1},'${un}')"><i class="ti ti-chevron-left"></i>Anterior</button>`:''}
+      <button class="btn gn" onclick="prodAfilProxima('${un}')"><i class="ti ti-brand-whatsapp"></i>${ultima?'Enviei a última':'Enviei — próxima'}</button>
+      ${!ultima?`<button class="btn xs gh" onclick="prodAfilIr(${PRD_AFIL.i+1},'${un}')">Pular<i class="ti ti-chevron-right"></i></button>`:''}
+      <span class="tt">Cole no grupo com <b>Ctrl+V</b> se o texto não vier junto, e envie.</span>
+    </div></div></div>`;
+}
+function prodAfilIr(i,un){ PRD_AFIL.i = Math.max(0, Math.min(PRD_AFIL.deck.length-1, i)); prodTabAfiliados(un); }
+async function prodAfilProxima(un){
+  if(PRD_AFIL.i < PRD_AFIL.deck.length-1){
+    PRD_AFIL.i++;
+    const m = PRD_AFIL.deck[PRD_AFIL.i];
+    try{ await navigator.clipboard.writeText(m.texto); }catch(e){}
+    window.open(prodAfilEndereco(m.texto), '_blank', 'noopener');
+  } else {
+    PRD_AFIL.aberto = false;
+  }
+  prodTabAfiliados(un);
 }

@@ -2,7 +2,7 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.42';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.43';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [

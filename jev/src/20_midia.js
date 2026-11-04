@@ -13,7 +13,9 @@ const MID_FINALIDADES = {
   cortes:   { n:'Cortes',           ic:'ti-scissors', cor:'#7C4DBE',
               desc:'Pega um vídeo longo e vira vários cortes de um minuto.' },
   afiliado: { n:'Afiliado',         ic:'ti-link',     cor:'#1F7A44',
-              desc:'Divulga produtos com o seu link de comissão.' }
+              desc:'Divulga produtos com o seu link de comissão.' },
+  marketing:{ n:'Marketing',        ic:'ti-speakerphone', cor:'#E67E22',
+              desc:'Divulga os produtos do seu próprio negócio (ex.: impressão 3D) nas redes para vender.' }
 };
 function midFinalidade(c){
   return MID_FINALIDADES[(c && c.finalidade) || 'proprio'] || MID_FINALIDADES.proprio;
