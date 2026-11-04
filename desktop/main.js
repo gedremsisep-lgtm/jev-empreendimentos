@@ -69,6 +69,16 @@ try {
   console.error('higgsfield indisponível:', e && e.message);
 }
 
+/* A produção de IA local — gerar episódio do zero (texto -> vídeo narrado)
+   pelo ComfyUI + Wan 2.2 + Piper, tudo no computador do dono. Mesma porta
+   protegida: se faltar no pacote, o botão explica em vez de sumir. */
+let producaoIa = null;
+try {
+  producaoIa = require('./producao_ia');
+} catch (e) {
+  console.error('producao_ia indisponível:', e && e.message);
+}
+
 /* A Shopee é a única das quatro lojas com API pública de link de afiliado.
    Mesma porta protegida das outras peças: faltando, o programa abre igual e
    a tela explica, em vez de o botão sumir sem motivo aparente. */
@@ -771,6 +781,62 @@ ipcMain.handle('est-guardar-como', async (_e, origem, sugestao) => {
 });
 ipcMain.handle('est-faxina', (_e, guardar) => {
   try { return estudio ? estudio.faxina(guardar) : 0; } catch (e) { return 0; }
+});
+
+/* ---------------------------------------------- produção de IA local
+
+   "Montar do zero com IA" — episódio gerado por texto (Wan 2.2, pelo
+   ComfyUI) e narrado (Piper), sem sair da tela de Mídia. */
+const contaProducaoIa = evento => {
+  if (janela && !janela.isDestroyed()) janela.webContents.send('producao-ia-passo', evento);
+};
+
+ipcMain.handle('pia-disponivel', () => !!producaoIa);
+ipcMain.handle('pia-estado', async () => {
+  if (!producaoIa) return { pronto: false, faltando: [], motivo: 'a produção de IA local não veio neste pacote' };
+  try { return await producaoIa.estado(); }
+  catch (e) { return { pronto: false, faltando: [], motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('pia-config-ler', () => {
+  try { return producaoIa ? producaoIa.configLer() : {}; } catch (e) { return {}; }
+});
+ipcMain.handle('pia-escolher-pasta-comfy', () => {
+  if (!producaoIa) return null;
+  try {
+    const c = producaoIa.escolherPastaComfy();
+    if (c) producaoIa.configSalvar({ comfyPasta: c });
+    return c;
+  } catch (e) { return null; }
+});
+ipcMain.handle('pia-escolher-piper-modelo', () => {
+  if (!producaoIa) return null;
+  try {
+    const c = producaoIa.escolherArquivo('Escolha o modelo de voz do Piper (.onnx)', ['onnx']);
+    if (c) producaoIa.configSalvar({ piperModelo: c });
+    return c;
+  } catch (e) { return null; }
+});
+ipcMain.handle('pia-escolher-ffmpeg', () => {
+  if (!producaoIa) return null;
+  try {
+    const c = producaoIa.escolherArquivo('Escolha o ffmpeg.exe', ['exe']);
+    if (c) producaoIa.configSalvar({ ffmpegExe: c });
+    return c;
+  } catch (e) { return null; }
+});
+ipcMain.handle('pia-escolher-workflow', () => {
+  if (!producaoIa) return { ok: false, motivo: 'indisponível' };
+  try { return producaoIa.escolherEGuardarWorkflow(); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('pia-criar', async (_e, dados) => {
+  if (!producaoIa) return { ok: false, motivo: 'a produção de IA local não veio neste pacote' };
+  try { return await producaoIa.criarEpisodio(dados || {}, contaProducaoIa); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('pia-parar', () => { try { return producaoIa ? producaoIa.pararEpisodio() : false; } catch (e) { return false; } });
+ipcMain.handle('pia-abrir-pasta', (_e, caminho) => {
+  try { shell.showItemInFolder(caminho); return true; } catch (e) { return false; }
 });
 
 /* ---------------- Sede dos agentes (jev-agentes) ---------------- */

@@ -269,6 +269,38 @@ fs.writeFileSync(EMBUTIDO,
   ok('e o botão mostra o texto certo, não só o onclick',
     html.includes('>Verificar Agentes</button>') ? true : 'não veio');
 
+  /* 1.0.41 — Produção IA Local e a categoria de Impressão 3D em Produtos */
+  ok('o tipo de produto "Produto 3D" veio',
+    html.includes("'Produto físico','Produto 3D','Produto da chácara'") ? true : 'não veio');
+  ok('e a categoria "Impressão 3D" entrou na lista de Produtos e Vendas',
+    html.includes("'Alimentos','Bebidas','Artesanato','Impressão 3D','Insumos','Ferramentas'") ? true : 'não veio');
+  ok('a aba Produção IA Local entrou no menu da Mídia',
+    html.includes("nome: 'Produção IA Local'") ? true : 'não veio');
+  ok('e ela sabe se desenhar quando a pessoa clica nela',
+    html.includes('function piaTabRender') && html.includes("MID_TAB==='pia'") ? true : 'não veio');
+  ok('o roteiro e a geração do episódio vieram',
+    html.includes('function piaRoteiroHTML') && html.includes('async function piaGerar') ? true : 'não veio');
+
+  /* 1.0.42 — Calculadora/Orçamentos/Clientes de Impressão 3D (calc3d.com.br) */
+  ok('a calculadora ganhou o modo rápido do calc3d.com.br',
+    html.includes('Reproduz a metodologia do calc3d.com.br') &&
+    html.includes('function imp3dCalcModoSet') ? true : 'não veio');
+  ok('os botões de alternar modo rápido/completo vieram',
+    html.includes('Modo rápido') && html.includes('Modo completo') ? true : 'não veio');
+  ok('a tela da Calculadora deixou de ser "em construção"',
+    html.includes('function imp3dCalcRender') && html.includes('function imp3dCalcCamposHTML')
+      ? true : 'não veio');
+  ok('o Orçamento completo (ligado a cliente, com lista e status) veio',
+    html.includes('function imp3dOrcRender') && html.includes('function imp3dOrcSalvar') &&
+    html.includes('function imp3dOrcMudarStatus') ? true : 'não veio');
+  ok('o botão de usar a calculadora direto num orçamento veio',
+    html.includes('function imp3dCalcUsarEmOrcamento') ? true : 'não veio');
+  ok('a tela de Clientes (filtrada da base de pessoas) veio',
+    html.includes('function imp3dCliRender') && html.includes('function imp3dCliSalvar') &&
+    html.includes('Novo cliente') ? true : 'não veio');
+  ok('"Novo orçamento" aparece na tela de Orçamentos',
+    html.includes('Novo orçamento') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();

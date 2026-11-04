@@ -97,6 +97,17 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estAbrirPasta:  caminho          => ipcRenderer.invoke('est-abrir-pasta', caminho),
   estGuardarComo: (origem, nome)   => ipcRenderer.invoke('est-guardar-como', origem, nome),
   estFaxina:      guardar          => ipcRenderer.invoke('est-faxina', guardar),
+  /* ---- Produção de IA local: episódio do zero (ComfyUI + Wan2.2 + Piper) ---- */
+  piaDisponivel:    ()               => ipcRenderer.invoke('pia-disponivel'),
+  piaEstado:        ()               => ipcRenderer.invoke('pia-estado'),
+  piaConfigLer:     ()               => ipcRenderer.invoke('pia-config-ler'),
+  piaEscolherPastaComfy:  ()         => ipcRenderer.invoke('pia-escolher-pasta-comfy'),
+  piaEscolherPiperModelo: ()         => ipcRenderer.invoke('pia-escolher-piper-modelo'),
+  piaEscolherFfmpeg:      ()         => ipcRenderer.invoke('pia-escolher-ffmpeg'),
+  piaEscolherWorkflow:    ()         => ipcRenderer.invoke('pia-escolher-workflow'),
+  piaCriar:         dados            => ipcRenderer.invoke('pia-criar', dados),
+  piaParar:         ()               => ipcRenderer.invoke('pia-parar'),
+  piaAbrirPasta:    caminho          => ipcRenderer.invoke('pia-abrir-pasta', caminho),
   /* ---- a IA da nuvem que põe uma PESSOA apresentando o produto ----
      hgGuardarChave é de mão única: a tela empurra a chave para o disco e
      não existe caminho de volta. hgEstado devolve só o rabinho dela. */
@@ -133,6 +144,11 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   /* o andamento chega por aqui, ao vivo, enquanto o vídeo é montado */
   aoEstudio(callback) {
     ipcRenderer.on('estudio-passo', (_e, dados) => {
+      try { callback(dados); } catch (e) { console.error(e); }
+    });
+  },
+  aoProducaoIa(callback) {
+    ipcRenderer.on('producao-ia-passo', (_e, dados) => {
       try { callback(dados); } catch (e) { console.error(e); }
     });
   }
