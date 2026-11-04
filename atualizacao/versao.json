@@ -1,16 +1,22 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.41",
-  "arquivo": "jev-1.0.41.html",
-  "data": "2026-11-03",
-  "sha256": "759ea4e83d1db209fd8e572229c6a89543ee3b879ac69bc34ff20fc5251bc065",
-  "tamanho": 2216143,
+  "versao": "1.0.42",
+  "arquivo": "jev-1.0.42.html",
+  "data": "2026-11-04",
+  "sha256": "cfdd165f8ffc103dbae4d3d362d3e1f6ca01b5da76afa5280a8b3ecf150ee19e",
+  "tamanho": 2254339,
   "notas": [
-    "Novo: Produção IA Local — gera episódio do zero a partir de texto, com narração em português, rodando no seu próprio computador (ComfyUI + Piper + FFmpeg)",
-    "Produtos e Vendas: nova categoria e tipo de produto para peças de Impressão 3D, e lista de categorias reorganizada"
+    "Calculadora de Impressão 3D com modo rápido (metodologia do calc3d.com.br) além do modo completo",
+    "Orçamentos completos ligados a clientes, com lista salva e fluxo de status (rascunho, emitido, aprovado, recusado)"
   ],
-  "substitui": "1.0.40",
+  "substitui": "1.0.41",
   "anteriores": [
+    {
+      "versao": "1.0.41",
+      "arquivo": "jev-1.0.41.html",
+      "sha256": "759ea4e83d1db209fd8e572229c6a89543ee3b879ac69bc34ff20fc5251bc065",
+      "data": "2026-11-03"
+    },
     {
       "versao": "1.0.40",
       "arquivo": "jev-1.0.40.html",
@@ -40,12 +46,6 @@
       "arquivo": "jev-1.0.36.html",
       "sha256": "87f88a0f3104acf21bdf28beb304613afcb24d6b094c0e3e4e1808f9f4373d15",
       "data": "2026-09-16"
-    },
-    {
-      "versao": "1.0.35",
-      "arquivo": "jev-1.0.35.html",
-      "sha256": "4cb8bb8a959383c43dec45a739840043231421f5834ce7105c76b26f7f4f46a1",
-      "data": "2026-09-08"
     }
   ]
 }
