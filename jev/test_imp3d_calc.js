@@ -79,5 +79,29 @@ t('modo hora usa só custoManutHora × tempo (8), ignora o fixo', perto(manutHor
 const manutFixo = imp3dCalcular({ tempoHoras:4, manutModo:'fixo', custoManutHora:2, custoManutFixoPeca:15 });
 t('modo fixo usa só o valor fixo (15), ignora o por-hora', perto(manutFixo.custoManut, 15));
 
+console.log('--- Modo rápido (fórmula do calc3d.com.br: material+energia+máquina+trabalho, falhas sobre a soma, preço=custo×(1+margem)) ---');
+const deprecRapido = imp3dDeprecInfo({ valorCompra:3000, valorResidual:0, vidaUtilHoras:2000 });
+t('depreciação/h do exemplo = R$1,50', perto(deprecRapido.custoHora, 1.5), deprecRapido.custoHora);
+const rapido = imp3dCalcular({
+  pesoConsumidoG: 10, custoPorGramaMaterial: 120/1000,
+  tempoHoras: 2, potenciaW: 150, tarifaKwh: 0.75,
+  custoDeprecHora: deprecRapido.custoHora,
+  manutModo: 'hora', custoManutHora: 0,
+  tempoPreparoH: 0.5, valorHoraTrabalho: 20,
+  reservaFalhasPct: 5,
+  modoPreco: 'markup', markupPct: 100,
+  quantidade: 1
+});
+t('material = R$1,20 (peso × preço/1000)', perto(rapido.custoMaterial, 1.20), rapido.custoMaterial);
+t('energia = R$0,225 (potência/1000 × tempo × tarifa)', perto(rapido.custoEnergia, 0.225), rapido.custoEnergia);
+t('máquina = R$3,00 (valor/vida útil × tempo)', perto(rapido.custoDeprec, 3.00), rapido.custoDeprec);
+t('trabalho = R$10,00 (horas manuais × hora de trabalho)', perto(rapido.custoMaoObra, 10.00), rapido.custoMaoObra);
+t('manutenção = R$0 no modo rápido (não é campo do calc3d)', rapido.custoManut === 0);
+t('outros custos diretos = R$0 no modo rápido', rapido.outrosCustosDiretos === 0);
+t('falhas = 5% sobre material+energia+máquina+trabalho = R$0,72125', perto(rapido.reservaFalhas, 0.72125), rapido.reservaFalhas);
+t('custo unitário = R$15,14625', perto(rapido.custoAjustado, 15.14625), rapido.custoAjustado);
+t('preço = custo × (1+margem) = R$30,2925', perto(rapido.precoFinalUnitario, 30.2925), rapido.precoFinalUnitario);
+t('lucro unitário = preço − custo = R$15,14625', perto(rapido.lucroUnitario, 15.14625), rapido.lucroUnitario);
+
 console.log('\n' + ok + ' ok, ' + fail + ' falha(s)');
 process.exit(fail ? 1 : 0);
