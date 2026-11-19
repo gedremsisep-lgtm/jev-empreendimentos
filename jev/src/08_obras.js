@@ -75,6 +75,50 @@ async function obraResumo(obraId){
           saldo:orcado-realizado, desvio:orcado?((realizado-orcado)/orcado*100):0};
 }
 
+/* ---------- Retrato para os agentes de IA (sede jev-agentes) ----------
+   Monta a unidade "obras" do retrato (workspace/retrato-jev.json) a partir
+   dos dados reais, sem senha/chave/token, e grava pela ponte do Electron.
+   Só troca a unidade "obras"; o resto do retrato (se houver) fica como
+   estava. Disponível só dentro do aplicativo (desktop), igual ao botão
+   "Verificar Agentes". */
+function obraEtapaAtual(etapas){
+  if(!etapas || !etapas.length) return '—';
+  const ord = [...etapas].sort((a,b)=>num(a.ordem)-num(b.ordem));
+  const atual = ord.find(e=>e.status!=='Concluída' && num(e.avanco)<100);
+  return (atual || ord[ord.length-1]).nome || '—';
+}
+async function obrasExportarRetrato(btn){
+  const ponte = window.JeVDesktop;
+  if(!ponte || !ponte.ehAplicativo || !ponte.agExportarRetrato){
+    toast('Isso só funciona dentro do aplicativo JeV (desktop), não no navegador.','aw');
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2 spin"></i>Enviando…'; }
+  try{
+    const obras = await dbGetAll('obras');
+    const lista = [];
+    for(const o of obras){
+      const r = await obraResumo(o.id);
+      lista.push({
+        id: 'OB-'+o.id, nome: o.nome, cod: o.cod, tipo: o.tipo, status: o.status,
+        cliente: o.cliente||null, endereco: o.endereco||null, cidade: o.cidade||null,
+        area: num(o.area), inicio: o.dtInicio, previsao: o.dtPrevFim,
+        orcamento: num(o.valorContrato), orcado: Math.round(r.orcado*100)/100,
+        gasto: Math.round(r.realizado*100)/100, saldo: Math.round(r.saldo*100)/100,
+        avancoPct: Math.round(r.avanco*10)/10, planejadoPct: Math.round(r.plan*10)/10,
+        etapaAtual: obraEtapaAtual(r.etapas),
+      });
+    }
+    const res = await ponte.agExportarRetrato({ obras: lista });
+    if(res && res.ok) toast(`Retrato enviado: ${lista.length} obra(s) em ${res.caminho}.`);
+    else toast('Não consegui enviar o retrato: '+(res&&res.motivo||'motivo desconhecido'),'ae');
+  } catch(e){
+    toast('Erro ao montar o retrato: '+e.message,'ae');
+  } finally {
+    if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i>Enviar p/ Agentes'; }
+  }
+}
+
 /* ---------- Lista de obras ---------- */
 async function obrasRender(){
   const obras = await dbGetAll('obras');
@@ -93,6 +137,7 @@ async function obrasRender(){
     <button class="btn gh" onclick="document.getElementById('oimp-file').click()"><i class="ti ti-package-import"></i>Importar obra</button>
     <input type="file" id="oimp-file" accept=".jevobra,.json" class="hide" onchange="obraImportarArquivo(this)">
     <button class="btn gh" onclick="conjuntoForm()"><i class="ti ti-home-plus"></i>Conjunto de casas</button>
+    <button class="btn gh" id="btn-ob-retrato" onclick="obrasExportarRetrato(this)" title="Grava as obras de verdade em workspace/retrato-jev.json, para o Gerente de Obras e a equipe lerem"><i class="ti ti-send"></i>Enviar p/ Agentes</button>
     <button class="btn" onclick="obraForm()"><i class="ti ti-plus"></i>Nova Obra</button></div>`;
 
   html += `<div class="kg">

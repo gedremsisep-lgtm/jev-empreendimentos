@@ -36,6 +36,160 @@ function imp3dEmConstrucao(raizId, titulo, subtitulo){
 }
 
 async function imp3dPainelRender(){ imp3dEmConstrucao('i3pn-root', 'Painel geral', 'Indicadores de impressão 3D a partir dos dados registrados'); }
+
+/* ---------------------------------------------------------------- Imagem → 3D (IA local)
+   Uma foto de um objeto entra, uma malha 3D (.stl) pronta para fatiar sai —
+   rodando no computador do dono (TripoSR), sem gastar crédito a cada tentativa.
+
+   SEJA HONESTO NA TELA, não só no código: isto não é mágico e não substitui
+   o acabamento de uma modelagem feita à mão. É um ponto de partida bom para
+   peça simples, e o dono deve sempre abrir o .stl antes de mandar fatiar.
+
+   Só funciona no aplicativo instalado (precisa de Python e placa NVIDIA no
+   computador) — no navegador, a tela explica isso e para por aí. */
+let IMP3D_IMG_FOTO = null;
+let IMP3D_IMG_OCUPADO = false;
+let IMP3D_IMG_OUVINDO = false;
+
+function imp3dImgApp(){ return (window.JeVDesktop && window.JeVDesktop.ehAplicativo) ? window.JeVDesktop : null; }
+
+async function imp3dImgRender(){
+  const raizId = 'i3img-root';
+  const el = document.getElementById(raizId);
+  const app = imp3dImgApp();
+  if(!app){
+    el.innerHTML = imp3dCabecalho('Imagem → 3D', 'Transforma a foto de um objeto num modelo 3D pronto para imprimir') +
+      `<div class="al ai"><i class="ti ti-device-desktop"></i>Esta ferramenta roda no computador — ela usa Python e a placa de vídeo da sua máquina para gerar o modelo. Abra o aplicativo instalado do JeV Empreendimentos para usá-la.</div>`;
+    return;
+  }
+
+  el.innerHTML = imp3dCabecalho('Imagem → 3D', 'Transforma a foto de um objeto num modelo 3D pronto para imprimir') +
+    `<div class="al ai"><i class="ti ti-loader-2"></i>Examinando o computador…</div>`;
+
+  let e;
+  try{ e = await app.i3dEstado(); }
+  catch(err){ e = { pronto:false, pode_instalar:false, motivo:'não consegui examinar o computador: '+(err&&err.message) }; }
+
+  if(!IMP3D_IMG_OUVINDO && app.aoEstudio){
+    app.aoEstudio(ev => imp3dImgProgresso(ev));
+    IMP3D_IMG_OUVINDO = true;
+  }
+
+  imp3dImgDesenhar(e);
+}
+
+function imp3dImgProgresso(ev){
+  const box = document.getElementById('i3img-progresso');
+  if(!box) return;
+  if(ev && ev.tipo==='passo'){
+    box.innerHTML = `<div class="al ai"><i class="ti ti-loader-2"></i>${esc(ev.texto||'trabalhando…')}${
+      typeof ev.pct==='number' ? ' — '+ev.pct+'%' : ''}</div>`;
+  } else if(ev && ev.tipo==='linha' && ev.texto){
+    const p = document.createElement('div');
+    p.style.cssText = 'font-size:11px;color:var(--mut);margin-top:4px';
+    p.textContent = ev.texto;
+    box.appendChild(p);
+  }
+}
+
+function imp3dImgDesenhar(e){
+  const el = document.getElementById('i3img-root');
+  if(!el) return;
+  let h = imp3dCabecalho('Imagem → 3D', 'Transforma a foto de um objeto num modelo 3D pronto para imprimir');
+
+  if(!e || (!e.pronto && !e.pode_instalar)){
+    h += `<div class="al ae"><i class="ti ti-alert-circle"></i>${esc((e&&e.motivo)||'não foi possível examinar o computador.')}</div>`;
+    el.innerHTML = h; return;
+  }
+
+  if(!e.pronto){
+    h += `<div class="al aw"><i class="ti ti-download"></i>${esc(e.motivo||'faltam algumas peças para esta IA funcionar.')}</div>
+      <div class="fg"><button class="btn" style="background:#16253B" ${IMP3D_IMG_OCUPADO?'disabled':''} onclick="imp3dImgInstalar()">
+        <i class="ti ti-download"></i>${IMP3D_IMG_OCUPADO?'Instalando…':'Instalar (baixa o código, os pacotes e os pesos do modelo)'}</button></div>
+      <div id="i3img-progresso"></div>`;
+    el.innerHTML = h; return;
+  }
+
+  h += `<div class="al ai"><i class="ti ti-cpu"></i>Pronto — placa ${esc(e.placa||'')}${e.vram_gb?' ('+e.vram_gb+' GB)':''}.${e.apertado?' A memória é curta: se travar na geração, baixe a resolução.':''}</div>
+    <div class="card" style="padding:16px">
+      <div class="fg">
+        <label>Foto do objeto</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn gh" onclick="imp3dImgEscolherFoto()"><i class="ti ti-photo"></i>Escolher foto…</button>
+          <span id="i3img-foto-nome" style="font-size:12px;color:var(--mut)">${IMP3D_IMG_FOTO?esc(IMP3D_IMG_FOTO):'nenhuma foto escolhida'}</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Detalhe da malha</label>
+        <select id="i3img-resolucao">
+          <option value="192">Mais rápido (menos detalhe)</option>
+          <option value="256" selected>Padrão</option>
+          <option value="320">Mais detalhe (mais lento)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <button class="btn gn" ${(!IMP3D_IMG_FOTO||IMP3D_IMG_OCUPADO)?'disabled':''} onclick="imp3dImgGerar()">
+          <i class="ti ti-cube"></i>${IMP3D_IMG_OCUPADO?'Gerando…':'Gerar modelo 3D (.stl)'}</button>
+      </div>
+      <div id="i3img-progresso"></div>
+      <div id="i3img-resultado"></div>
+    </div>
+    <div class="al ai" style="margin-top:12px"><i class="ti ti-info-circle"></i>Funciona melhor com fotos de objeto único, em fundo simples. Não substitui modelagem feita à mão para peça técnica, com encaixe ou medida exata — sempre confira o arquivo antes de mandar fatiar.</div>`;
+
+  el.innerHTML = h;
+}
+
+async function imp3dImgInstalar(){
+  const app = imp3dImgApp(); if(!app || IMP3D_IMG_OCUPADO) return;
+  IMP3D_IMG_OCUPADO = true;
+  imp3dImgDesenhar(await app.i3dEstado());
+  let r;
+  try{ r = await app.i3dInstalar(); }
+  catch(err){ r = { ok:false, motivo:String((err&&err.message)||err) }; }
+  IMP3D_IMG_OCUPADO = false;
+  if(!r.ok) toast('Não consegui instalar: '+(r.motivo||'motivo desconhecido'), 'ae');
+  else toast('IA de imagem → 3D instalada.');
+  imp3dImgDesenhar(r.estado || await app.i3dEstado());
+}
+
+async function imp3dImgEscolherFoto(){
+  const app = imp3dImgApp(); if(!app) return;
+  let r;
+  try{ r = await app.i3dEscolherFoto(); }
+  catch(err){ toast('Não consegui abrir o seletor de arquivo.', 'ae'); return; }
+  if(!r || !r.ok) return;
+  IMP3D_IMG_FOTO = r.caminho;
+  const span = document.getElementById('i3img-foto-nome');
+  if(span) span.textContent = r.caminho;
+  const btn = document.querySelector('#i3img-root .btn.gn');
+  if(btn) btn.removeAttribute('disabled');
+}
+
+async function imp3dImgGerar(){
+  const app = imp3dImgApp(); if(!app || !IMP3D_IMG_FOTO || IMP3D_IMG_OCUPADO) return;
+  IMP3D_IMG_OCUPADO = true;
+  const resEl = document.getElementById('i3img-resolucao');
+  const resultadoEl = document.getElementById('i3img-resultado');
+  if(resultadoEl) resultadoEl.innerHTML = '';
+  const btn = document.querySelector('#i3img-root .btn.gn');
+  if(btn){ btn.setAttribute('disabled','disabled'); btn.innerHTML = '<i class="ti ti-loader-2"></i>Gerando…'; }
+
+  let r;
+  try{
+    r = await app.i3dGerar({ foto: IMP3D_IMG_FOTO, resolucao: resEl ? Number(resEl.value) : 256 });
+  } catch(err){ r = { ok:false, motivo:String((err&&err.message)||err) }; }
+
+  IMP3D_IMG_OCUPADO = false;
+  if(btn){ btn.removeAttribute('disabled'); btn.innerHTML = '<i class="ti ti-cube"></i>Gerar modelo 3D (.stl)'; }
+
+  if(!resultadoEl) return;
+  if(!r || !r.ok){
+    resultadoEl.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>${esc((r&&r.motivo)||'não consegui gerar o modelo.')}</div>`;
+    return;
+  }
+  resultadoEl.innerHTML = `<div class="al ai"><i class="ti ti-circle-check"></i>Modelo gerado: ${esc(r.arquivo)} (${r.vertices} vértices, ${r.faces} faces).</div>
+    <div class="fg"><button class="btn gh" onclick="window.JeVDesktop.i3dAbrirPasta(${JSON.stringify(r.arquivo)})"><i class="ti ti-folder-open"></i>Abrir pasta do arquivo</button></div>`;
+}
 /* ---------------------------------------------------------------- Calculadora de custos e preços
    Reproduz a metodologia do calc3d.com.br (material + energia + máquina + trabalho,
    reserva de falhas sobre essa soma, preço = custo × (1+margem)) como MODO RÁPIDO do

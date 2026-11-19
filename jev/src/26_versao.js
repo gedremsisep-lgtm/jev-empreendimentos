@@ -174,7 +174,7 @@ async function verAutoteste(){
                      imoveis:imoveisRender, veiculos:veiculosRender, chacara:chacaraRender,
                      produtos:produtosRender, info:infoRender, midia:midiaRender, pes:pesRender,
                      rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender, ver:verRender,
-                     i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender,
+                     i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3img:imp3dImgRender, i3orc:imp3dOrcRender,
                      i3cli:imp3dCliRender, i3imp:imp3dImpRender, i3fil:imp3dFilRender,
                      i3des:imp3dDesRender, i3prod:imp3dProdRender, i3hist:imp3dHistRender,
                      i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};

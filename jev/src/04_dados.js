@@ -25,6 +25,7 @@ const UNIDADES = [
   {id:'imp3d', pg:'i3pn', nome:'Impressão 3D', curto:'Impressão 3D', ic:'ti-3d-cube-sphere',
    cor:'#16253B', bg:'#E7EBF0', desc:'Orçamento, produção e custos de impressão 3D',
    tabs:[['i3pn','Painel','ti-layout-grid'],['i3calc','Calculadora','ti-calculator'],
+         ['i3img','Imagem → 3D','ti-zoom-scan']   /* ti-scan não está na fonte embutida */,
          ['i3orc','Orçamentos','ti-file-invoice'],['i3cli','Clientes','ti-address-book'],
          ['i3imp','Impressoras','ti-printer'],['i3fil','Filamentos','ti-package'],
          ['i3des','Despesas','ti-receipt'],['i3prod','Produtos','ti-cube'],

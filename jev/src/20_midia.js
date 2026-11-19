@@ -14,7 +14,10 @@ const MID_FINALIDADES = {
               desc:'Pega um vídeo longo e vira vários cortes de um minuto.' },
   afiliado: { n:'Afiliado',         ic:'ti-link',     cor:'#1F7A44',
               desc:'Divulga produtos com o seu link de comissão.' },
-  marketing:{ n:'Marketing',        ic:'ti-speakerphone', cor:'#E67E22',
+  /* ti-target-arrow, e não ti-speakerphone: o megafone não existe na fonte
+     embutida deste sistema e sairia como quadrado vazio na tela da família.
+     Trocar o desenho custa uma palavra; recuperar o embed.py, não. */
+  marketing:{ n:'Marketing',        ic:'ti-target-arrow', cor:'#E67E22',
               desc:'Divulga os produtos do seu próprio negócio (ex.: impressão 3D) nas redes para vender.' }
 };
 function midFinalidade(c){
