@@ -9,3 +9,9 @@ Thumbs.db
 mobile/index.html
 mobile/sw.dist.js
 mobile/versao.json
+
+# lixo de execucao do Python
+__pycache__/
+*.pyc
+# capturas de tela de trabalho
+desktop/s_*.png

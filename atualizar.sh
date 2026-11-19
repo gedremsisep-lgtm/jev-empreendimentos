@@ -76,11 +76,22 @@ cp "$FONTE/build.sh" "$FONTE/embed.py" desktop/fonte/ 2>/dev/null || true
 
 # A fábrica vai DENTRO do aplicativo: é ela que monta o vídeo quando você
 # clica em "Criar o vídeo agora". Sem isto, o botão existe e não funciona.
+#
+# A lista era escrita à mão, e foi assim que o imagem3d.py (foto → modelo 3D)
+# quase foi publicado com o botão na tela e a peça fora do instalador. Agora
+# vai TODO .py da fábrica, e a conferência cobra todos eles — a próxima peça
+# nova entra sozinha, sem ninguém lembrar. Os test_*.py ficam de fora: teste
+# é ferramenta de quem constrói, não peso no programa da família.
 mkdir -p desktop/fabrica
-cp fabrica/fabrica.py fabrica/cortes.py fabrica/ia_local.py fabrica/LEIAME.txt desktop/fabrica/
-for f in fabrica.py cortes.py ia_local.py; do
-  test -s "desktop/fabrica/$f" || { echo "ERRO: desktop/fabrica/$f não foi copiado"; exit 1; }
+rm -f desktop/fabrica/test_*.py
+for f in fabrica/*.py; do
+  n="$(basename "$f")"
+  case "$n" in test_*) continue;; esac
+  cp "$f" desktop/fabrica/
+  test -s "desktop/fabrica/$n" || { echo "ERRO: desktop/fabrica/$n não foi copiado"; exit 1; }
 done
+cp fabrica/LEIAME.txt desktop/fabrica/
+echo "  fábrica dentro do programa: $(ls -1 desktop/fabrica/*.py | wc -l) peça(s) de Python"
 
 bash mobile/build.sh >/dev/null 2>&1 || echo "  (o aplicativo do celular não foi remontado)"
 
