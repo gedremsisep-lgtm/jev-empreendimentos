@@ -21,8 +21,7 @@ const { chromium } = require('playwright');
   const ok = (t,v)=>{ if(v!==true) falhas++;
     console.log((v===true?'  OK  ':' FALHA')+'  '+t+(v===true?'':'  → '+String(JSON.stringify(v)).slice(0,300))); };
   const erros = [];
-  const b = await chromium.launch({
-    executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox'] });
+  const b = await chromium.launch({ args:['--no-sandbox'] });
   const page = await (await b.newContext({viewport:{width:1440,height:1100}})).newPage();
   page.on('pageerror',e=>erros.push('PAGEERROR: '+e.message));
   page.on('console',m=>{ if(m.type()==='error'&&!/favicon|api.github|ERR_|net::/.test(m.text())) erros.push('CONSOLE: '+m.text()); });

@@ -19,7 +19,6 @@ const ok = (t, v) => {
 
 (async () => {
   const b = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
     args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const page = await b.newPage();
   page.on('pageerror', e => erros.push(String(e.message)));

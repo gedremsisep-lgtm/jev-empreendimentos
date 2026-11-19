@@ -2,8 +2,13 @@
 const { chromium } = require('playwright');
 (async () => {
   const erros = [];
-  const ok = (t,v)=>console.log((v===true?'  OK  ':' FALHA')+'  '+t+(v===true?'':'  → '+JSON.stringify(v)));
-  const b = await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
+  /* Este contador existe porque, sem ele, o teste escrevia FALHA na tela e
+     mesmo assim saía como se tudo estivesse certo. Numa esteira automática
+     isso é pior do que não ter teste nenhum: fica verde para sempre. */
+  let falhas = 0;
+  const ok = (t,v)=>{ if(v!==true) falhas++;
+    console.log((v===true?'  OK  ':' FALHA')+'  '+t+(v===true?'':'  → '+JSON.stringify(v))); };
+  const b = await chromium.launch({args:['--no-sandbox']});
   const ctx = await b.newContext({viewport:{width:1440,height:1100},permissions:['clipboard-read','clipboard-write']});
   const page = await ctx.newPage();
   page.on('pageerror',e=>erros.push('PAGEERROR: '+e.message));
@@ -245,4 +250,6 @@ const { chromium } = require('playwright');
   if(erros.length){ console.log('ERROS:'); erros.forEach(e=>console.log('  '+e)); }
   else console.log('Nenhum erro de JavaScript.');
   await b.close();
+  console.log(falhas ? `\n${falhas} falha(s).` : '\nTudo certo — o garimpo faz o que promete.');
+  process.exit(falhas ? 1 : 0);
 })();

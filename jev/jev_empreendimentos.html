@@ -790,6 +790,7 @@ tfoot td{padding:10px;font-weight:800;background:var(--bg3);border-top:2px solid
   <div class="pg" id="pg-galeria"><div id="galeria-root"></div></div>
   <div class="pg" id="pg-i3pn"><div id="i3pn-root"></div></div>
   <div class="pg" id="pg-i3calc"><div id="i3calc-root"></div></div>
+  <div class="pg" id="pg-i3img"><div id="i3img-root"></div></div>
   <div class="pg" id="pg-i3orc"><div id="i3orc-root"></div></div>
   <div class="pg" id="pg-i3cli"><div id="i3cli-root"></div></div>
   <div class="pg" id="pg-i3imp"><div id="i3imp-root"></div></div>
@@ -904,7 +905,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.43';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.44';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [
@@ -981,8 +982,8 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
-  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','ver'],
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','cfg','ver'],
+  o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','cel','nuvem','ver'],
   c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
 
@@ -1007,7 +1008,7 @@ function go(pg){
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
              midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
              ver:verRender,
-             i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender, i3cli:imp3dCliRender,
+             i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3img:imp3dImgRender, i3orc:imp3dOrcRender, i3cli:imp3dCliRender,
              i3imp:imp3dImpRender, i3fil:imp3dFilRender, i3des:imp3dDesRender, i3prod:imp3dProdRender,
              i3hist:imp3dHistRender, i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};
   safeRender(R[pg], pg);
@@ -1365,6 +1366,7 @@ const UNIDADES = [
   {id:'imp3d', pg:'i3pn', nome:'Impressão 3D', curto:'Impressão 3D', ic:'ti-3d-cube-sphere',
    cor:'#16253B', bg:'#E7EBF0', desc:'Orçamento, produção e custos de impressão 3D',
    tabs:[['i3pn','Painel','ti-layout-grid'],['i3calc','Calculadora','ti-calculator'],
+         ['i3img','Imagem → 3D','ti-zoom-scan']   /* ti-scan não está na fonte embutida */,
          ['i3orc','Orçamentos','ti-file-invoice'],['i3cli','Clientes','ti-address-book'],
          ['i3imp','Impressoras','ti-printer'],['i3fil','Filamentos','ti-package'],
          ['i3des','Despesas','ti-receipt'],['i3prod','Produtos','ti-cube'],
@@ -2898,6 +2900,50 @@ async function obraResumo(obraId){
           saldo:orcado-realizado, desvio:orcado?((realizado-orcado)/orcado*100):0};
 }
 
+/* ---------- Retrato para os agentes de IA (sede jev-agentes) ----------
+   Monta a unidade "obras" do retrato (workspace/retrato-jev.json) a partir
+   dos dados reais, sem senha/chave/token, e grava pela ponte do Electron.
+   Só troca a unidade "obras"; o resto do retrato (se houver) fica como
+   estava. Disponível só dentro do aplicativo (desktop), igual ao botão
+   "Verificar Agentes". */
+function obraEtapaAtual(etapas){
+  if(!etapas || !etapas.length) return '—';
+  const ord = [...etapas].sort((a,b)=>num(a.ordem)-num(b.ordem));
+  const atual = ord.find(e=>e.status!=='Concluída' && num(e.avanco)<100);
+  return (atual || ord[ord.length-1]).nome || '—';
+}
+async function obrasExportarRetrato(btn){
+  const ponte = window.JeVDesktop;
+  if(!ponte || !ponte.ehAplicativo || !ponte.agExportarRetrato){
+    toast('Isso só funciona dentro do aplicativo JeV (desktop), não no navegador.','aw');
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2 spin"></i>Enviando…'; }
+  try{
+    const obras = await dbGetAll('obras');
+    const lista = [];
+    for(const o of obras){
+      const r = await obraResumo(o.id);
+      lista.push({
+        id: 'OB-'+o.id, nome: o.nome, cod: o.cod, tipo: o.tipo, status: o.status,
+        cliente: o.cliente||null, endereco: o.endereco||null, cidade: o.cidade||null,
+        area: num(o.area), inicio: o.dtInicio, previsao: o.dtPrevFim,
+        orcamento: num(o.valorContrato), orcado: Math.round(r.orcado*100)/100,
+        gasto: Math.round(r.realizado*100)/100, saldo: Math.round(r.saldo*100)/100,
+        avancoPct: Math.round(r.avanco*10)/10, planejadoPct: Math.round(r.plan*10)/10,
+        etapaAtual: obraEtapaAtual(r.etapas),
+      });
+    }
+    const res = await ponte.agExportarRetrato({ obras: lista });
+    if(res && res.ok) toast(`Retrato enviado: ${lista.length} obra(s) em ${res.caminho}.`);
+    else toast('Não consegui enviar o retrato: '+(res&&res.motivo||'motivo desconhecido'),'ae');
+  } catch(e){
+    toast('Erro ao montar o retrato: '+e.message,'ae');
+  } finally {
+    if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i>Enviar p/ Agentes'; }
+  }
+}
+
 /* ---------- Lista de obras ---------- */
 async function obrasRender(){
   const obras = await dbGetAll('obras');
@@ -2916,6 +2962,7 @@ async function obrasRender(){
     <button class="btn gh" onclick="document.getElementById('oimp-file').click()"><i class="ti ti-package-import"></i>Importar obra</button>
     <input type="file" id="oimp-file" accept=".jevobra,.json" class="hide" onchange="obraImportarArquivo(this)">
     <button class="btn gh" onclick="conjuntoForm()"><i class="ti ti-home-plus"></i>Conjunto de casas</button>
+    <button class="btn gh" id="btn-ob-retrato" onclick="obrasExportarRetrato(this)" title="Grava as obras de verdade em workspace/retrato-jev.json, para o Gerente de Obras e a equipe lerem"><i class="ti ti-send"></i>Enviar p/ Agentes</button>
     <button class="btn" onclick="obraForm()"><i class="ti ti-plus"></i>Nova Obra</button></div>`;
 
   html += `<div class="kg">
@@ -8295,7 +8342,12 @@ const MID_FINALIDADES = {
   cortes:   { n:'Cortes',           ic:'ti-scissors', cor:'#7C4DBE',
               desc:'Pega um vídeo longo e vira vários cortes de um minuto.' },
   afiliado: { n:'Afiliado',         ic:'ti-link',     cor:'#1F7A44',
-              desc:'Divulga produtos com o seu link de comissão.' }
+              desc:'Divulga produtos com o seu link de comissão.' },
+  /* ti-target-arrow, e não ti-speakerphone: o megafone não existe na fonte
+     embutida deste sistema e sairia como quadrado vazio na tela da família.
+     Trocar o desenho custa uma palavra; recuperar o embed.py, não. */
+  marketing:{ n:'Marketing',        ic:'ti-target-arrow', cor:'#E67E22',
+              desc:'Divulga os produtos do seu próprio negócio (ex.: impressão 3D) nas redes para vender.' }
 };
 function midFinalidade(c){
   return MID_FINALIDADES[(c && c.finalidade) || 'proprio'] || MID_FINALIDADES.proprio;
@@ -11658,7 +11710,7 @@ async function verAutoteste(){
                      imoveis:imoveisRender, veiculos:veiculosRender, chacara:chacaraRender,
                      produtos:produtosRender, info:infoRender, midia:midiaRender, pes:pesRender,
                      rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender, ver:verRender,
-                     i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3orc:imp3dOrcRender,
+                     i3pn:imp3dPainelRender, i3calc:imp3dCalcRender, i3img:imp3dImgRender, i3orc:imp3dOrcRender,
                      i3cli:imp3dCliRender, i3imp:imp3dImpRender, i3fil:imp3dFilRender,
                      i3des:imp3dDesRender, i3prod:imp3dProdRender, i3hist:imp3dHistRender,
                      i3rel:imp3dRelRender, i3cfg:imp3dCfgRender};
@@ -23306,6 +23358,160 @@ function imp3dEmConstrucao(raizId, titulo, subtitulo){
 }
 
 async function imp3dPainelRender(){ imp3dEmConstrucao('i3pn-root', 'Painel geral', 'Indicadores de impressão 3D a partir dos dados registrados'); }
+
+/* ---------------------------------------------------------------- Imagem → 3D (IA local)
+   Uma foto de um objeto entra, uma malha 3D (.stl) pronta para fatiar sai —
+   rodando no computador do dono (TripoSR), sem gastar crédito a cada tentativa.
+
+   SEJA HONESTO NA TELA, não só no código: isto não é mágico e não substitui
+   o acabamento de uma modelagem feita à mão. É um ponto de partida bom para
+   peça simples, e o dono deve sempre abrir o .stl antes de mandar fatiar.
+
+   Só funciona no aplicativo instalado (precisa de Python e placa NVIDIA no
+   computador) — no navegador, a tela explica isso e para por aí. */
+let IMP3D_IMG_FOTO = null;
+let IMP3D_IMG_OCUPADO = false;
+let IMP3D_IMG_OUVINDO = false;
+
+function imp3dImgApp(){ return (window.JeVDesktop && window.JeVDesktop.ehAplicativo) ? window.JeVDesktop : null; }
+
+async function imp3dImgRender(){
+  const raizId = 'i3img-root';
+  const el = document.getElementById(raizId);
+  const app = imp3dImgApp();
+  if(!app){
+    el.innerHTML = imp3dCabecalho('Imagem → 3D', 'Transforma a foto de um objeto num modelo 3D pronto para imprimir') +
+      `<div class="al ai"><i class="ti ti-device-desktop"></i>Esta ferramenta roda no computador — ela usa Python e a placa de vídeo da sua máquina para gerar o modelo. Abra o aplicativo instalado do JeV Empreendimentos para usá-la.</div>`;
+    return;
+  }
+
+  el.innerHTML = imp3dCabecalho('Imagem → 3D', 'Transforma a foto de um objeto num modelo 3D pronto para imprimir') +
+    `<div class="al ai"><i class="ti ti-loader-2"></i>Examinando o computador…</div>`;
+
+  let e;
+  try{ e = await app.i3dEstado(); }
+  catch(err){ e = { pronto:false, pode_instalar:false, motivo:'não consegui examinar o computador: '+(err&&err.message) }; }
+
+  if(!IMP3D_IMG_OUVINDO && app.aoEstudio){
+    app.aoEstudio(ev => imp3dImgProgresso(ev));
+    IMP3D_IMG_OUVINDO = true;
+  }
+
+  imp3dImgDesenhar(e);
+}
+
+function imp3dImgProgresso(ev){
+  const box = document.getElementById('i3img-progresso');
+  if(!box) return;
+  if(ev && ev.tipo==='passo'){
+    box.innerHTML = `<div class="al ai"><i class="ti ti-loader-2"></i>${esc(ev.texto||'trabalhando…')}${
+      typeof ev.pct==='number' ? ' — '+ev.pct+'%' : ''}</div>`;
+  } else if(ev && ev.tipo==='linha' && ev.texto){
+    const p = document.createElement('div');
+    p.style.cssText = 'font-size:11px;color:var(--mut);margin-top:4px';
+    p.textContent = ev.texto;
+    box.appendChild(p);
+  }
+}
+
+function imp3dImgDesenhar(e){
+  const el = document.getElementById('i3img-root');
+  if(!el) return;
+  let h = imp3dCabecalho('Imagem → 3D', 'Transforma a foto de um objeto num modelo 3D pronto para imprimir');
+
+  if(!e || (!e.pronto && !e.pode_instalar)){
+    h += `<div class="al ae"><i class="ti ti-alert-circle"></i>${esc((e&&e.motivo)||'não foi possível examinar o computador.')}</div>`;
+    el.innerHTML = h; return;
+  }
+
+  if(!e.pronto){
+    h += `<div class="al aw"><i class="ti ti-download"></i>${esc(e.motivo||'faltam algumas peças para esta IA funcionar.')}</div>
+      <div class="fg"><button class="btn" style="background:#16253B" ${IMP3D_IMG_OCUPADO?'disabled':''} onclick="imp3dImgInstalar()">
+        <i class="ti ti-download"></i>${IMP3D_IMG_OCUPADO?'Instalando…':'Instalar (baixa o código, os pacotes e os pesos do modelo)'}</button></div>
+      <div id="i3img-progresso"></div>`;
+    el.innerHTML = h; return;
+  }
+
+  h += `<div class="al ai"><i class="ti ti-cpu"></i>Pronto — placa ${esc(e.placa||'')}${e.vram_gb?' ('+e.vram_gb+' GB)':''}.${e.apertado?' A memória é curta: se travar na geração, baixe a resolução.':''}</div>
+    <div class="card" style="padding:16px">
+      <div class="fg">
+        <label>Foto do objeto</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn gh" onclick="imp3dImgEscolherFoto()"><i class="ti ti-photo"></i>Escolher foto…</button>
+          <span id="i3img-foto-nome" style="font-size:12px;color:var(--mut)">${IMP3D_IMG_FOTO?esc(IMP3D_IMG_FOTO):'nenhuma foto escolhida'}</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Detalhe da malha</label>
+        <select id="i3img-resolucao">
+          <option value="192">Mais rápido (menos detalhe)</option>
+          <option value="256" selected>Padrão</option>
+          <option value="320">Mais detalhe (mais lento)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <button class="btn gn" ${(!IMP3D_IMG_FOTO||IMP3D_IMG_OCUPADO)?'disabled':''} onclick="imp3dImgGerar()">
+          <i class="ti ti-cube"></i>${IMP3D_IMG_OCUPADO?'Gerando…':'Gerar modelo 3D (.stl)'}</button>
+      </div>
+      <div id="i3img-progresso"></div>
+      <div id="i3img-resultado"></div>
+    </div>
+    <div class="al ai" style="margin-top:12px"><i class="ti ti-info-circle"></i>Funciona melhor com fotos de objeto único, em fundo simples. Não substitui modelagem feita à mão para peça técnica, com encaixe ou medida exata — sempre confira o arquivo antes de mandar fatiar.</div>`;
+
+  el.innerHTML = h;
+}
+
+async function imp3dImgInstalar(){
+  const app = imp3dImgApp(); if(!app || IMP3D_IMG_OCUPADO) return;
+  IMP3D_IMG_OCUPADO = true;
+  imp3dImgDesenhar(await app.i3dEstado());
+  let r;
+  try{ r = await app.i3dInstalar(); }
+  catch(err){ r = { ok:false, motivo:String((err&&err.message)||err) }; }
+  IMP3D_IMG_OCUPADO = false;
+  if(!r.ok) toast('Não consegui instalar: '+(r.motivo||'motivo desconhecido'), 'ae');
+  else toast('IA de imagem → 3D instalada.');
+  imp3dImgDesenhar(r.estado || await app.i3dEstado());
+}
+
+async function imp3dImgEscolherFoto(){
+  const app = imp3dImgApp(); if(!app) return;
+  let r;
+  try{ r = await app.i3dEscolherFoto(); }
+  catch(err){ toast('Não consegui abrir o seletor de arquivo.', 'ae'); return; }
+  if(!r || !r.ok) return;
+  IMP3D_IMG_FOTO = r.caminho;
+  const span = document.getElementById('i3img-foto-nome');
+  if(span) span.textContent = r.caminho;
+  const btn = document.querySelector('#i3img-root .btn.gn');
+  if(btn) btn.removeAttribute('disabled');
+}
+
+async function imp3dImgGerar(){
+  const app = imp3dImgApp(); if(!app || !IMP3D_IMG_FOTO || IMP3D_IMG_OCUPADO) return;
+  IMP3D_IMG_OCUPADO = true;
+  const resEl = document.getElementById('i3img-resolucao');
+  const resultadoEl = document.getElementById('i3img-resultado');
+  if(resultadoEl) resultadoEl.innerHTML = '';
+  const btn = document.querySelector('#i3img-root .btn.gn');
+  if(btn){ btn.setAttribute('disabled','disabled'); btn.innerHTML = '<i class="ti ti-loader-2"></i>Gerando…'; }
+
+  let r;
+  try{
+    r = await app.i3dGerar({ foto: IMP3D_IMG_FOTO, resolucao: resEl ? Number(resEl.value) : 256 });
+  } catch(err){ r = { ok:false, motivo:String((err&&err.message)||err) }; }
+
+  IMP3D_IMG_OCUPADO = false;
+  if(btn){ btn.removeAttribute('disabled'); btn.innerHTML = '<i class="ti ti-cube"></i>Gerar modelo 3D (.stl)'; }
+
+  if(!resultadoEl) return;
+  if(!r || !r.ok){
+    resultadoEl.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>${esc((r&&r.motivo)||'não consegui gerar o modelo.')}</div>`;
+    return;
+  }
+  resultadoEl.innerHTML = `<div class="al ai"><i class="ti ti-circle-check"></i>Modelo gerado: ${esc(r.arquivo)} (${r.vertices} vértices, ${r.faces} faces).</div>
+    <div class="fg"><button class="btn gh" onclick="window.JeVDesktop.i3dAbrirPasta(${JSON.stringify(r.arquivo)})"><i class="ti ti-folder-open"></i>Abrir pasta do arquivo</button></div>`;
+}
 /* ---------------------------------------------------------------- Calculadora de custos e preços
    Reproduz a metodologia do calc3d.com.br (material + energia + máquina + trabalho,
    reserva de falhas sobre essa soma, preço = custo × (1+margem)) como MODO RÁPIDO do

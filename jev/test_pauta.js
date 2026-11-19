@@ -17,8 +17,7 @@ spawnSync('ffmpeg', ['-loglevel','error','-y','-f','lavfi',
   const ok = (t,v)=>{ if(v!==true) falhas++;
     console.log((v===true?'  OK  ':' FALHA')+'  '+t+(v===true?'':'  → '+JSON.stringify(v).slice(0,300))); };
 
-  const b = await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-                                   args:['--no-sandbox','--allow-file-access-from-files']});
+  const b = await chromium.launch({args:['--no-sandbox','--allow-file-access-from-files']});
   const ctx = await b.newContext({viewport:{width:1440,height:1200},permissions:['clipboard-read','clipboard-write']});
   const page = await ctx.newPage();
   page.on('pageerror',e=>erros.push('PAGEERROR: '+e.message));
