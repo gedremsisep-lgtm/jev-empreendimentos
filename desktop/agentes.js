@@ -78,4 +78,33 @@ async function estado(app) { return { pasta: PASTA || achar(app), rodando: await
 function definirPasta(app, dir) { if (!ehSede(dir)) return { ok: false, motivo: 'Essa pasta não tem o server.js e a engine da sede. Escolha a pasta "jev-agentes".' }; PASTA = dir; gravarConfig(app, { pasta: dir }); motivo = ''; return { ok: true, pasta: dir }; }
 function parar() { try { if (servidor && !servidor.killed) servidor.kill(); } catch {} servidor = null; }
 
-module.exports = { garantir, abrir, estado, definirPasta, parar, get pasta() { return PASTA; } };
+/* ------------------------------------------------------------------------
+   Retrato: um JSON (sem senha, sem chave, sem token) com os dados reais do
+   JeV para os agentes lerem em workspace/retrato-jev.json. Grava direto no
+   arquivo (não depende do servidor da sede estar no ar) e só troca a(s)
+   unidade(s) que vieram nesta exportação — o resto do retrato (se houver)
+   fica como estava.
+   ------------------------------------------------------------------------ */
+function exportarRetrato(app, unidades) {
+  PASTA = PASTA || achar(app);
+  if (!PASTA) return { ok: false, motivo: 'não encontrei a pasta da sede dos agentes (jev-agentes)' };
+  const caminho = path.join(PASTA, 'workspace', 'retrato-jev.json');
+  let atual = {};
+  try { atual = JSON.parse(fs.readFileSync(caminho, 'utf8')); } catch { atual = {}; }
+  delete atual.aviso; // uma vez que entrou dado de verdade, o aviso de "é tudo exemplo" fica errado
+  const novo = {
+    ...atual,
+    exportadoEm: new Date().toISOString(),
+    versaoJeV: app.getVersion(),
+    unidades: { ...(atual.unidades || {}), ...unidades },
+  };
+  try {
+    fs.mkdirSync(path.dirname(caminho), { recursive: true });
+    const tmp = caminho + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(novo, null, 2) + '\n', 'utf8');
+    fs.renameSync(tmp, caminho);
+  } catch (e) { return { ok: false, motivo: 'não consegui gravar o retrato: ' + e.message }; }
+  return { ok: true, caminho, pasta: PASTA };
+}
+
+module.exports = { garantir, abrir, estado, definirPasta, parar, exportarRetrato, get pasta() { return PASTA; } };

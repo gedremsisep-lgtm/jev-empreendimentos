@@ -301,6 +301,46 @@ fs.writeFileSync(EMBUTIDO,
   ok('"Novo orçamento" aparece na tela de Orçamentos',
     html.includes('Novo orçamento') ? true : 'não veio');
 
+  /* 1.0.43 — Afiliados dentro de Produtos e Vendas, com envio ao grupo do WhatsApp */
+  ok('a aba Afiliados entrou em Produtos e Vendas',
+    html.includes('async function prodTabAfiliados') &&
+    html.includes("onclick=\"prdStab('${un}','afil')\"") ? true : 'não veio');
+  ok('ela mostra os produtos filiados e a plataforma de cada um',
+    html.includes('Produtos filiados') && html.includes('p.ficha.plataforma') ? true : 'não veio');
+  ok('o cadastro de grupo do WhatsApp veio, reaproveitando o das Ofertas',
+    html.includes('Grupos do WhatsApp') && html.includes('async function prodAddGrupoAfil') &&
+    html.includes('ofCfg') ? true : 'não veio');
+  ok('o envio de uma oferta e de todas para o grupo veio',
+    html.includes('async function prodEnviarAfiliado') &&
+    html.includes('async function prodEnviarTodasAfiliados') &&
+    html.includes('Enviar todas ao grupo') ? true : 'não veio');
+  ok('e continua sendo o dedo do dono quem aperta enviar — nada de postagem automática',
+    html.includes("window.open(prodAfilEndereco") && !/prodEnviarAfiliado[\s\S]{0,400}fetch\(/.test(html)
+      ? true : 'achei algo tentando postar sozinho');
+
+  /* 1.0.44 — as três cópias juntadas numa só.
+     As três primeiras verificações aqui são de ÍCONE, e parecem besteira até
+     você lembrar que a conferência do build dizia "OK, todo ícone existe"
+     enquanto três deles sairiam como quadrado vazio na casa da família. O que
+     se mede aqui não é o desenho: é que a conferência voltou a enxergar. */
+  ok('a finalidade Marketing entrou nos canais de mídia',
+    html.includes("marketing:{ n:'Marketing'") ? true : 'não veio');
+  ok('a aba Imagem → 3D entrou na Impressão 3D',
+    html.includes("'i3img'") && html.includes('function imp3dImgRender') &&
+    html.includes('i3img:imp3dImgRender') ? true : 'não veio');
+  ok('nenhum ícone usado ficou fora da fonte embutida',
+    (() => {
+      const naTela = new Set([...html.matchAll(/\bti\s+ti-([a-z0-9-]+)/g)].map(m => m[1]));
+      const dado   = new Set([...html.matchAll(/['"]ti-([a-z0-9-]+)['"]/g)].map(m => m[1]));
+      const emb    = new Set([...html.matchAll(/\.ti-([a-z0-9-]+):before/g)].map(m => m[1]));
+      const falta  = [...new Set([...naTela, ...dado])]
+        .filter(i => i !== 'clapperboard' && !emb.has(i));
+      return falta.length ? 'sairiam como quadrado vazio: ' + falta.join(', ') : true;
+    })());
+  ok('e os três que estavam quebrados não voltaram como ícone de verdade',
+    !/ic:\s*'ti-speakerphone'/.test(html) && !/['"]ti-scan['"]/.test(html) &&
+    !/\bti\s+ti-radar-2\b/.test(html) ? true : 'algum voltou');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();

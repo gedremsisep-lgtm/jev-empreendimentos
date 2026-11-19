@@ -71,7 +71,7 @@ function ferramentas() { return pasta('ferramentas'); }
    A segunda camada existe porque a primeira depende de uma configuração de
    empacotamento dar certo — e configuração de empacotamento é exatamente o
    tipo de coisa que quebra sem avisar.                                     */
-const ARQUIVOS_FABRICA = ['fabrica.py', 'cortes.py', 'ia_local.py'];
+const ARQUIVOS_FABRICA = ['fabrica.py', 'cortes.py', 'ia_local.py', 'imagem3d.py'];
 
 function ehDentroDoAsar(c) {
   return /[\\/]app\.asar[\\/]/i.test(String(c || ''));
@@ -1324,6 +1324,225 @@ function faxina(guardar) {
   return apagados;
 }
 
+/* =========================================================================
+   IMAGEM → 3D NO COMPUTADOR DO DONO
+
+   Mesma lógica da IA de vídeo, uma peça acima: nada baixa sozinho, tudo é
+   examinado antes e só instala quando o dono manda. Aqui tem DUAS coisas
+   para trazer, não uma — o CÓDIGO do TripoSR (um pacote Python que não está
+   no PyPI, só no GitHub) e os PESOS do modelo (uns 200 MB, no Hugging
+   Face). O código vem como zip comum, sem precisar de git instalado na
+   máquina do dono — é a mesma função descompactar() de cima que já abre os
+   zips do Python e do FFmpeg.
+
+   O que esta IA faz: pega uma foto de um objeto e devolve uma malha 3D
+   pronta para fatiar (.stl). O que ela NÃO faz: não garante qualidade de
+   serviço pago como a Tripo3D na nuvem — é um ponto de partida bom para
+   peça simples, e o dono deve sempre abrir o arquivo antes de mandar
+   imprimir. */
+const IMAGEM3D_CODIGO_URL = 'https://codeload.github.com/VAST-AI-Research/TripoSR/zip/refs/heads/main';
+const IMAGEM3D_MODELO_HF = 'stabilityai/TripoSR';
+const IMAGEM3D_PACOTES = [
+  /* o torch com CUDA é o pedaço gordo: uns 2,5 GB só ele — se a IA de vídeo
+     já instalou, o pip percebe que já está lá e não baixa de novo */
+  { nome: 'torch', args: ['torch', 'torchvision', '--index-url', 'https://download.pytorch.org/whl/cu124'] },
+  { nome: 'o resto do TripoSR',
+    args: ['transformers', 'einops', 'omegaconf', 'trimesh', 'rembg', 'onnxruntime', 'huggingface_hub'] }
+];
+
+function imagem3dPy() { return path.join(pastaDaFabrica(), 'imagem3d.py'); }
+function pastaImagem3dModelos() { return pasta('ferramentas', 'imagem3d-modelos'); }
+function pastaImagem3dCodigo() { return pasta('ferramentas', 'imagem3d-codigo'); }
+
+/* pergunta à peça de IA o que ela vê nesta máquina */
+function imagem3dEstado() {
+  const e = estado();
+  const py = e.python;
+  const arq = imagem3dPy();
+  if (!py)
+    return { pronto: false, pode_instalar: false, placa: '', vram_gb: 0,
+             motivo: 'as ferramentas de vídeo ainda não foram instaladas' };
+  if (!fs.existsSync(arq))
+    return { pronto: false, pode_instalar: false, placa: '', vram_gb: 0,
+             motivo: 'a peça de IA não veio dentro deste pacote — instale a versão mais nova do aplicativo' };
+
+  const amb = Object.assign({}, process.env, {
+    PYTHONIOENCODING: 'utf-8',
+    JEV_FERRAMENTAS: ferramentas(),
+    JEV_IMAGEM3D_MODELOS: pastaImagem3dModelos(),
+    JEV_IMAGEM3D_CODIGO: pastaImagem3dCodigo()
+  });
+  const r = spawnSync(py, ['-u', arq, '--estado'], { env: amb, encoding: 'utf8', timeout: 60000 });
+  const linha = String(r.stdout || '').trim().split(/\r?\n/).pop();
+  try { return JSON.parse(linha); }
+  catch (x) {
+    return { pronto: false, pode_instalar: false, placa: '', vram_gb: 0,
+             motivo: 'não consegui examinar a placa de vídeo: ' +
+                     (String(r.stderr || '').trim().split(/\r?\n/).pop() || 'sem resposta') };
+  }
+}
+
+/* baixa o que falta para a IA de imagem→3D local. Só roda depois do dono mandar. */
+function imagem3dInstalar(enviar) {
+  return new Promise(resolve => {
+    const av = e => { try { if (enviar) enviar(e); } catch (x) {} };
+    const antes = imagem3dEstado();
+    if (antes.pronto) { av({ tipo: 'passo', pct: 100, texto: 'a IA de imagem → 3D já estava pronta' });
+      return resolve({ ok: true, estado: antes, motivo: '' }); }
+    if (!antes.pode_instalar)
+      return resolve({ ok: false, estado: antes, motivo: antes.motivo });
+
+    const py = estado().python;
+    const amb = Object.assign({}, process.env, {
+      PYTHONIOENCODING: 'utf-8',
+      JEV_FERRAMENTAS: ferramentas(),
+      JEV_IMAGEM3D_MODELOS: pastaImagem3dModelos(),
+      JEV_IMAGEM3D_CODIGO: pastaImagem3dCodigo()
+    });
+
+    const passosPip = IMAGEM3D_PACOTES.map((p, i) => ({
+      tipo: 'pip',
+      texto: 'instalando ' + p.nome + ' (' + (i + 1) + ' de ' + IMAGEM3D_PACOTES.length + ')',
+      args: ['-m', 'pip', 'install', '--no-input', ...p.args]
+    }));
+
+    let i = 0;
+    const erros = [];
+    let rodandoLocal = null;
+
+    /* passo que baixa e abre o código do TripoSR — não é pip install porque
+       o pacote 'tsr' não está publicado no PyPI, só no repositório do
+       GitHub. Baixar o zip é mais simples que exigir git instalado. */
+    const baixarCodigo = () => new Promise((ok, erro) => {
+      if (fs.existsSync(path.join(_raizTsrLocal(pastaImagem3dCodigo()), 'tsr'))) return ok();
+      av({ tipo: 'passo', texto: 'baixando o código do TripoSR' });
+      const zip = path.join(os.tmpdir(), 'jev-triposr.zip');
+      baixar(IMAGEM3D_CODIGO_URL, zip, 50 * 1024 * 1024).then(() => {
+        av({ tipo: 'passo', texto: 'abrindo o código do TripoSR' });
+        if (!descompactar(zip, pastaImagem3dCodigo())) { erro(new Error('não consegui abrir o pacote')); return; }
+        try { fs.unlinkSync(zip); } catch (e) {}
+        ok();
+      }).catch(erro);
+    });
+
+    /* passo que baixa só os dois arquivos de peso que o TripoSR precisa —
+       usa o huggingface_hub que já foi instalado no passo de pip de cima */
+    const baixarPesos = () => new Promise((ok, erro) => {
+      if (fs.existsSync(path.join(pastaImagem3dModelos(), 'model.ckpt'))) return ok();
+      av({ tipo: 'passo', texto: 'baixando os pesos do modelo (uns 200 MB, uma vez só)' });
+      const p = spawn(py, ['-c',
+        'import sys;from huggingface_hub import snapshot_download;' +
+        'snapshot_download(sys.argv[1], local_dir=sys.argv[2], ' +
+        'allow_patterns=["model.ckpt","config.yaml"]);print("baixado")',
+        IMAGEM3D_MODELO_HF, pastaImagem3dModelos()], { env: amb });
+      rodandoLocal = p;
+      let ultimo = '';
+      const olhar = d => { const t = String(d).trim(); if (t) { ultimo = t.split(/\r?\n/).pop(); av({ tipo: 'linha', texto: ultimo }); } };
+      p.stdout.on('data', olhar); p.stderr.on('data', olhar);
+      p.on('error', erro);
+      p.on('close', code => code === 0 ? ok() : erro(new Error(ultimo || 'código ' + code)));
+    });
+
+    const comecar = () => {
+      av({ tipo: 'passo', pct: 2, texto: 'preparando o Python (pip e site-packages)' });
+      prepararPython(py, av).then(pr => {
+        if (!pr.ok) {
+          return resolve({ ok: false, estado: imagem3dEstado(),
+            motivo: pr.motivo + ' — sem o pip, nada do resto tem como ser instalado.' });
+        }
+        if (!pr.jaTinha) av({ tipo: 'linha', texto: 'pip instalado' });
+        seguirPip();
+      }).catch(e => {
+        resolve({ ok: false, estado: imagem3dEstado(),
+          motivo: 'não deu para preparar o Python: ' + String((e && e.message) || e) });
+      });
+    };
+
+    const seguirPip = () => {
+      if (i >= passosPip.length) return depoisDoPip();
+      const passo = passosPip[i];
+      av({ tipo: 'passo', pct: Math.round(10 + i / passosPip.length * 50), texto: passo.texto });
+      const p = spawn(py, passo.args, { env: amb });
+      rodandoLocal = p;
+      let ultimo = '';
+      const olhar = d => { const t = String(d).trim(); if (t) { ultimo = t.split(/\r?\n/).pop(); av({ tipo: 'linha', texto: ultimo }); } };
+      p.stdout.on('data', olhar); p.stderr.on('data', olhar);
+      p.on('error', err => { erros.push(passo.texto + ': ' + (err && err.message)); i++; seguirPip(); });
+      p.on('close', code => {
+        if (code !== 0) erros.push(passo.texto + ' falhou: ' + (ultimo || 'código ' + code));
+        i++; seguirPip();
+      });
+    };
+
+    const depoisDoPip = () => {
+      av({ tipo: 'passo', pct: 65, texto: 'código e pesos do modelo' });
+      baixarCodigo()
+        .then(baixarPesos)
+        .then(() => {
+          rodandoLocal = null;
+          const depois = imagem3dEstado();
+          av({ tipo: 'passo', pct: 100, texto: depois.pronto ? 'IA de imagem → 3D pronta' : 'faltou alguma coisa' });
+          resolve({ ok: !!depois.pronto, estado: depois,
+                   motivo: depois.pronto ? '' : (erros.join(' · ') || depois.motivo) });
+        })
+        .catch(e => {
+          rodandoLocal = null;
+          erros.push(String((e && e.message) || e));
+          const depois = imagem3dEstado();
+          av({ tipo: 'passo', pct: 100, texto: 'faltou alguma coisa' });
+          resolve({ ok: false, estado: depois, motivo: erros.join(' · ') });
+        });
+    };
+    comecar();
+  });
+}
+
+/* acha a subpasta onde o zip do GitHub descompactou (tipo TripoSR-main/) —
+   mesma lógica do fabrica/imagem3d.py, usada aqui só para saber se o
+   download já foi feito antes de baixar de novo */
+function _raizTsrLocal(base) {
+  if (fs.existsSync(path.join(base, 'tsr'))) return base;
+  let nomes;
+  try { nomes = fs.readdirSync(base); } catch (e) { return base; }
+  for (const nome of nomes) {
+    const c = path.join(base, nome);
+    try { if (fs.statSync(c).isDirectory() && fs.existsSync(path.join(c, 'tsr'))) return c; } catch (e) {}
+  }
+  return base;
+}
+
+/* manda a peça de IA transformar UMA foto numa malha 3D (.stl) */
+function imagem3dGerar(foto, destino, resolucao) {
+  const py = estado().python;
+  const arq = imagem3dPy();
+  const amb = Object.assign({}, process.env, {
+    PYTHONIOENCODING: 'utf-8',
+    JEV_FERRAMENTAS: ferramentas(),
+    JEV_IMAGEM3D_MODELOS: pastaImagem3dModelos(),
+    JEV_IMAGEM3D_CODIGO: pastaImagem3dCodigo()
+  });
+  const args = ['-u', arq, '--gerar', foto, destino];
+  if (resolucao) args.push('--resolucao', String(resolucao));
+  /* a geração pode demorar alguns minutos numa placa apertada — timeout
+     generoso, mas não infinito, para nunca travar o programa calado */
+  const r = spawnSync(py, args, { env: amb, encoding: 'utf8', timeout: 10 * 60 * 1000 });
+  const linha = String(r.stdout || '').trim().split(/\r?\n/).pop();
+  try { return JSON.parse(linha); }
+  catch (x) {
+    return { ok: false, motivo: 'a geração não respondeu: ' +
+             (String(r.stderr || '').trim().split(/\r?\n/).pop() || 'sem resposta') };
+  }
+}
+
+/* apaga só o código e os pesos da IA de imagem → 3D */
+function imagem3dLimpar() {
+  try {
+    fs.rmSync(pastaImagem3dModelos(), { recursive: true, force: true });
+    fs.rmSync(pastaImagem3dCodigo(), { recursive: true, force: true });
+    return true;
+  } catch (e) { return false; }
+}
+
 module.exports = {
   estado, instalar, limpar, criar, parar, faxina,
   acharPython, acharFfmpeg, pythonServe, esquecerFerramentas,
@@ -1332,5 +1551,6 @@ module.exports = {
   baixarMidias, midiasGuardadas, limparMidias, chaveDePasta, midiaPelaJanela,
   iaEstado, iaInstalar, iaLimpar, iaLocalPy,
   destravarPth, temPip, prepararPython, pastaDoPython,
+  imagem3dPy, imagem3dEstado, imagem3dInstalar, imagem3dGerar, imagem3dLimpar,
   raiz, fabricaPy, cortesPy, baixar
 };

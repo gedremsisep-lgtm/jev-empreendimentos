@@ -82,7 +82,6 @@ function paginaMudada() {
 
 (async () => {
   const navegador = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
     args: ['--no-sandbox']
   });
   const pagina = await (await navegador.newContext()).newPage();

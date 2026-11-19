@@ -97,6 +97,14 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   estAbrirPasta:  caminho          => ipcRenderer.invoke('est-abrir-pasta', caminho),
   estGuardarComo: (origem, nome)   => ipcRenderer.invoke('est-guardar-como', origem, nome),
   estFaxina:      guardar          => ipcRenderer.invoke('est-faxina', guardar),
+  /* ---- Imagem → 3D: uma foto entra, um .stl pronto para fatiar sai ----
+     Roda no seu PC (só NVIDIA), e só quando você manda instalar ou gerar. */
+  i3dEstado:        ()               => ipcRenderer.invoke('i3d-estado'),
+  i3dInstalar:      ()               => ipcRenderer.invoke('i3d-instalar'),
+  i3dEscolherFoto:  ()               => ipcRenderer.invoke('i3d-escolher-foto'),
+  i3dGerar:         dados            => ipcRenderer.invoke('i3d-gerar', dados),
+  i3dLimpar:        ()               => ipcRenderer.invoke('i3d-limpar'),
+  i3dAbrirPasta:    caminho          => ipcRenderer.invoke('i3d-abrir-pasta', caminho),
   /* ---- Produção de IA local: episódio do zero (ComfyUI + Wan2.2 + Piper) ---- */
   piaDisponivel:    ()               => ipcRenderer.invoke('pia-disponivel'),
   piaEstado:        ()               => ipcRenderer.invoke('pia-estado'),
@@ -127,9 +135,10 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
      Só leitura e dois comandos (mudar a etapa de uma tarefa, mandar uma
      rotina rodar agora). Nada aqui publica em lugar nenhum. */
   /* ---- sede dos agentes (jev-agentes): sobe o servidor e abre o painel ---- */
-  agEstado:        () => ipcRenderer.invoke('ag-estado'),
-  agAbrir:         () => ipcRenderer.invoke('ag-abrir'),
-  agEscolherPasta: () => ipcRenderer.invoke('ag-escolher-pasta'),
+  agEstado:          () => ipcRenderer.invoke('ag-estado'),
+  agAbrir:           () => ipcRenderer.invoke('ag-abrir'),
+  agEscolherPasta:   () => ipcRenderer.invoke('ag-escolher-pasta'),
+  agExportarRetrato: (unidades) => ipcRenderer.invoke('ag-exportar-retrato', unidades),
 
   ctlEstado:        ()              => ipcRenderer.invoke('ctl-estado'),
   ctlArquivo:       rel             => ipcRenderer.invoke('ctl-arquivo', rel),

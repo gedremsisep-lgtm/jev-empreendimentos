@@ -67,6 +67,25 @@ if (fs.existsSync(asar)) {
     const tam = fs.statSync(path.join(AQUI, 'app', 'index.html')).size;
     ok('o sistema dentro do pacote tem tamanho de sistema (> 1 MB)', tam > 1000000 ? true : tam);
   }
+
+  /* TODA peça de Python da fábrica tem de estar dentro do instalador.
+     A lista do atualizar.sh já foi escrita à mão, e o imagem3d.py (foto →
+     modelo 3D) quase saiu com o botão na tela e a peça de fora. Botão que
+     chama arquivo que não foi junto não é recurso: é armadilha. Aqui a
+     conferência é feita contra a pasta de origem, não contra uma lista —
+     peça nova entra na cobrança sozinha. */
+  const origem = path.join(AQUI, '..', 'fabrica');
+  if (fs.existsSync(origem)) {
+    const pecas = fs.readdirSync(origem)
+      .filter(f => f.endsWith('.py') && !f.startsWith('test_'));
+    ok('a fábrica de origem tem peças de Python', pecas.length > 0 ? true : 'nenhuma');
+    for (const p of pecas) {
+      ok(`"fabrica/${p}" foi junto no instalador`, dentro.includes('fabrica/' + p));
+    }
+    const testesDentro = dentro.filter(a => /^fabrica\/test_.*\.py$/.test(a));
+    ok('e nenhum teste da fábrica virou peso no programa da família',
+       testesDentro.length === 0 ? true : testesDentro.join(', '));
+  }
 }
 
 /* --- 3. o programa empacotado abre e continua aberto --------------------- */

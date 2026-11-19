@@ -765,6 +765,51 @@ ipcMain.handle('est-ia-limpar', () => {
   try { return estudio ? estudio.iaLimpar() : false; } catch (e) { return false; }
 });
 
+/* a IA de imagem → 3D do computador do dono: examinar, instalar, gerar e apagar */
+ipcMain.handle('i3d-estado', () => {
+  if (!estudio) return { pronto: false, pode_instalar: false, motivo: 'o estúdio não veio neste pacote' };
+  try { return estudio.imagem3dEstado(); }
+  catch (e) { return { pronto: false, pode_instalar: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('i3d-instalar', async () => {
+  if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote' };
+  try { return await estudio.imagem3dInstalar(contaEstudio); }
+  catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+/* a foto chega por diálogo nativo — mesma ideia do est-escolher, mas para
+   uma única imagem, e aceitando só os formatos que o modelo entende */
+ipcMain.handle('i3d-escolher-foto', async () => {
+  if (!janela) return { ok: false, motivo: 'janela indisponível' };
+  const r = await dialog.showOpenDialog(janela, {
+    title: 'Escolha a foto do objeto',
+    properties: ['openFile'],
+    filters: [{ name: 'Imagens', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+  });
+  if (r.canceled || !r.filePaths.length) return { ok: false, motivo: 'cancelado' };
+  return { ok: true, caminho: r.filePaths[0] };
+});
+ipcMain.handle('i3d-gerar', async (_e, dados) => {
+  if (!estudio) return { ok: false, motivo: 'o estúdio não veio neste pacote' };
+  try {
+    const foto = dados && dados.foto;
+    if (!foto) return { ok: false, motivo: 'nenhuma foto escolhida' };
+    const pastaSaida = require('path').join(estudio.raiz(), 'imagem3d');
+    require('fs').mkdirSync(pastaSaida, { recursive: true });
+    const nome = 'modelo-' + Date.now() + '.stl';
+    const destino = require('path').join(pastaSaida, nome);
+    contaEstudio({ tipo: 'passo', pct: 5, texto: 'gerando a malha 3D a partir da foto' });
+    const r = estudio.imagem3dGerar(foto, destino, dados && dados.resolucao);
+    contaEstudio({ tipo: 'passo', pct: 100, texto: r && r.ok ? 'modelo 3D gerado' : 'não consegui gerar o modelo' });
+    return r;
+  } catch (e) { return { ok: false, motivo: String((e && e.message) || e) }; }
+});
+ipcMain.handle('i3d-limpar', () => {
+  try { return estudio ? estudio.imagem3dLimpar() : false; } catch (e) { return false; }
+});
+ipcMain.handle('i3d-abrir-pasta', (_e, caminho) => {
+  try { shell.showItemInFolder(caminho); return true; } catch (e) { return false; }
+});
+
 ipcMain.handle('est-abrir-pasta', (_e, caminho) => {
   try { shell.showItemInFolder(caminho); return true; } catch (e) { return false; }
 });
@@ -848,6 +893,7 @@ ipcMain.handle('ag-escolher-pasta', async () => {
   if (r.canceled || !r.filePaths[0]) return { cancelado: true };
   return agentes.definirPasta(app, r.filePaths[0]);
 });
+ipcMain.handle('ag-exportar-retrato', (_e, unidades) => agentes ? agentes.exportarRetrato(app, unidades) : { ok: false, motivo: 'o módulo da sede não foi empacotado com o programa' });
 
 /* ---------------- Controle (Mission Control) ---------------- */
 /* Nenhum destes escreve em plataforma nenhuma: o mais longe que vão é
