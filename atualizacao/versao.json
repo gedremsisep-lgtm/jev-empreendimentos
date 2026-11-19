@@ -1,17 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.43",
-  "arquivo": "jev-1.0.43.html",
-  "data": "2026-11-04",
-  "sha256": "af2396ee4d385fe34e8779621d8b4334e57de9dc9b2623ac0b553786436fd67d",
-  "tamanho": 2263061,
+  "versao": "1.0.44",
+  "arquivo": "jev-1.0.44.html",
+  "data": "2026-11-19",
+  "sha256": "51bae48a4067cd18a9665de1543db3e3e4b56c880e19fc80bb1427387bfdfe41",
+  "tamanho": 2273584,
   "notas": [
-    "Produtos e Vendas: aba Afiliados, com todos os produtos filiados, a plataforma de cada um e envio das ofertas para o grupo do WhatsApp",
-    "Calculadora de Impressão 3D com modo rápido (metodologia calc3d.com.br) além do modo completo",
-    "Orçamentos completos ligados a clientes, com lista salva e fluxo de status (rascunho, emitido, aprovado, recusado)"
+    "Canais de Mídia: finalidade Marketing, para divulgar os produtos do próprio negócio",
+    "Impressão 3D: Imagem → 3D, que transforma uma foto em malha pronta para imprimir, rodando na sua máquina",
+    "Obras: enviar o retrato das obras para os agentes"
   ],
-  "substitui": "1.0.42",
+  "substitui": "1.0.43",
   "anteriores": [
+    {
+      "versao": "1.0.43",
+      "arquivo": "jev-1.0.43.html",
+      "sha256": "af2396ee4d385fe34e8779621d8b4334e57de9dc9b2623ac0b553786436fd67d",
+      "data": "2026-11-04"
+    },
     {
       "versao": "1.0.42",
       "arquivo": "jev-1.0.42.html",
@@ -40,12 +46,6 @@
       "versao": "1.0.38",
       "arquivo": "jev-1.0.38.html",
       "sha256": "f30399071dc360c00a33ea042c155d492987840641e6bcde2c3d6b52cb7c5aff",
-      "data": "2026-09-28"
-    },
-    {
-      "versao": "1.0.37",
-      "arquivo": "jev-1.0.37.html",
-      "sha256": "612ed9105b6128564b1acec3936a600e7f3bc44d8fc9c114f172312a86863418",
       "data": "2026-09-28"
     }
   ]
