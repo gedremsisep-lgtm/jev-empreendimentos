@@ -137,6 +137,7 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   /* ---- sede dos agentes (jev-agentes): sobe o servidor e abre o painel ---- */
   agEstado:          () => ipcRenderer.invoke('ag-estado'),
   agAbrir:           () => ipcRenderer.invoke('ag-abrir'),
+  ccGarantir:        () => ipcRenderer.invoke('cc-garantir'),
   agEscolherPasta:   () => ipcRenderer.invoke('ag-escolher-pasta'),
   agExportarRetrato: (unidades) => ipcRenderer.invoke('ag-exportar-retrato', unidades),
 

@@ -51,6 +51,15 @@ try {
   console.error('agentes indisponível:', e && e.message);
 }
 
+/* A fábrica de vídeos (Editor, Máquina de Vendas, Central de Canais) em
+   C:\JeV\fabrica-reels — mesma porta protegida. */
+let central = null;
+try {
+  central = require('./central');
+} catch (e) {
+  console.error('fábrica de vídeos indisponível:', e && e.message);
+}
+
 /* O garimpo pelo Kalodata — mesma porta protegida. */
 let kalodata = null;
 try {
@@ -884,6 +893,9 @@ ipcMain.handle('pia-abrir-pasta', (_e, caminho) => {
   try { shell.showItemInFolder(caminho); return true; } catch (e) { return false; }
 });
 
+/* ---------------- Fábrica de vídeos (porta 3140) ---------------- */
+ipcMain.handle('cc-garantir', () => central ? central.garantir() : { ok: false, motivo: 'o módulo da fábrica não foi empacotado com o programa' });
+
 /* ---------------- Sede dos agentes (jev-agentes) ---------------- */
 ipcMain.handle('ag-estado', () => agentes ? agentes.estado(app) : { rodando: false, motivo: 'o módulo da sede não foi empacotado com o programa' });
 ipcMain.handle('ag-abrir',  () => agentes ? agentes.abrir(app, BrowserWindow) : { ok: false, motivo: 'o módulo da sede não foi empacotado com o programa' });
@@ -963,6 +975,13 @@ app.whenReady().then(() => {
   criarJanela();
   ligarVigia();
   configurarAtualizacao();
+
+  /* agentes e fábrica de vídeos ligados assim que o JeV abre (se já estiverem
+     no ar pelo INICIAR-TUDO, nada acontece). Ficam ligados depois que o JeV fecha. */
+  if (!process.env.JEV_ROTEIRO) setTimeout(() => {
+    try { if (agentes) agentes.garantir(app).catch(() => {}); } catch (e) {}
+    try { if (central) central.garantir().catch(() => {}); } catch (e) {}
+  }, 6000);
 
   if (process.env.JEV_ROTEIRO) {
     try {
