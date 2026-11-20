@@ -341,6 +341,12 @@ fs.writeFileSync(EMBUTIDO,
     !/ic:\s*'ti-speakerphone'/.test(html) && !/['"]ti-scan['"]/.test(html) &&
     !/\bti\s+ti-radar-2\b/.test(html) ? true : 'algum voltou');
 
+    ok('1.0.45: as novidades vieram (selo e balão)', html.includes('function novBalao') && html.includes('jev_novidades_vistas') ? true : 'não veio');
+  ok('1.0.45: abas Editor, Máquina de Vendas e Central de Canais', html.includes("aba: 'edit'") && html.includes("aba: 'mvend'") && html.includes("aba: 'ccan'") ? true : 'não veio');
+  ok('1.0.45: cartão Novidades no Início', html.includes('Novidades no seu JeV') ? true : 'não veio');
+  ok('1.0.45: o Comandante fala com a Central', html.includes('O Comandante agora fala com a Central de Canais') ? true : 'não veio');
+  ok('1.0.45: a fábrica desligada se explica', html.includes('O programa da fábrica está desligado.') ? true : 'não veio');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();
