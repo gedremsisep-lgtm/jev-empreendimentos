@@ -1,17 +1,24 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.44",
-  "arquivo": "jev-1.0.44.html",
-  "data": "2026-11-19",
-  "sha256": "51bae48a4067cd18a9665de1543db3e3e4b56c880e19fc80bb1427387bfdfe41",
-  "tamanho": 2273584,
+  "versao": "1.0.45",
+  "arquivo": "jev-1.0.45.html",
+  "data": "2026-11-20",
+  "sha256": "921f1664321cb0f4ec186151d36539cd0039fa2c768265104eca0344a45eb4eb",
+  "tamanho": 2287253,
   "notas": [
-    "Canais de Mídia: finalidade Marketing, para divulgar os produtos do próprio negócio",
-    "Impressão 3D: Imagem → 3D, que transforma uma foto em malha pronta para imprimir, rodando na sua máquina",
-    "Obras: enviar o retrato das obras para os agentes"
+    "Novo: Editor de Vídeo — solte o vídeo gravado e ele corta silêncios, ãh e frases repetidas, põe legenda, música e gráficos, e mostra a estrutura antes de exportar.",
+    "Novo: Máquina de Vendas e Central de Canais dentro do menu Mídia, com selo NOVO e um balão explicando cada uma.",
+    "Novo: cartão Novidades no Início, e o Comandante agora manda pedidos para a Central de Canais.",
+    "O aplicativo liga sozinho a sede dos agentes e a fábrica de vídeos quando abre."
   ],
-  "substitui": "1.0.43",
+  "substitui": "1.0.44",
   "anteriores": [
+    {
+      "versao": "1.0.44",
+      "arquivo": "jev-1.0.44.html",
+      "sha256": "51bae48a4067cd18a9665de1543db3e3e4b56c880e19fc80bb1427387bfdfe41",
+      "data": "2026-11-19"
+    },
     {
       "versao": "1.0.43",
       "arquivo": "jev-1.0.43.html",
@@ -40,12 +47,6 @@
       "versao": "1.0.39",
       "arquivo": "jev-1.0.39.html",
       "sha256": "06ad165e4e8193c57da4aab1e4d0681bd4ad2efe5f39fce88fd51b5d66d0699e",
-      "data": "2026-09-28"
-    },
-    {
-      "versao": "1.0.38",
-      "arquivo": "jev-1.0.38.html",
-      "sha256": "f30399071dc360c00a33ea042c155d492987840641e6bcde2c3d6b52cb7c5aff",
       "data": "2026-09-28"
     }
   ]
