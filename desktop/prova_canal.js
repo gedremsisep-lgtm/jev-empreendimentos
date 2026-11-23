@@ -347,6 +347,17 @@ fs.writeFileSync(EMBUTIDO,
   ok('1.0.45: o Comandante fala com a Central', html.includes('O Comandante agora fala com a Central de Canais') ? true : 'não veio');
   ok('1.0.45: a fábrica desligada se explica', html.includes('O programa da fábrica está desligado.') ? true : 'não veio');
 
+  /* 1.0.46 — Redes Sociais e o módulo Software */
+  ok('1.0.46: a tela virou Redes Sociais', html.includes('<h1>Redes Sociais</h1>') ? true : 'não veio');
+  ok('1.0.46: cada rede com as suas ações', html.includes('const REDE_ACOES') && html.includes("'X (Twitter)': [") &&
+    html.includes("n:'Publicar no perfil/página'") && html.includes("n:'Criar Pin'") ? true : 'não veio');
+  ok('1.0.46: o cartão Software ao lado do Escritório', html.includes('function softCardHub') &&
+    html.includes("[...UNIDADES, ESCRITORIO, SOFTWARE]") && html.includes('soft:softRender') ? true : 'não veio');
+  ok('1.0.46: a ficha de controle de cada sistema', html.includes('function softDetalhe') && html.includes('function softVenc') &&
+    html.includes('function softVerificarUm') && html.includes('function softAbaCons') ? true : 'não veio');
+  ok('1.0.46: os seis sistemas de fábrica', ['Funchal','SSCONPAV','Sete Engenharia','RR Barros','Santa Cruz Engenharia','Fenix Engenharia']
+    .every(n => html.includes("nome:'" + n + "'")) ? true : 'faltou algum');
+
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
   const fim = atualizacao.estado();
