@@ -246,7 +246,7 @@ async function relMidia(){
   const canais = await dbGetAll('canais'), videos = await dbGetAll('videos');
   if(!canais.length){ toast('Nenhum canal cadastrado.','aw'); return; }
   await finLoad();
-  let h = prnHead('Desempenho dos Canais de Vídeo','Posição em '+dbr(hoje()));
+  let h = prnHead('Desempenho das Redes Sociais','Posição em '+dbr(hoje()));
   h += `<table><thead><tr><th>Canal</th><th>Plataforma</th><th>Inscritos</th><th>Vídeos</th><th>Views</th>
     <th>Receita</th><th>Custo</th><th>Resultado</th><th>RPM</th></tr></thead><tbody>`;
   canais.forEach(c=>{

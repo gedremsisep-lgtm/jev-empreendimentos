@@ -19,8 +19,8 @@ const UNIDADES = [
    cor:'#B0842B', bg:'#FBF2DF', desc:'Catálogo, estoque e pedidos', tabs:[]},
   {id:'info', pg:'info', nome:'Infoprodutos', curto:'Infoprodutos', ic:'ti-device-laptop',
    cor:'#7B3FA0', bg:'#F2EAF9', desc:'Cursos e materiais digitais', tabs:[]},
-  {id:'midia', pg:'midia', nome:'Canais de Vídeo', curto:'Mídia', ic:'ti-brand-youtube',
-   cor:'#C0392B', bg:'#FBEAE8', desc:'Plataformas digitais e monetização',
+  {id:'midia', pg:'midia', nome:'Redes Sociais', curto:'Mídia', ic:'ti-share',
+   cor:'#C0392B', bg:'#FBEAE8', desc:'Perfis, canais, publicações e monetização',
    tabs:[['midia','Canais','ti-brand-youtube'],['galeria','Midiateca','ti-photo-video']]},
   {id:'imp3d', pg:'i3pn', nome:'Impressão 3D', curto:'Impressão 3D', ic:'ti-3d-cube-sphere',
    cor:'#16253B', bg:'#E7EBF0', desc:'Orçamento, produção e custos de impressão 3D',
@@ -114,20 +114,28 @@ const PLATAFORMAS = ['Venda direta','WhatsApp','Instagram','Mercado Livre','Shop
                      'Eduzz','Monetizze','Braip','Site próprio','Feira / presencial','Outro'];
 const ST_VENDA = {'Pedido':'s-nt','Confirmada':'s-pd','Entregue':'s-ok','Paga':'s-br','Cancelada':'s-bl','Reembolsada':'s-wn'};
 
-/* ---------------- Canais de vídeo ---------------- */
+/* ---------------- Redes sociais ----------------
+   Cada rede tem o seu jeito de contar seguidor ("seg") e as suas ações —
+   as ações moram em REDE_ACOES, no 31_postar.js. "Outra" fica sempre por
+   último: é o que platInfo devolve quando não reconhece o nome.          */
 const PLATS_VIDEO = [
-  {v:'YouTube',   ic:'ti-brand-youtube',   cor:'#C0392B'},
-  {v:'TikTok',    ic:'ti-brand-tiktok',    cor:'#111827'},
-  {v:'Instagram', ic:'ti-brand-instagram', cor:'#B03A83'},
-  {v:'Kwai',      ic:'ti-video',           cor:'#D97706'},
-  {v:'Facebook',  ic:'ti-brand-facebook',  cor:'#1F5FA8'},
-  {v:'Outra',     ic:'ti-device-tv',       cor:'#5B6260'}
+  {v:'YouTube',        ic:'ti-brand-youtube',   cor:'#C0392B', seg:'Inscritos'},
+  {v:'YouTube Shorts', ic:'ti-brand-youtube',   cor:'#E5484D', seg:'Inscritos'},
+  {v:'TikTok',         ic:'ti-brand-tiktok',    cor:'#111827', seg:'Seguidores'},
+  {v:'Instagram',      ic:'ti-brand-instagram', cor:'#B03A83', seg:'Seguidores'},
+  {v:'Facebook',       ic:'ti-brand-facebook',  cor:'#1F5FA8', seg:'Seguidores da página'},
+  {v:'Kwai',           ic:'ti-video',           cor:'#D97706', seg:'Seguidores'},
+  {v:'Pinterest',      ic:'ti-brand-pinterest', cor:'#BD081C', seg:'Seguidores'},
+  {v:'WhatsApp',       ic:'ti-brand-whatsapp',  cor:'#1F8A4C', seg:'Seguidores do canal'},
+  {v:'X (Twitter)',    ic:'ti-brand-x',         cor:'#0F1419', seg:'Seguidores'},
+  {v:'LinkedIn',       ic:'ti-brand-linkedin',  cor:'#0A66C2', seg:'Seguidores / conexões'},
+  {v:'Outra',          ic:'ti-device-tv',       cor:'#5B6260', seg:'Seguidores'}
 ];
 const ST_VIDEO = {'Ideia':'s-nt','Roteiro':'s-pu','Gravado':'s-wn','Editado':'s-pd','Publicado':'s-ok','Arquivado':'s-bl'};
 const FONTES_REC = ['Monetização da plataforma','Publicidade / publipost','Afiliados','Patrocínio',
                     'Venda de infoproduto','Doações','Outra'];
 
-function platInfo(v){ return PLATS_VIDEO.find(p=>p.v===v)||PLATS_VIDEO[5]; }
+function platInfo(v){ return PLATS_VIDEO.find(p=>p.v===v)||PLATS_VIDEO[PLATS_VIDEO.length-1]; }
 
 /* ---------------- Impressão 3D ---------------- */
 const TIPOS_TEC_3D = ['FDM (filamento)','Resina / SLA','Resina / DLP','SLS','Outra'];

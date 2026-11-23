@@ -1,5 +1,5 @@
 /* =========================================================================
-   NEGÓCIO: CANAIS E PLATAFORMAS DIGITAIS DE VÍDEO
+   NEGÓCIO: REDES SOCIAIS (canais, perfis e páginas)
    ========================================================================= */
 let MID_TAB = 'canais';
 function midStab(t){ MID_TAB = t; midiaRender(); }
@@ -46,11 +46,11 @@ async function midiaRender(){
      dois tem o que fazer. E a linha de subtítulo repetia, em outras palavras,
      o nome que já está escrito logo acima dela. */
   const grupoAgora = menuGrupoDe(MID_TAB).id;
-  let h = `<div class="ph" style="margin-bottom:10px"><div class="ic" style="background:#FBEAE8;color:#C0392B"><i class="ti ti-brand-youtube"></i></div>
-    <div><h1>Canais de Vídeo</h1>${grupoAgora==='cadastros'?'<p>Plataformas digitais, produção de conteúdo e monetização</p>':''}</div>
+  let h = `<div class="ph" style="margin-bottom:10px"><div class="ic" style="background:#FBEAE8;color:#C0392B"><i class="ti ti-share"></i></div>
+    <div><h1>Redes Sociais</h1>${grupoAgora==='cadastros'?'<p>YouTube, TikTok, Instagram, Facebook, Kwai, Pinterest, WhatsApp, X e LinkedIn — cada rede com as suas ações</p>':''}</div>
     <div class="sp"></div>
     ${grupoAgora==='resultado'?'<button class="btn gh" onclick="midReceita()"><i class="ti ti-cash"></i>Lançar monetização</button>':''}
-    ${grupoAgora==='cadastros'?'<button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Novo canal</button>':''}</div>`;
+    ${grupoAgora==='cadastros'?'<button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Nova rede social</button>':''}</div>`;
 
   /* OS SEIS QUADRADOS SÓ EM "RESULTADOS".
 
@@ -101,10 +101,10 @@ async function midTabCanais(canais,videos){
   const body = document.getElementById('mid-body');
   if(!canais.length){
     body.innerHTML = `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-device-tv-off"></i>
-      <b>Nenhum canal cadastrado</b>Cadastre seus canais do YouTube, TikTok, Instagram ou Kwai
-      para acompanhar inscritos, visualizações e quanto cada um traz de receita.
+      <b>Nenhuma rede cadastrada</b>Cadastre seus perfis e canais — YouTube, TikTok, Instagram, Facebook,
+      Kwai, Pinterest, WhatsApp, X ou LinkedIn. Cada um ganha os botões próprios da sua rede.
       <div class="brow" style="justify-content:center;margin-top:14px">
-      <button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar canal</button></div></div></div></div>`;
+      <button class="btn rd" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar rede social</button></div></div></div></div>`;
     return;
   }
   let h = `<div class="mgrid">`;
@@ -115,6 +115,8 @@ async function midTabCanais(canais,videos){
     const views = pub.reduce((s,v)=>s+num(v.views),0);
     const rec = finDoRef('canal',c.id,'receita').reduce((s,l)=>s+num(l.valor),0);
     const des = finDoRef('canal',c.id,'despesa').reduce((s,l)=>s+num(l.valor),0);
+    const pa = redePrincipal(c);
+    const extras = redeAcoes(c).filter(x=>x!==pa);
     h += `<div class="ocard" onclick="canalDetalhe(${c.id})">
       <div class="oh"><div class="oi" style="background:${pi.cor}1A;color:${pi.cor}"><i class="ti ${pi.ic}"></i></div>
         <div style="flex:1;min-width:0"><b style="display:block;font-size:13.5px">${esc(c.nome)}</b>
@@ -122,8 +124,8 @@ async function midTabCanais(canais,videos){
             ${esc(midFinalidade(c).n)} · ${esc(c.plataforma)}${c.nicho?' · '+esc(c.nicho):''}</span></div>
         ${c.monetizado?'<span class="st s-ok">Monetizado</span>':'<span class="st s-nt">Sem monetização</span>'}</div>
       <div class="ob">
-        <div class="row"><span>Inscritos</span><b>${num(c.inscritos).toLocaleString('pt-BR')}</b></div>
-        <div class="row"><span>Vídeos publicados</span><b>${pub.length}</b></div>
+        <div class="row"><span>${esc(pi.seg||'Seguidores')}</span><b>${num(c.inscritos).toLocaleString('pt-BR')}</b></div>
+        <div class="row"><span>Publicações</span><b>${pub.length}</b></div>
         <div class="row"><span>Visualizações</span><b>${views.toLocaleString('pt-BR')}</b></div>
         <div class="row"><span>Receita acumulada</span><b style="color:var(--green)">${moedaK(rec)}</b></div>
         <div class="row"><span>Custo acumulado</span><b style="color:var(--red)">${moedaK(des)}</b></div>
@@ -139,8 +141,11 @@ async function midTabCanais(canais,videos){
             ? `<button class="btn sm gn" style="flex:1" onclick="canalIrAfiliado(${c.id}, event)">
                  <i class="ti ti-pick"></i>Garimpar produto</button>`
             : ''}
-          <button class="btn sm gn blk" style="flex:1" onclick="postAbrir(${c.id}, event)">
-            <i class="ti ti-send"></i>Postar</button></div>
+          <button class="btn sm blk" style="flex:1;background:${pi.cor};border-color:${pi.cor};color:#fff"
+            onclick="postAbrir(${c.id}, event, '${pa.k}')"><i class="ti ${pa.ic}"></i>${esc(pa.n)}</button></div>
+        ${extras.length?`<div class="no-print" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+          ${extras.map(x=>`<button class="btn xs gh" style="flex:1;white-space:nowrap" title="${esc(x.dica||'')}"
+            onclick="postAbrir(${c.id}, event, '${x.k}')"><i class="ti ${x.ic}"></i>${esc(x.n)}</button>`).join('')}</div>`:''}
       </div></div>`;
   });
   h += `</div>`;
@@ -161,9 +166,9 @@ let AFIL_CANAL = null;
 async function canalForm(id){
   const c = id ? await dbGet('canais',id) : null;
   const b = `<div class="fr3">
-      <div class="fg" style="grid-column:span 2"><label>Nome do canal <span class="rq">*</span></label>
+      <div class="fg" style="grid-column:span 2"><label>Nome do perfil / canal <span class="rq">*</span></label>
         <input id="cn-nome" value="${esc(c?c.nome:'')}" placeholder="Ex.: JeV Construção na Prática"></div>
-      <div class="fg"><label>Plataforma</label><select id="cn-plat">
+      <div class="fg"><label>Rede social</label><select id="cn-plat">
         ${PLATS_VIDEO.map(p=>`<option ${c&&c.plataforma===p.v?'selected':''}>${p.v}</option>`).join('')}</select></div></div>
     <div class="fg"><label>Para que serve este canal</label>
       <div class="chips" id="cn-fins">
@@ -173,7 +178,7 @@ async function canalForm(id){
       <div class="hint" id="cn-finh">${esc(midFinalidade(c).desc)}</div></div>
     <div class="fr3">
       <div class="fg"><label>Nicho / tema</label><input id="cn-nicho" value="${esc(c?c.nicho:'')}" placeholder="Ex.: obras, vida na chácara"></div>
-      <div class="fg"><label>Inscritos / seguidores</label><input id="cn-insc" type="number" value="${c?c.inscritos:0}"></div>
+      <div class="fg"><label>Seguidores / inscritos</label><input id="cn-insc" type="number" value="${c?c.inscritos:0}"></div>
       <div class="fg"><label>Início do canal</label><input id="cn-ini" type="date" value="${c?c.dtInicio:hoje()}"></div></div>
     <div class="fr3">
       <div class="fg" style="grid-column:span 2"><label>Endereço do canal</label><input id="cn-url" value="${esc(c?c.url:'')}" placeholder="https://"></div>
@@ -185,14 +190,14 @@ async function canalForm(id){
         quando a plataforma muda de endereço ou quando você administra mais de uma conta.</div></div>
     <div class="fg"><label>Observações (estratégia, frequência de postagem, parcerias)</label><textarea id="cn-obs">${esc(c?c.obs:'')}</textarea></div>
     <div id="cn-err"></div>`;
-  modal(id?'Editar canal':'Novo canal','ti-device-tv',b,
+  modal(id?'Editar rede social':'Nova rede social','ti-share',b,
     `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
      ${id?`<button class="btn rd" onclick="canalDel(${id})"><i class="ti ti-trash"></i>Excluir</button>`:''}
      <button class="btn gn" onclick="canalSave(${id||'null'})"><i class="ti ti-device-floppy"></i>Salvar</button>`);
 }
 async function canalSave(id){
   const nome = val('cn-nome');
-  if(!nome){ document.getElementById('cn-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o nome do canal.</div>`; return; }
+  if(!nome){ document.getElementById('cn-err').innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i>Informe o nome do perfil ou canal.</div>`; return; }
   const d = {nome, plataforma:val('cn-plat'), nicho:val('cn-nicho'), inscritos:num(val('cn-insc')),
              dtInicio:val('cn-ini'), url:val('cn-url'), urlPostar:val('cn-urlp'),
              finalidade:val('cn-fin')||'proprio',
@@ -226,7 +231,7 @@ async function canalDetalhe(id){
   const des = mov.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+num(l.valor),0);
   const views = vs.filter(v=>v.status==='Publicado').reduce((s,v)=>s+num(v.views),0);
   const b = `<div class="kg" style="margin-bottom:14px">
-      <div class="kc pu"><div class="lb">Inscritos</div><div class="vl">${num(c.inscritos).toLocaleString('pt-BR')}</div></div>
+      <div class="kc pu"><div class="lb">${esc(platInfo(c.plataforma).seg||'Seguidores')}</div><div class="vl">${num(c.inscritos).toLocaleString('pt-BR')}</div></div>
       <div class="kc bl"><div class="lb">Visualizações</div><div class="vl">${views.toLocaleString('pt-BR')}</div></div>
       <div class="kc gn"><div class="lb">Receita</div><div class="vl">${moedaK(rec)}</div></div>
       <div class="kc rd"><div class="lb">Custo</div><div class="vl">${moedaK(des)}</div></div></div>
@@ -245,7 +250,7 @@ async function canalDetalhe(id){
       </tbody></table></div></div>`;
   modal(c.nome+' — '+c.plataforma,'ti-device-tv',b,
     `<button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>
-     <button class="btn gn" onclick="postAbrir(${id})"><i class="ti ti-send"></i>Postar</button>
+     <button class="btn gn" onclick="postAbrir(${id}, null, '${redePrincipal(c).k}')"><i class="ti ${redePrincipal(c).ic}"></i>${esc(redePrincipal(c).n)}</button>
      <button class="btn rd" onclick="videoForm(null,${id})"><i class="ti ti-video-plus"></i>Novo vídeo</button>
      <button class="btn gn" onclick="midReceita(${id})"><i class="ti ti-cash"></i>Lançar receita</button>
      <button class="btn" onclick="canalForm(${id})"><i class="ti ti-edit"></i>Editar</button>`,'lg');
@@ -265,7 +270,7 @@ async function midTabVideos(canais,videos){
       `<div class="tt" style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <i class="ti ti-info-circle"></i>Você ainda não cadastrou canal. Dá para garimpar e montar
       o vídeo assim mesmo — o canal só faz falta na hora de publicar.
-      <button class="btn xs gh" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar canal</button></div>`;
+      <button class="btn xs gh" onclick="canalForm()"><i class="ti ti-plus"></i>Cadastrar rede social</button></div>`;
     return;
   }
   const fases = ['Ideia','Roteiro','Gravado','Editado','Publicado'];
