@@ -133,15 +133,19 @@ const ESTADO = {
       quantos: cards.length,
       totalUnidades: UNIDADES.length,
       ultimo: cards.indexOf(meu) === UNIDADES.length,
-      softUltimo: /Software/.test(cards[cards.length-1].querySelector('h3').textContent),
+      softUltimo: /Software/.test(cards[cards.length-3].querySelector('h3').textContent),
+      dtUltimo: /Day-Trade/.test(cards[cards.length-2].querySelector('h3').textContent),
+      metaUltimo: /Meta R\$ 50 mil/.test(cards[cards.length-1].querySelector('h3').textContent),
       leva: (meu.getAttribute('onclick')||''),
       texto: meu.innerText,
     };
   });
-  /* o Software entrou ao lado do Escritório: são os negócios + Escritório + Software */
-  t('o card do Escritório está na fileira', card.quantos === card.totalUnidades + 2, card.quantos + ' cards');
+  /* ao lado do Escritório: Software, Day-Trade e Meta R$ 50 mil — negócios + 4 cards */
+  t('o card do Escritório está na fileira', card.quantos === card.totalUnidades + 4, card.quantos + ' cards');
   t('vem logo depois de todos os negócios', card.ultimo);
-  t('e o Software fecha a fileira, ao lado dele', card.softUltimo);
+  t('o Software vem ao lado dele', card.softUltimo);
+  t('depois vem o Day-Trade', card.dtUltimo);
+  t('e a Meta R$ 50 mil fecha a fileira', card.metaUltimo);
   t('e clicar nele abre o Controle', /go\('ctl'\)/.test(card.leva), card.leva);
   t('não fala em receita, despesa nem resultado do mês',
     !/Receita do mês|Despesa do mês|Resultado do mês/.test(card.texto));

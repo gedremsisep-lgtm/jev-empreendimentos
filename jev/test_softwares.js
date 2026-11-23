@@ -81,7 +81,7 @@ const t = (nome, cond, extra) => {
     go('hub'); await new Promise(r => setTimeout(r, 700));
     return [...document.querySelectorAll('#hub-root .ugrid .ucard h3')].map(e => e.textContent);
   });
-  t('o card Software vem logo depois do Escritório', hub[hub.length-1] === 'Software' && hub[hub.length-2] === 'Escritório', hub.join(', '));
+  t('o card Software vem logo depois do Escritório', hub.indexOf('Software') === hub.indexOf('Escritório') + 1, hub.join(', '));
 
   const fabrica = await page.evaluate(() => softLista().map(s => s.nome));
   t('vem com os seis sistemas de fábrica', ['Funchal','SSCONPAV','Sete Engenharia','RR Barros','Santa Cruz Engenharia','Fenix Engenharia']
