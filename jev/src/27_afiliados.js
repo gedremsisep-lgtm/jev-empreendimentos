@@ -317,12 +317,14 @@ async function progSave(id){
              beneficio:val('pg-benef'), ativo:document.getElementById('pg-ativo').checked};
   if(id){ const o = await dbGet('programas',id); await dbPut('programas',{...o,...d}); }
   else await dbAdd('programas',d);
-  closeModal('mk-form'); toast('Produto salvo.'); midiaRender();
+  closeModal('mk-form'); toast('Produto salvo.'); progDepois();
 }
 function progDel(id){
   confirmar('Excluir produto','O produto sai da lista. Os vídeos já criados não são afetados.',
-    async()=>{ await dbDel('programas',id); toast('Removido.','aw'); midiaRender(); });
+    async()=>{ await dbDel('programas',id); toast('Removido.','aw'); progDepois(); });
 }
+/* a ficha também é editada pela Vitrine (Produtos): volta para a tela de onde veio */
+function progDepois(){ if(document.getElementById('pg-produtos')?.classList.contains('on')) produtosRender(); else midiaRender(); }
 async function progCopiar(id){
   const p = await dbGet('programas',id);
   if(!p || !p.url) return;

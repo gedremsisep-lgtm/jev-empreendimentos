@@ -61,7 +61,9 @@ async function prodRender(un){
     <button class="tab ${tab==='cat'?'on':''}" onclick="prdStab('${un}','cat')"><i class="ti ti-list"></i>${ehInfo(un)?'Infoprodutos':'Catálogo e estoque'}</button>
     <button class="tab ${tab==='ven'?'on':''}" onclick="prdStab('${un}','ven')"><i class="ti ti-shopping-cart"></i>Vendas</button>
     <button class="tab ${tab==='ana'?'on':''}" onclick="prdStab('${un}','ana')"><i class="ti ti-chart-bar"></i>Desempenho</button>
-    ${!ehInfo(un)?`<button class="tab ${tab==='afil'?'on':''}" onclick="prdStab('${un}','afil')"><i class="ti ti-brand-whatsapp"></i>Afiliados</button>`:''}
+    ${!ehInfo(un)?`<button class="tab ${tab==='vit'?'on':''}" onclick="prdStab('${un}','vit')"><i class="ti ti-building-store"></i>Vitrine de afiliados</button>`:''}
+    ${!ehInfo(un)?`<button class="tab ${tab==='afil'?'on':''}" onclick="prdStab('${un}','afil')"><i class="ti ti-brand-whatsapp"></i>Grupos de ofertas</button>`:''}
+    ${ehInfo(un)?`<button class="tab ${tab==='lojas'?'on':''}" onclick="prdStab('${un}','lojas')"><i class="ti ti-sparkles"></i>Lojas e anúncios</button>`:''}
   </div><div id="prd-body-${un}"></div>`;
   root.innerHTML = h;
 
@@ -69,6 +71,8 @@ async function prodRender(un){
   if(tab==='ven') await prodTabVendas(un,prods,vendas);
   if(tab==='ana') await prodTabAnalise(un,prods,vendas);
   if(tab==='afil' && !ehInfo(un)) await prodTabAfiliados(un);
+  if(tab==='vit' && !ehInfo(un)) await prodTabVitrine(un);
+  if(tab==='lojas' && ehInfo(un)) await infoTabLojas(un,prods);
 }
 
 async function prodTabCatalogo(un,prods,vendas){

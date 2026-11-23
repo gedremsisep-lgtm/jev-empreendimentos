@@ -48,12 +48,14 @@ async function chacaraRender(){
     <button class="tab ${CHA_TAB==='lotes'?'on':''}" onclick="chaStab('lotes')"><i class="ti ti-map-2"></i>Lotes e áreas</button>
     <button class="tab ${CHA_TAB==='ciclos'?'on':''}" onclick="chaStab('ciclos')"><i class="ti ti-seeding"></i>Ciclos de produção</button>
     <button class="tab ${CHA_TAB==='res'?'on':''}" onclick="chaStab('res')"><i class="ti ti-chart-bar"></i>Resultado por ciclo</button>
+    <button class="tab ${CHA_TAB==='plano'?'on':''}" onclick="chaStab('plano')"><i class="ti ti-calculator"></i>Plano 0,5 ha</button>
   </div><div id="cha-body"></div>`;
   root.innerHTML = h;
 
   if(CHA_TAB==='lotes')  await chaTabLotes(lotes,ciclos);
   if(CHA_TAB==='ciclos') await chaTabCiclos(lotes,ciclos);
   if(CHA_TAB==='res')    await chaTabResultado(lotes,ciclos);
+  if(CHA_TAB==='plano')  await chaTabPlano();
 }
 
 async function chaTabLotes(lotes,ciclos){
