@@ -1,18 +1,23 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.45",
-  "arquivo": "jev-1.0.45.html",
-  "data": "2026-11-20",
-  "sha256": "921f1664321cb0f4ec186151d36539cd0039fa2c768265104eca0344a45eb4eb",
-  "tamanho": 2287253,
+  "versao": "1.0.46",
+  "arquivo": "jev-1.0.46.html",
+  "data": "2026-11-23",
+  "sha256": "2f9563f0f4c0265fc652b2da9dd2719f42a9cdf8e38202e883e20220cbee07ff",
+  "tamanho": 2346627,
   "notas": [
-    "Novo: Editor de Vídeo — solte o vídeo gravado e ele corta silêncios, ãh e frases repetidas, põe legenda, música e gráficos, e mostra a estrutura antes de exportar.",
-    "Novo: Máquina de Vendas e Central de Canais dentro do menu Mídia, com selo NOVO e um balão explicando cada uma.",
-    "Novo: cartão Novidades no Início, e o Comandante agora manda pedidos para a Central de Canais.",
-    "O aplicativo liga sozinho a sede dos agentes e a fábrica de vídeos quando abre."
+    "Novo: Redes Sociais no lugar de Canais de Vídeo — YouTube, Shorts, TikTok, Instagram, Facebook, Kwai, Pinterest, WhatsApp, X e LinkedIn, cada rede com o seu botão principal e as suas ações próprias.",
+    "Novo: módulo Software ao lado do Escritório, para gerir os sistemas Funchal, SSCONPAV, Sete, RR Barros, Santa Cruz e Fenix.",
+    "Cada sistema tem ficha de controle: pagamentos e dias para o vencimento, última atualização com verificação da versão no ar, consumo do Supabase e resumo de atividades."
   ],
-  "substitui": "1.0.44",
+  "substitui": "1.0.45",
   "anteriores": [
+    {
+      "versao": "1.0.45",
+      "arquivo": "jev-1.0.45.html",
+      "sha256": "921f1664321cb0f4ec186151d36539cd0039fa2c768265104eca0344a45eb4eb",
+      "data": "2026-11-20"
+    },
     {
       "versao": "1.0.44",
       "arquivo": "jev-1.0.44.html",
@@ -42,12 +47,6 @@
       "arquivo": "jev-1.0.40.html",
       "sha256": "81a26b7cb33e8807406eea4df28ddf6d8a7fec137c52b390d21961919cfe161f",
       "data": "2026-10-27"
-    },
-    {
-      "versao": "1.0.39",
-      "arquivo": "jev-1.0.39.html",
-      "sha256": "06ad165e4e8193c57da4aab1e4d0681bd4ad2efe5f39fce88fd51b5d66d0699e",
-      "data": "2026-09-28"
     }
   ]
 }
