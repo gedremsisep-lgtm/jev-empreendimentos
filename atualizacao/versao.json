@@ -1,17 +1,26 @@
 {
   "sistema": "JeV Empreendimentos",
-  "versao": "1.0.46",
-  "arquivo": "jev-1.0.46.html",
+  "versao": "1.0.47",
+  "arquivo": "jev-1.0.47.html",
   "data": "2026-11-23",
-  "sha256": "2f9563f0f4c0265fc652b2da9dd2719f42a9cdf8e38202e883e20220cbee07ff",
-  "tamanho": 2346627,
+  "sha256": "6e49e37ef584a0e863f3e4453c6eaff6bb084648ad826f0a8c9b3ad2f7029f8a",
+  "tamanho": 2456178,
   "notas": [
-    "Novo: Redes Sociais no lugar de Canais de Vídeo — YouTube, Shorts, TikTok, Instagram, Facebook, Kwai, Pinterest, WhatsApp, X e LinkedIn, cada rede com o seu botão principal e as suas ações próprias.",
-    "Novo: módulo Software ao lado do Escritório, para gerir os sistemas Funchal, SSCONPAV, Sete, RR Barros, Santa Cruz e Fenix.",
-    "Cada sistema tem ficha de controle: pagamentos e dias para o vencimento, última atualização com verificação da versão no ar, consumo do Supabase e resumo de atividades."
+    "Meta R$ 50 mil: placar por frente e comando único da sede",
+    "Day-Trade: bolsa e cripto com laboratório e simulação",
+    "Produtos: vitrine de afiliados com relatório CSV",
+    "Chácara: plano de meio hectare",
+    "Infoprodutos: lojas e gerador de anúncios",
+    "Veículos: plano de frota com gatilhos"
   ],
-  "substitui": "1.0.45",
+  "substitui": "1.0.46",
   "anteriores": [
+    {
+      "versao": "1.0.46",
+      "arquivo": "jev-1.0.46.html",
+      "sha256": "2f9563f0f4c0265fc652b2da9dd2719f42a9cdf8e38202e883e20220cbee07ff",
+      "data": "2026-11-23"
+    },
     {
       "versao": "1.0.45",
       "arquivo": "jev-1.0.45.html",
@@ -41,12 +50,6 @@
       "arquivo": "jev-1.0.41.html",
       "sha256": "759ea4e83d1db209fd8e572229c6a89543ee3b879ac69bc34ff20fc5251bc065",
       "data": "2026-11-03"
-    },
-    {
-      "versao": "1.0.40",
-      "arquivo": "jev-1.0.40.html",
-      "sha256": "81a26b7cb33e8807406eea4df28ddf6d8a7fec137c52b390d21961919cfe161f",
-      "data": "2026-10-27"
     }
   ]
 }
