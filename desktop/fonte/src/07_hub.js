@@ -93,6 +93,8 @@ async function hubRender(){
   if(PERMS[CU].includes(ESCRITORIO.pg)) h += escrCard();
   /* ao lado do Escritório, o Software — também fora de UNIDADES */
   if(PERMS[CU].includes(SOFTWARE.pg)) h += softCardHub();
+  if(PERMS[CU].includes(DAYTRADE.pg)) h += dtCardHub();
+  if(PERMS[CU].includes(META.pg)) h += metaCardHub();
   h += `</div>`;
 
   // ------- atalhos -------
@@ -140,6 +142,7 @@ async function hubRender(){
      com prazo de 2,5 segundos. Esperar aqui seria trocar o painel da família
      por um relógio girando toda vez que o Controle estivesse desligado. */
   if(PERMS[CU].includes(ESCRITORIO.pg)) escrPreencher();
+  if(PERMS[CU].includes(DAYTRADE.pg)) dtPreencherHub();
 }
 
 /* indicadores curtos por unidade, mostrados no card do hub */

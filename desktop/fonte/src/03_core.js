@@ -2,7 +2,7 @@
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.46';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.47';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [
@@ -79,7 +79,7 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','soft','cel','nuvem','cfg','ver'],
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','soft','dt','meta','cel','nuvem','cfg','ver'],
   o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','soft','cel','nuvem','ver'],
   c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
@@ -100,7 +100,7 @@ function go(pg){
   document.getElementById('bn-'+pg)?.classList.add('on');
   renderCtxBar(u);
   window.scrollTo(0,0);
-  const R = {vigias:vigiasRender, ctl:controleRender, soft:softRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
+  const R = {vigias:vigiasRender, ctl:controleRender, soft:softRender, dt:dtRender, meta:metaRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
              midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
@@ -126,7 +126,7 @@ async function safeRender(fn,pg){
    UNIDADES resolveria em menos linhas e estragaria o financeiro, que percorre
    UNIDADES para ratear receita e despesa por negócio. */
 function unidadeDaPagina(pg){
-  return [...UNIDADES, ESCRITORIO, SOFTWARE].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
+  return [...UNIDADES, ESCRITORIO, SOFTWARE, DAYTRADE, META].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
 }
 
 function renderCtxBar(u){
@@ -151,7 +151,7 @@ function renderCtxBar(u){
 function menuNegocios(el){
   const d = document.getElementById('dropneg');
   if(d.style.display==='block'){ fecharDrops(); return; }
-  d.innerHTML = [...UNIDADES, ESCRITORIO, SOFTWARE].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
+  d.innerHTML = [...UNIDADES, ESCRITORIO, SOFTWARE, DAYTRADE, META].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
     `<div onclick="go('${u.pg}')" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;cursor:pointer"
        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
        <div style="width:32px;height:32px;border-radius:9px;background:${u.bg};color:${u.cor};display:flex;align-items:center;justify-content:center;font-size:18px">

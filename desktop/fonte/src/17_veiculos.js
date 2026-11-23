@@ -57,6 +57,7 @@ async function veiculosRender(){
     <button class="tab ${VEI_TAB==='loc'?'on':''}" onclick="veiStab('loc')"><i class="ti ti-cash"></i>Locações do mês</button>
     <button class="tab ${VEI_TAB==='man'?'on':''}" onclick="veiStab('man')"><i class="ti ti-tool"></i>Manutenção</button>
     <button class="tab ${VEI_TAB==='cus'?'on':''}" onclick="veiStab('cus')"><i class="ti ti-chart-bar"></i>Custo por veículo</button>
+    <button class="tab ${VEI_TAB==='plano'?'on':''}" onclick="veiStab('plano')"><i class="ti ti-calendar-event"></i>Plano de frota</button>
   </div><div id="vei-body"></div>`;
   root.innerHTML = h;
 
@@ -65,6 +66,7 @@ async function veiculosRender(){
   if(VEI_TAB==='loc')   await veiTabLocacoes();
   if(VEI_TAB==='man')   await manutTab('veiculo','vei-body',veic);
   if(VEI_TAB==='cus')   await veiTabCusto(veic);
+  if(VEI_TAB==='plano') await veiTabPlano();
 }
 
 async function veiTabLista(veic,contratos){
