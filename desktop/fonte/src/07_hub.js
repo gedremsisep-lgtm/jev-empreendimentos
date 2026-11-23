@@ -91,6 +91,8 @@ async function hubRender(){
      dentro dele, porque não é unidade de negócio — o miolo conta gente, não
      dinheiro, e os números só entram depois que o painel já apareceu */
   if(PERMS[CU].includes(ESCRITORIO.pg)) h += escrCard();
+  /* ao lado do Escritório, o Software — também fora de UNIDADES */
+  if(PERMS[CU].includes(SOFTWARE.pg)) h += softCardHub();
   h += `</div>`;
 
   // ------- atalhos -------
