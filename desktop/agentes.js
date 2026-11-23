@@ -107,4 +107,79 @@ function exportarRetrato(app, unidades) {
   return { ok: true, caminho, pasta: PASTA };
 }
 
-module.exports = { garantir, abrir, estado, definirPasta, parar, exportarRetrato, get pasta() { return PASTA; } };
+/* ------------------------------------------------------------------------
+   Day-Trade: o motor mora na sede (engine/daytrade/dt.js). O JeV não copia
+   nada dele — pede o estado e manda comandos rodando o próprio dt.js com o
+   Electron em modo Node, na pasta da sede. Uma fonte só da verdade.
+   Comandos aceitos: estado | ciclo | zerar | laboratorio | acao (sempre como
+   "dono", porque quem clica no JeV é o dono).
+   ------------------------------------------------------------------------ */
+const DT_COMANDOS = { estado: 60000, ciclo: 180000, zerar: 120000, laboratorio: 900000, acao: 60000 };
+function dtRodar(app, cmd, arg) {
+  return new Promise(resolve => {
+    if (!(cmd in DT_COMANDOS)) return resolve({ ok: false, erro: 'comando não permitido: ' + cmd });
+    PASTA = PASTA || achar(app);
+    if (!PASTA) return resolve({ ok: false, erro: 'não encontrei a pasta da sede dos agentes (jev-agentes)' });
+    const script = path.join(PASTA, 'engine', 'daytrade', 'dt.js');
+    if (!fs.existsSync(script)) return resolve({ ok: false, erro: 'a sede ainda não tem o motor do Day-Trade (engine/daytrade/dt.js)' });
+    const args = [script, cmd];
+    if (cmd === 'acao') args.push(JSON.stringify({ ...(arg || {}), quem: 'dono' }));
+    else if (arg) args.push(String(arg));
+    let out = '', err = '';
+    let filho;
+    try { filho = spawn(process.execPath, args, { cwd: PASTA, windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } }); }
+    catch (e) { return resolve({ ok: false, erro: 'não consegui rodar o motor: ' + e.message }); }
+    const t = setTimeout(() => { try { filho.kill(); } catch {} resolve({ ok: false, erro: 'o motor demorou demais (' + cmd + ')' }); }, DT_COMANDOS[cmd]);
+    filho.stdout.on('data', d => { out += d; });
+    filho.stderr.on('data', d => { err += d; });
+    filho.on('exit', () => {
+      clearTimeout(t);
+      const linha = out.trim().split(/\r?\n/).pop() || '';
+      try { resolve(JSON.parse(linha)); }
+      catch { resolve({ ok: false, erro: 'resposta inesperada do motor: ' + (err || out).slice(0, 300) }); }
+    });
+  });
+}
+
+/* Piloto automático da meta (engine/renda/piloto.js). "rodar" pode levar horas: sai
+   desligado do JeV (detached), grava o log em workspace/piloto/ultima-rodada.log, e o
+   JeV acompanha pelo "estado". Antes de rodar, grava o retrato da meta que o JeV mandou. */
+const PILOTO_COMANDOS = { estado: 60000, ligar: 30000, desligar: 30000, acao: 30000, rodar: 30000 };
+function pilotoRodar(app, cmd, arg) {
+  return new Promise(resolve => {
+    if (!(cmd in PILOTO_COMANDOS)) return resolve({ ok: false, erro: 'comando não permitido: ' + cmd });
+    PASTA = PASTA || achar(app);
+    if (!PASTA) return resolve({ ok: false, erro: 'não encontrei a pasta da sede dos agentes (jev-agentes)' });
+    const script = path.join(PASTA, 'engine', 'renda', 'piloto.js');
+    if (!fs.existsSync(script)) return resolve({ ok: false, erro: 'a sede ainda não tem o piloto (engine/renda/piloto.js)' });
+    const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1' };
+    if (cmd === 'rodar') {
+      try {
+        const dir = path.join(PASTA, 'workspace', 'piloto');
+        fs.mkdirSync(dir, { recursive: true });
+        if (arg && typeof arg.retrato === 'string') fs.writeFileSync(path.join(dir, 'retrato-da-meta.md'), arg.retrato.slice(0, 200000), 'utf8');
+        const log = fs.openSync(path.join(dir, 'ultima-rodada.log'), 'w');
+        const args = [script, 'rodar']; if (arg && arg.forcar) args.push('--forcar');
+        const filho = spawn(process.execPath, args, { cwd: PASTA, windowsHide: true, detached: true, stdio: ['ignore', log, log], env });
+        filho.unref();
+        return resolve({ ok: true, iniciado: true, msg: 'Piloto rodando na sede. Acompanhe por aqui.' });
+      } catch (e) { return resolve({ ok: false, erro: 'não consegui iniciar o piloto: ' + e.message }); }
+    }
+    const args = [script, cmd];
+    if (cmd === 'acao') args.push(JSON.stringify(arg || {}));
+    let out = '', err = '', filho;
+    try { filho = spawn(process.execPath, args, { cwd: PASTA, windowsHide: true, env }); }
+    catch (e) { return resolve({ ok: false, erro: 'não consegui rodar o piloto: ' + e.message }); }
+    const t = setTimeout(() => { try { filho.kill(); } catch {} resolve({ ok: false, erro: 'o piloto demorou demais (' + cmd + ')' }); }, PILOTO_COMANDOS[cmd]);
+    filho.stdout.on('data', d => { out += d; });
+    filho.stderr.on('data', d => { err += d; });
+    filho.on('exit', () => {
+      clearTimeout(t);
+      const linha = out.trim().split(/\r?\n/).pop() || '';
+      try { resolve(JSON.parse(linha)); }
+      catch { resolve({ ok: false, erro: 'resposta inesperada do piloto: ' + (err || out).slice(0, 300) }); }
+    });
+  });
+}
+
+module.exports = { garantir, abrir, estado, definirPasta, parar, exportarRetrato, dtRodar, pilotoRodar, get pasta() { return PASTA; } };

@@ -140,6 +140,9 @@ contextBridge.exposeInMainWorld('JeVDesktop', {
   ccGarantir:        () => ipcRenderer.invoke('cc-garantir'),
   agEscolherPasta:   () => ipcRenderer.invoke('ag-escolher-pasta'),
   agExportarRetrato: (unidades) => ipcRenderer.invoke('ag-exportar-retrato', unidades),
+  /* ---- Day-Trade: o motor da sede (estado, ciclo, laboratório, ações do dono) ---- */
+  dtRodar:           (cmd, arg) => ipcRenderer.invoke('dt-rodar', cmd, arg),
+  pilotoRodar:       (cmd, arg) => ipcRenderer.invoke('piloto-rodar', cmd, arg),
 
   ctlEstado:        ()              => ipcRenderer.invoke('ctl-estado'),
   ctlArquivo:       rel             => ipcRenderer.invoke('ctl-arquivo', rel),

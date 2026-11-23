@@ -906,6 +906,9 @@ ipcMain.handle('ag-escolher-pasta', async () => {
   return agentes.definirPasta(app, r.filePaths[0]);
 });
 ipcMain.handle('ag-exportar-retrato', (_e, unidades) => agentes ? agentes.exportarRetrato(app, unidades) : { ok: false, motivo: 'o módulo da sede não foi empacotado com o programa' });
+/* Day-Trade: estado e comandos do motor que mora na sede (engine/daytrade/dt.js) */
+ipcMain.handle('piloto-rodar', (_e, cmd, arg) => agentes ? agentes.pilotoRodar(app, String(cmd || ''), arg) : { ok: false, erro: 'a ponte com a sede não carregou' });
+ipcMain.handle('dt-rodar', (_e, cmd, arg) => agentes ? agentes.dtRodar(app, String(cmd || ''), arg) : { ok: false, erro: 'o módulo da sede não foi empacotado com o programa' });
 
 /* ---------------- Controle (Mission Control) ---------------- */
 /* Nenhum destes escreve em plataforma nenhuma: o mais longe que vão é

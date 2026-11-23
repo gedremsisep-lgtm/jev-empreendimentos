@@ -352,11 +352,24 @@ fs.writeFileSync(EMBUTIDO,
   ok('1.0.46: cada rede com as suas ações', html.includes('const REDE_ACOES') && html.includes("'X (Twitter)': [") &&
     html.includes("n:'Publicar no perfil/página'") && html.includes("n:'Criar Pin'") ? true : 'não veio');
   ok('1.0.46: o cartão Software ao lado do Escritório', html.includes('function softCardHub') &&
-    html.includes("[...UNIDADES, ESCRITORIO, SOFTWARE]") && html.includes('soft:softRender') ? true : 'não veio');
+    html.includes("[...UNIDADES, ESCRITORIO, SOFTWARE") && html.includes('soft:softRender') ? true : 'não veio');
   ok('1.0.46: a ficha de controle de cada sistema', html.includes('function softDetalhe') && html.includes('function softVenc') &&
     html.includes('function softVerificarUm') && html.includes('function softAbaCons') ? true : 'não veio');
   ok('1.0.46: os seis sistemas de fábrica', ['Funchal','SSCONPAV','Sete Engenharia','RR Barros','Santa Cruz Engenharia','Fenix Engenharia']
     .every(n => html.includes("nome:'" + n + "'")) ? true : 'faltou algum');
+
+  /* 1.0.47 — Day-Trade, Meta R$ 50 mil, vitrine, chácara, infoprodutos e frota */
+  ok('1.0.47: o módulo Day-Trade com bolsa e cripto', html.includes('function dtRender') && html.includes('function dtCardHub') &&
+    html.includes("dt:dtRender") && html.includes('ENTENDO O RISCO') ? true : 'não veio');
+  ok('1.0.47: o cartão Meta R$ 50 mil e o comando único', html.includes('function metaRender') && html.includes('function metaPlacar') &&
+    html.includes("pilotoRodar('rodar'") === false && html.includes("metaPiloto('rodar'") && html.includes('meta:metaRender') ? true : 'não veio');
+  ok('1.0.47: a vitrine de afiliados com relatório CSV', html.includes('function prodTabVitrine') && html.includes('function vitLerArquivo') ? true : 'não veio');
+  ok('1.0.47: o plano de meio hectare da chácara', html.includes('function chaTabPlano') && html.includes('const CHP_AREAS') ? true : 'não veio');
+  ok('1.0.47: lojas e gerador de anúncios dos infoprodutos', html.includes('function infoTabLojas') && html.includes('function anGerar') ? true : 'não veio');
+  ok('1.0.47: o plano de frota com gatilhos', html.includes('function veiTabPlano') && html.includes('const FROTA_MARCOS') &&
+    html.includes('Retroescavadeira usada') ? true : 'não veio');
+  ok('1.0.47: a ponte da sede para Day-Trade e piloto', fs.readFileSync(path.join(__dirname, 'preload.js'), 'utf8').includes("pilotoRodar") &&
+    fs.readFileSync(path.join(__dirname, 'preload.js'), 'utf8').includes("dtRodar") ? true : 'não veio');
 
   console.log('\n6) aprovar');
   const v = atualizacao.validar(true, 'autoteste da prova');
