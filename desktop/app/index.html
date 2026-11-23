@@ -804,6 +804,8 @@ tfoot td{padding:10px;font-weight:800;background:var(--bg3);border-top:2px solid
   <div class="pg" id="pg-ctl"><div id="ctl-root"></div></div>
   <div class="pg" id="pg-vigias"><div id="vigias-root"></div></div>
   <div class="pg" id="pg-soft"><div id="soft-root"></div></div>
+  <div class="pg" id="pg-dt"><div id="dt-root"></div></div>
+  <div class="pg" id="pg-meta"><div id="meta-root"></div></div>
   <div class="pg" id="pg-cel"><div id="cel-root"></div></div>
   <div class="pg" id="pg-nuvem"><div id="nuvem-root"></div></div>
   <div class="pg" id="pg-pes"><div id="pes-root"></div></div>
@@ -906,7 +908,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    JeV EMPREENDIMENTOS — Núcleo: banco, navegação em hub, utilitários, gráficos
    ========================================================================= */
 
-const SISTEMA_VERSAO = '1.0.46';   // versão do sistema — trocada por ./versao.sh
+const SISTEMA_VERSAO = '1.0.47';   // versão do sistema — trocada por ./versao.sh
 const DB_NAME = 'JEV_DB';
 const DB_VERSION = 10;   // v2: guias · v3: lixeira e sync · v4: afiliados · v5: garimpo · v6: cortes · v7: estúdio · v8: midiateca · v9: vigias do negócio · v10: impressão 3D
 const STORES = [
@@ -983,7 +985,7 @@ const PERFIS = {
   c:{nome:'Campo',     sigla:'C', desc:'Foco na execução: obras, chácara, diário e compras — sem valores consolidados'}
 };
 const PERMS = {
-  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','soft','cel','nuvem','cfg','ver'],
+  g:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','soft','dt','meta','cel','nuvem','cfg','ver'],
   o:['hub','fin','obras','orc','crono','proj','mat','mo','rdo','med','imoveis','veiculos','chacara','produtos','info','midia','galeria','i3pn','i3calc','i3img','i3orc','i3cli','i3imp','i3fil','i3des','i3prod','i3hist','i3rel','i3cfg','pes','rel','vigias','ctl','soft','cel','nuvem','ver'],
   c:['hub','obras','crono','mat','mo','rdo','proj','chacara','galeria','pes','vigias','cel']
 };
@@ -1004,7 +1006,7 @@ function go(pg){
   document.getElementById('bn-'+pg)?.classList.add('on');
   renderCtxBar(u);
   window.scrollTo(0,0);
-  const R = {vigias:vigiasRender, ctl:controleRender, soft:softRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
+  const R = {vigias:vigiasRender, ctl:controleRender, soft:softRender, dt:dtRender, meta:metaRender, hub:hubRender, fin:finRender, obras:obrasRender, orc:orcRender, crono:cronoRender, proj:projRender,
              mat:matRender, mo:moRender, rdo:rdoRender, med:medRender, imoveis:imoveisRender,
              veiculos:veiculosRender, chacara:chacaraRender, produtos:produtosRender, info:infoRender,
              midia:midiaRender, galeria:galeriaRender, pes:pesRender, rel:relRender, cel:celRender, nuvem:nuvemRender, cfg:cfgRender,
@@ -1030,7 +1032,7 @@ async function safeRender(fn,pg){
    UNIDADES resolveria em menos linhas e estragaria o financeiro, que percorre
    UNIDADES para ratear receita e despesa por negócio. */
 function unidadeDaPagina(pg){
-  return [...UNIDADES, ESCRITORIO, SOFTWARE].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
+  return [...UNIDADES, ESCRITORIO, SOFTWARE, DAYTRADE, META].find(u=>u.pg===pg || (u.tabs||[]).some(t=>t[0]===pg));
 }
 
 function renderCtxBar(u){
@@ -1055,7 +1057,7 @@ function renderCtxBar(u){
 function menuNegocios(el){
   const d = document.getElementById('dropneg');
   if(d.style.display==='block'){ fecharDrops(); return; }
-  d.innerHTML = [...UNIDADES, ESCRITORIO, SOFTWARE].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
+  d.innerHTML = [...UNIDADES, ESCRITORIO, SOFTWARE, DAYTRADE, META].filter(u=>PERMS[CU].includes(u.pg)).map(u=>
     `<div onclick="go('${u.pg}')" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;cursor:pointer"
        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
        <div style="width:32px;height:32px;border-radius:9px;background:${u.bg};color:${u.cor};display:flex;align-items:center;justify-content:center;font-size:18px">
@@ -2639,6 +2641,8 @@ async function hubRender(){
   if(PERMS[CU].includes(ESCRITORIO.pg)) h += escrCard();
   /* ao lado do Escritório, o Software — também fora de UNIDADES */
   if(PERMS[CU].includes(SOFTWARE.pg)) h += softCardHub();
+  if(PERMS[CU].includes(DAYTRADE.pg)) h += dtCardHub();
+  if(PERMS[CU].includes(META.pg)) h += metaCardHub();
   h += `</div>`;
 
   // ------- atalhos -------
@@ -2686,6 +2690,7 @@ async function hubRender(){
      com prazo de 2,5 segundos. Esperar aqui seria trocar o painel da família
      por um relógio girando toda vez que o Controle estivesse desligado. */
   if(PERMS[CU].includes(ESCRITORIO.pg)) escrPreencher();
+  if(PERMS[CU].includes(DAYTRADE.pg)) dtPreencherHub();
 }
 
 /* indicadores curtos por unidade, mostrados no card do hub */
@@ -7179,6 +7184,7 @@ async function veiculosRender(){
     <button class="tab ${VEI_TAB==='loc'?'on':''}" onclick="veiStab('loc')"><i class="ti ti-cash"></i>Locações do mês</button>
     <button class="tab ${VEI_TAB==='man'?'on':''}" onclick="veiStab('man')"><i class="ti ti-tool"></i>Manutenção</button>
     <button class="tab ${VEI_TAB==='cus'?'on':''}" onclick="veiStab('cus')"><i class="ti ti-chart-bar"></i>Custo por veículo</button>
+    <button class="tab ${VEI_TAB==='plano'?'on':''}" onclick="veiStab('plano')"><i class="ti ti-calendar-event"></i>Plano de frota</button>
   </div><div id="vei-body"></div>`;
   root.innerHTML = h;
 
@@ -7187,6 +7193,7 @@ async function veiculosRender(){
   if(VEI_TAB==='loc')   await veiTabLocacoes();
   if(VEI_TAB==='man')   await manutTab('veiculo','vei-body',veic);
   if(VEI_TAB==='cus')   await veiTabCusto(veic);
+  if(VEI_TAB==='plano') await veiTabPlano();
 }
 
 async function veiTabLista(veic,contratos){
@@ -7494,12 +7501,14 @@ async function chacaraRender(){
     <button class="tab ${CHA_TAB==='lotes'?'on':''}" onclick="chaStab('lotes')"><i class="ti ti-map-2"></i>Lotes e áreas</button>
     <button class="tab ${CHA_TAB==='ciclos'?'on':''}" onclick="chaStab('ciclos')"><i class="ti ti-seeding"></i>Ciclos de produção</button>
     <button class="tab ${CHA_TAB==='res'?'on':''}" onclick="chaStab('res')"><i class="ti ti-chart-bar"></i>Resultado por ciclo</button>
+    <button class="tab ${CHA_TAB==='plano'?'on':''}" onclick="chaStab('plano')"><i class="ti ti-calculator"></i>Plano 0,5 ha</button>
   </div><div id="cha-body"></div>`;
   root.innerHTML = h;
 
   if(CHA_TAB==='lotes')  await chaTabLotes(lotes,ciclos);
   if(CHA_TAB==='ciclos') await chaTabCiclos(lotes,ciclos);
   if(CHA_TAB==='res')    await chaTabResultado(lotes,ciclos);
+  if(CHA_TAB==='plano')  await chaTabPlano();
 }
 
 async function chaTabLotes(lotes,ciclos){
@@ -7844,7 +7853,9 @@ async function prodRender(un){
     <button class="tab ${tab==='cat'?'on':''}" onclick="prdStab('${un}','cat')"><i class="ti ti-list"></i>${ehInfo(un)?'Infoprodutos':'Catálogo e estoque'}</button>
     <button class="tab ${tab==='ven'?'on':''}" onclick="prdStab('${un}','ven')"><i class="ti ti-shopping-cart"></i>Vendas</button>
     <button class="tab ${tab==='ana'?'on':''}" onclick="prdStab('${un}','ana')"><i class="ti ti-chart-bar"></i>Desempenho</button>
-    ${!ehInfo(un)?`<button class="tab ${tab==='afil'?'on':''}" onclick="prdStab('${un}','afil')"><i class="ti ti-brand-whatsapp"></i>Afiliados</button>`:''}
+    ${!ehInfo(un)?`<button class="tab ${tab==='vit'?'on':''}" onclick="prdStab('${un}','vit')"><i class="ti ti-building-store"></i>Vitrine de afiliados</button>`:''}
+    ${!ehInfo(un)?`<button class="tab ${tab==='afil'?'on':''}" onclick="prdStab('${un}','afil')"><i class="ti ti-brand-whatsapp"></i>Grupos de ofertas</button>`:''}
+    ${ehInfo(un)?`<button class="tab ${tab==='lojas'?'on':''}" onclick="prdStab('${un}','lojas')"><i class="ti ti-sparkles"></i>Lojas e anúncios</button>`:''}
   </div><div id="prd-body-${un}"></div>`;
   root.innerHTML = h;
 
@@ -7852,6 +7863,8 @@ async function prodRender(un){
   if(tab==='ven') await prodTabVendas(un,prods,vendas);
   if(tab==='ana') await prodTabAnalise(un,prods,vendas);
   if(tab==='afil' && !ehInfo(un)) await prodTabAfiliados(un);
+  if(tab==='vit' && !ehInfo(un)) await prodTabVitrine(un);
+  if(tab==='lojas' && ehInfo(un)) await infoTabLojas(un,prods);
 }
 
 async function prodTabCatalogo(un,prods,vendas){
@@ -12501,12 +12514,14 @@ async function progSave(id){
              beneficio:val('pg-benef'), ativo:document.getElementById('pg-ativo').checked};
   if(id){ const o = await dbGet('programas',id); await dbPut('programas',{...o,...d}); }
   else await dbAdd('programas',d);
-  closeModal('mk-form'); toast('Produto salvo.'); midiaRender();
+  closeModal('mk-form'); toast('Produto salvo.'); progDepois();
 }
 function progDel(id){
   confirmar('Excluir produto','O produto sai da lista. Os vídeos já criados não são afetados.',
-    async()=>{ await dbDel('programas',id); toast('Removido.','aw'); midiaRender(); });
+    async()=>{ await dbDel('programas',id); toast('Removido.','aw'); progDepois(); });
 }
+/* a ficha também é editada pela Vitrine (Produtos): volta para a tela de onde veio */
+function progDepois(){ if(document.getElementById('pg-produtos')?.classList.contains('on')) produtosRender(); else midiaRender(); }
 async function progCopiar(id){
   const p = await dbGet('programas',id);
   if(!p || !p.url) return;
@@ -26043,6 +26058,1274 @@ function softExcluir(id){
       await softGravar(softLista().filter(x=>x.id!==id));
       closeModal('mk-form'); toast('Sistema removido.','aw'); softRender();
     });
+}
+/* =========================================================================
+   DAY-TRADE — bolsa (mini-índice e mini-dólar) e cripto (BTC, ETH, SOL)
+
+   O que esta tela É: o painel do dono sobre o motor que mora na sede dos
+   agentes (C:\JeV\jev-agentes\engine\daytrade). Ela não calcula nada sozinha:
+   pede o estado ao motor e manda os comandos do dono (travar, mudar fase,
+   anotar uma ordem executada). Uma fonte só da verdade.
+
+   O que ela NÃO é: um robô que mexe no seu dinheiro. Na simulação o dinheiro é
+   fictício. Nas fases reais o motor PREPARA a ordem e quem executa, na sua
+   corretora, é você. Isso não tem chave para desligar.
+
+   Como cartão, mora ao lado do Escritório e do Software e, como eles, fica
+   FORA de UNIDADES — não entra no rateio do financeiro.
+   ========================================================================= */
+const DAYTRADE = {
+  id:'daytrade', pg:'dt', nome:'Day-Trade', curto:'Day-Trade',
+  ic:'ti-chart-line', cor:'#8B1E3F', bg:'#F7E8EE',
+  desc:'Bolsa e cripto: laboratório, simulação e risco',
+  tabs:[['dt','Day-Trade','ti-chart-line']]
+};
+const DT_ABAS = [['bolsa','Bolsa','ti-building-bank'],['cripto','Cripto','ti-coin'],['lab','Laboratório','ti-flask'],
+                 ['imposto','Imposto','ti-receipt'],['como','Como funciona','ti-info-circle']];
+const DT_FASES = { laboratorio:['Só laboratório','s-nt'], simulacao:['Simulação ao vivo','s-pd'], real_pequeno:['Real pequeno','s-wn'], real:['Real','s-bl'] };
+const DT_VEREDITO = { forte:['Forte','s-ok','passou no teste e no Sharpe deflacionado'], fraca_mas_positiva:['Fraca — pode ser sorte','s-wn','passou no teste, mas o Sharpe deflacionado está abaixo de 90%'], reprovada:['Reprovada','s-bl',''], nenhuma:['Nenhuma','s-nt',''] };
+let DT_ABA = 'bolsa';
+let DT_EST = null;          /* último estado recebido do motor */
+let DT_OCUPADO = false;
+
+function dtApp(){ const a = (typeof APP === 'function') ? APP() : null; return a && a.dtRodar ? a : null; }
+async function dtPedir(cmd, arg){
+  const a = dtApp(); if(!a) return { ok:false, erro:'O Day-Trade roda no aplicativo do Windows, junto com a sede dos agentes.' };
+  try { return await a.dtRodar(cmd, arg); } catch(e){ return { ok:false, erro: String(e && e.message || e) }; }
+}
+async function dtCarregar(){
+  const r = await dtPedir('estado');
+  if(r && r.bolsa) { DT_EST = r; return r; }
+  DT_EST = { erro: (r && r.erro) || 'sem resposta do motor' }; return DT_EST;
+}
+const dtR = v => moeda(Number(v)||0);
+const dtCor = v => (Number(v)||0) >= 0 ? 'var(--green)' : 'var(--red)';
+function dtNomeEst(id){ return (DT_EST && DT_EST.estrategias && DT_EST.estrategias[id] && DT_EST.estrategias[id].nome) || id || '—'; }
+function dtParams(p){ return esc(Object.entries(p||{}).map(([k,v])=>`${k} ${v}`).join(' · ')); }
+
+/* ------------------------------------------------ o cartão da página inicial */
+function dtCardHub(){
+  const u = DAYTRADE;
+  return `<div class="ucard" style="--uc:${u.cor};--ucb:${u.bg}" onclick="go('${u.pg}')">
+      <div class="bar"></div>
+      <div class="top2"><div class="ico"><i class="ti ${u.ic}"></i></div>
+        <div style="flex:1;min-width:0"><h3>${esc(u.curto)}</h3><div class="sub">${esc(u.desc)}</div></div></div>
+      <div class="body">
+        <div class="kv"><span>Bolsa</span><b data-dt="bolsa">—</b></div>
+        <div class="kv"><span>Cripto</span><b data-dt="cripto">—</b></div>
+        <div class="kv"><span>Resultado do mês (bolsa)</span><b data-dt="mesb">—</b></div>
+        <div class="kv"><span>Resultado do mês (cripto)</span><b data-dt="mesc">—</b></div>
+        <div class="foot">
+          <div><div class="tt">Travas</div><div class="res" data-dt="trava" style="color:var(--text3)">—</div></div>
+          <div class="go">Abrir <i class="ti ti-arrow-right"></i></div></div>
+      </div></div>`;
+}
+async function dtPreencherHub(){
+  const put = (k, t, c) => { const el = document.querySelector(`[data-dt="${k}"]`); if(el){ el.textContent = t; el.style.color = c || ''; } };
+  if(!dtApp()){ put('bolsa','no app do Windows'); put('cripto','no app do Windows'); return; }
+  const e = await dtCarregar();
+  if(e.erro){ put('bolsa','sede fechada'); put('cripto','—'); put('trava','—'); return; }
+  const fase = m => (DT_FASES[m.fase]||[m.fase])[0] + (m.estrategia ? '' : ' · de fora');
+  put('bolsa', fase(e.bolsa)); put('cripto', fase(e.cripto));
+  put('mesb', moedaK(e.bolsa.mes.resultadoBRL), dtCor(e.bolsa.mes.resultadoBRL));
+  put('mesc', moedaK(e.cripto.mes.resultadoBRL), dtCor(e.cripto.mes.resultadoBRL));
+  const tr = [e.bolsa, e.cripto].filter(m => m.trava && m.trava.ativa).length;
+  put('trava', tr ? tr + ' mercado(s) travado(s)' : 'nenhuma', tr ? 'var(--red)' : 'var(--green)');
+}
+
+/* --------------------------------------------------------------- a tela */
+function dtAba(a){ DT_ABA = a; dtDesenhar(); }
+
+async function dtRender(){
+  const root = document.getElementById('dt-root'); if(!root) return;
+  root.innerHTML = dtCabecalho() + `<div class="card"><div class="bd"><div class="tt"><i class="ti ti-loader"></i> Perguntando ao motor da sede…</div></div></div>`;
+  if(!dtApp()){ root.innerHTML = dtCabecalho() + `<div class="al ai"><i class="ti ti-info-circle"></i><div>O Day-Trade roda no <b>aplicativo do Windows</b>, junto com a sede dos agentes. Pelo navegador dá para ler a aba <a href="#" onclick="dtAba('como');return false">Como funciona</a>.</div></div>` + (DT_ABA==='como' ? dtAbaComo() : ''); return; }
+  await dtCarregar();
+  dtDesenhar();
+}
+
+function dtCabecalho(){
+  return `<div class="ph"><div class="ic" style="background:${DAYTRADE.bg};color:${DAYTRADE.cor}"><i class="ti ${DAYTRADE.ic}"></i></div>
+    <div><h1>Day-Trade</h1><p>Bolsa e cripto — o laboratório testa, a simulação prova, o dinheiro real é decisão sua</p></div>
+    <div class="sp"></div>
+    <button class="btn gh" onclick="dtRender()"><i class="ti ti-refresh"></i>Atualizar</button></div>
+    <div class="chips" style="margin-bottom:14px">${DT_ABAS.map(([k,n,i])=>`<span class="chip ${DT_ABA===k?'on':''}" onclick="dtAba('${k}')"><i class="ti ${i}"></i> ${n}</span>`).join('')}</div>`;
+}
+
+function dtDesenhar(){
+  const root = document.getElementById('dt-root'); if(!root) return;
+  let h = dtCabecalho();
+  if(DT_ABA === 'como'){ root.innerHTML = h + dtAbaComo(); return; }
+  if(!DT_EST || DT_EST.erro){
+    root.innerHTML = h + `<div class="al ae"><i class="ti ti-alert-circle"></i><div><b>Não consegui falar com o motor do Day-Trade.</b><br>${esc((DT_EST&&DT_EST.erro)||'')}<br>
+      Confira se a pasta da sede (C:\\JeV\\jev-agentes) está no lugar — o botão "Verificar Agentes" do Início mostra onde ela está.</div></div>`; return;
+  }
+  if(DT_ABA === 'bolsa' || DT_ABA === 'cripto') h += dtAbaMercado(DT_ABA);
+  if(DT_ABA === 'lab') h += dtAbaLab();
+  if(DT_ABA === 'imposto') h += dtAbaImposto();
+  root.innerHTML = h;
+}
+
+/* ---- curva de resultado acumulado (SVG simples) ---- */
+function dtCurva(diario){
+  const ops = (diario||[]).filter(o => o.resultadoBRL != null);
+  if(ops.length < 2) return `<div class="tt" style="padding:10px 0">A curva aparece depois das primeiras operações.</div>`;
+  let acc = 0; const pts = ops.map(o => (acc += Number(o.resultadoBRL)||0));
+  const W = 600, H = 110, mn = Math.min(0, ...pts), mx = Math.max(0, ...pts), rg = (mx - mn) || 1;
+  const x = i => (i / (pts.length - 1)) * W, y = v => H - ((v - mn) / rg) * H;
+  const d = pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const cor = acc >= 0 ? 'var(--green)' : 'var(--red)';
+  return `<svg viewBox="0 0 ${W} ${H+4}" style="width:100%;height:120px" preserveAspectRatio="none">
+    <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--border)" stroke-dasharray="4 4"/>
+    <path d="${d}" fill="none" stroke="${cor}" stroke-width="2.2" vector-effect="non-scaling-stroke"/></svg>
+    <div class="tt">Últimas ${ops.length} operações · acumulado ${dtR(acc)}</div>`;
+}
+
+function dtAbaMercado(m){
+  const e = DT_EST[m], cripto = m === 'cripto';
+  const [nomeFase, clsFase] = DT_FASES[e.fase] || [e.fase,'s-nt'];
+  const real = e.fase === 'real' || e.fase === 'real_pequeno';
+  let h = '';
+  if(e.trava && e.trava.ativa) h += `<div class="al ae" style="margin-top:0"><i class="ti ti-lock"></i><div style="flex:1"><b>Mercado travado:</b> ${esc(e.trava.motivo)}</div>
+      <button class="btn xs gh" onclick="dtDestravar('${m}')">Destravar</button></div>`;
+  if(real) h += `<div class="al aw" style="margin-top:0"><i class="ti ti-alert-triangle"></i><div><b>Fase real.</b> O motor prepara as ordens e quem executa na corretora é você. Coloque sempre o stop junto (ordem OCO).</div></div>`;
+  else h += `<div class="al ai" style="margin-top:0"><i class="ti ti-info-circle"></i><div>Dinheiro <b>fictício</b>. ${cripto?'Preços reais da Binance':'Preços reais do Ibovespa e do dólar, com atraso, espelhando o mini-índice e o mini-dólar'} — o resultado é uma aproximação.</div></div>`;
+
+  h += `<div class="kg" style="margin-bottom:14px">
+    <div class="kc pu"><div class="lb"><i class="ti ti-route"></i>Fase</div><div class="vl" style="font-size:18px"><span class="st ${clsFase}">${esc(nomeFase)}</span></div>
+      <div class="sb">desde ${dbr(e.faseDesde)} · capital ${moedaK(e.capital)}${real?'':' fictício'}</div></div>
+    <div class="kc ${e.dia.resultadoBRL>=0?'gn':'rd'}"><div class="lb"><i class="ti ti-clock"></i>Hoje</div><div class="vl" style="color:${dtCor(e.dia.resultadoBRL)}">${moedaK(e.dia.resultadoBRL)}</div>
+      <div class="sb">${e.dia.operacoes} operação(ões) · semana ${moedaK(e.semana.resultadoBRL)}</div></div>
+    <div class="kc ${e.mes.resultadoBRL>=0?'gn':'rd'}"><div class="lb"><i class="ti ti-calendar"></i>Mês</div><div class="vl" style="color:${dtCor(e.mes.resultadoBRL)}">${moedaK(e.mes.resultadoBRL)}</div>
+      <div class="sb">${e.mes.operacoes} operação(ões) · total ${moedaK(e.total.resultadoBRL)}</div></div>
+    <div class="kc ${e.podeAbrir.pode?'gn':'am'}"><div class="lb"><i class="ti ti-shield-lock"></i>Pode entrar agora?</div><div class="vl" style="font-size:18px">${e.podeAbrir.pode?'Sim':'Não'}</div>
+      <div class="sb">${esc(e.podeAbrir.pode ? 'travas livres' : e.podeAbrir.motivos[0] || '')}</div></div></div>`;
+
+  /* estratégia */
+  const es = e.estrategia;
+  h += `<div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-target"></i>Estratégia em uso<span class="sp"></span>
+      <button class="btn xs gh" onclick="dtComando('ciclo','${m}')"><i class="ti ti-player-play"></i>Rodar ciclo agora</button></div><div class="bd">`;
+  if(es){
+    const [vn, vc, vd] = DT_VEREDITO[es.veredito] || ['—','s-nt',''];
+    const t = es.testeResumo || {};
+    h += `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:14px">${esc(dtNomeEst(es.id))}</b><span class="st ${vc}" title="${esc(vd)}">${esc(vn)}</span></div>
+      <div class="tt" style="margin-top:4px">${dtParams(es.parametros)} · em uso desde ${dbr(String(es.desde).slice(0,10))}</div>
+      <div class="tt" style="margin-top:4px">No teste do laboratório (dados que ela não viu): ${t.operacoes||0} operações, ${dtR(t.resultadoBRL)}, ganhos ${t.fatorLucro!=null?t.fatorLucro:'—'}× as perdas${t.dsr!=null?`, Sharpe deflacionado ${(t.dsr*100).toFixed(0)}%`:''}.</div>`;
+  } else {
+    h += `<div class="al aw" style="margin:0"><i class="ti ti-alert-triangle"></i><div><b>De fora do mercado.</b> O laboratório ainda não achou uma estratégia que se sustente com custos em dados que ela não viu. Não operar também é decisão — e costuma ser a mais barata.
+      <div style="margin-top:6px"><button class="btn xs bl" onclick="dtAba('lab')"><i class="ti ti-flask"></i>Ver o laboratório</button></div></div></div>`;
+  }
+  h += `</div></div>`;
+
+  /* ordens reais esperando o dono */
+  if(real || (e.ordensPendentes||[]).length){
+    h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-list-check"></i>Ordens para você (${(e.ordensPendentes||[]).length})</div><div class="bd">`;
+    h += (e.ordensPendentes||[]).length ? `<table><thead><tr><th>Ativo</th><th>Lado</th><th class="r">Qtd</th><th class="r">Entrada</th><th class="r">Stop</th><th class="r">Alvo</th><th>Situação</th><th></th></tr></thead><tbody>
+      ${e.ordensPendentes.map(o=>`<tr><td><b>${esc(o.ativo)}</b><br><span class="tt">${esc(o.motivo||'')}</span></td><td>${esc(o.lado)}</td><td class="r n">${o.qtd}</td>
+        <td class="r n">${Number(o.entrada||o.entradaRef).toFixed(2)}</td><td class="r n">${Number(o.stop).toFixed(2)}</td><td class="r n">${Number(o.alvo).toFixed(2)}</td>
+        <td>${o.estado==='preparada'?`vale até ${new Date(o.validaAte).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:'executada'}</td>
+        <td class="r">${o.estado==='preparada'
+          ? `<button class="btn xs gn" onclick="dtOrdem('${m}','${o.id}','executada')">Executei</button> <button class="btn xs gh" onclick="dtOrdem('${m}','${o.id}','ignorada')">Não executei</button>`
+          : `<button class="btn xs bl" onclick="dtOrdem('${m}','${o.id}','encerrada')">Encerrei</button>`}</td></tr>`).join('')}
+      </tbody></table>` : `<div class="tt" style="padding:12px">Nenhuma ordem esperando você.</div>`;
+    h += `</div></div>`;
+  }
+
+  /* posições simuladas */
+  if((e.posicoes||[]).length){
+    h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-player-play"></i>Posições simuladas abertas</div><div class="bd"><table>
+      <thead><tr><th>Ativo</th><th>Lado</th><th class="r">Qtd</th><th class="r">Entrada</th><th class="r">Stop</th><th class="r">Alvo</th><th>Por quê</th></tr></thead><tbody>
+      ${e.posicoes.map(p=>`<tr><td><b>${esc(p.ativo)}</b></td><td>${esc(p.lado)}</td><td class="r n">${p.qtd}</td><td class="r n">${Number(p.entrada).toFixed(2)}</td><td class="r n">${Number(p.stop).toFixed(2)}</td><td class="r n">${Number(p.alvo).toFixed(2)}</td><td class="tt">${esc(p.motivo||'')}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+  }
+
+  /* curva e diário */
+  h += `<div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-chart-line"></i>Resultado acumulado</div><div class="bd">${dtCurva(e.diario)}</div></div>`;
+  const ult = (e.diario||[]).slice(-20).reverse();
+  h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-history"></i>Últimas operações</div><div class="bd"><table>
+    <thead><tr><th>Quando</th><th>Ativo</th><th>Lado</th><th>Saída por</th><th class="c">Tipo</th><th class="r">Resultado</th></tr></thead><tbody>
+    ${ult.map(o=>`<tr><td class="n">${dbr(String(o.em).slice(0,10))} ${String(o.em).slice(11,16)}</td><td><b>${esc(o.ativo)}</b></td><td>${esc(o.lado||'')}</td><td class="tt">${esc(o.motivo||'')}</td>
+      <td class="c"><span class="st ${o.real?'s-bl':'s-nt'}">${o.real?'real':'simulada'}</span></td><td class="r n"><b style="color:${dtCor(o.resultadoBRL)}">${dtR(o.resultadoBRL)}</b></td></tr>`).join('')
+      || `<tr><td colspan="6" class="c tt" style="padding:16px">Nenhuma operação ainda.</td></tr>`}
+    </tbody></table></div></div>`;
+
+  /* limites e caminho até o real */
+  const L = e.limites, pc = v => (v*100).toFixed(2).replace('.',',') + '%';
+  h += `<div class="fr3" style="align-items:start">
+    <div class="card" style="grid-column:span 1"><div class="hd"><i class="ti ti-shield-lock"></i>Travas de risco<span class="sp"></span>
+      <button class="btn xs gh" onclick="dtFormLimites('${m}')"><i class="ti ti-pencil"></i>Ajustar</button></div><div class="bd">
+      ${dtLinha('Risco por operação', pc(L.riscoPorOperacaoPct) + ' do capital')}
+      ${dtLinha('Perda máxima do dia', pc(L.perdaMaxDiariaPct) + ' → trava')}
+      ${dtLinha('Perda máxima da semana', pc(L.perdaMaxSemanalPct) + ' → trava')}
+      ${dtLinha('Operações por dia', L.maxOperacoesDia)}
+      ${dtLinha('Posições ao mesmo tempo', L.maxPosicoesAbertas)}
+      <div style="margin-top:8px">${e.trava&&e.trava.ativa?'':`<button class="btn xs rd" onclick="dtTravar('${m}')"><i class="ti ti-lock"></i>Travar agora</button>`}</div>
+    </div></div>
+    <div class="card" style="grid-column:span 2"><div class="hd"><i class="ti ti-route"></i>Caminho até o dinheiro real<span class="sp"></span>
+      <button class="btn xs gh" onclick="dtFormFase('${m}')"><i class="ti ti-pencil"></i>Mudar fase</button></div><div class="bd">
+      <div class="tt" style="margin-bottom:6px">Para sair da simulação, a estratégia precisa provar ao vivo, com dinheiro fictício:</div>
+      ${(e.criteriosReal.itens||[]).map(i=>`<div style="display:flex;gap:8px;align-items:center;padding:3px 0"><i class="ti ti-${i.ok?'check':'x'}" style="color:${i.ok?'var(--green)':'var(--red)'}"></i><span style="font-size:13px">${esc(i.texto)}</span></div>`).join('')}
+      <div class="tt" style="margin-top:8px">${e.criteriosReal.atende?'<b style="color:var(--green)">Critérios atendidos.</b> A decisão continua sendo sua.':'Ainda não atende. Ir para o real assim exige você escrever ENTENDO O RISCO.'}</div>
+      ${cripto?`<div class="fg" style="margin-top:10px"><label>Onde você opera cripto (muda o imposto)</label><select onchange="dtComando('acao',{acao:'regime_cripto',mercado:'cripto',regime:this.value})">
+        <option value="nacional" ${e.regimeCripto!=='exterior'?'selected':''}>Corretora nacional — isento até R$ 35 mil vendidos no mês</option>
+        <option value="exterior" ${e.regimeCripto==='exterior'?'selected':''}>Corretora no exterior — 15% sem isenção</option></select></div>`:''}
+    </div></div></div>`;
+
+  if((e.avisos||[]).length) h += `<div class="card"><div class="hd"><i class="ti ti-bell"></i>Avisos do motor</div><div class="bd">
+    ${e.avisos.slice().reverse().map(a=>`<div class="tt" style="padding:3px 0">${dbr(String(a.em).slice(0,10))} ${String(a.em).slice(11,16)} — ${esc(a.texto)}</div>`).join('')}</div></div>`;
+  return h;
+}
+function dtLinha(r, v){ return `<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--bg3);font-size:13px"><span class="tt">${r}</span><b>${v}</b></div>`; }
+
+/* ---- laboratório ---- */
+function dtAbaLab(){
+  const L = DT_EST.laboratorio;
+  let h = `<div class="al ai" style="margin-top:0"><i class="ti ti-flask"></i><div>Toda semana o laboratório baixa o histórico real e testa as estratégias: escolhe a melhor nos primeiros 2/3 dos dias (<b>treino</b>) e só aprova se ela também ganhar no último 1/3, que ela nunca viu (<b>teste</b>), já pagando custos.
+    O limite é de <b>${L.limiteSemana} tentativas por semana</b> por mercado — testar mais do que isso no mesmo histórico fabrica resultado bonito por acaso.</div></div>`;
+  for(const m of ['bolsa','cripto']){
+    const u = L.ultimo[m], usado = (L.tentativas||{})[m] || 0;
+    h += `<div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-${m==='bolsa'?'building-bank':'coin'}"></i>${m==='bolsa'?'Bolsa':'Cripto'} · semana ${esc(L.semana||'')} · ${usado}/${L.limiteSemana} tentativas<span class="sp"></span>
+      <button class="btn xs bl" onclick="dtLabAgora('${m}')"><i class="ti ti-player-play"></i>Rodar agora</button></div><div class="bd">`;
+    if(!u) h += `<div class="tt">Ainda não rodou. Roda sozinho no domingo às 20h, ou agora pelo botão.</div>`;
+    else if(u.erro) h += `<div class="al ae" style="margin:0"><i class="ti ti-alert-circle"></i><div>${esc(u.erro)}<div class="tt">${dbr(String(u.em).slice(0,10))}</div></div></div>`;
+    else {
+      const [vn, vc] = DT_VEREDITO[u.veredito] || ['—','s-nt'];
+      h += `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="st ${vc}">${esc(vn)}</span><b>${esc(u.decisao)}</b></div>
+        <div class="tt" style="margin:4px 0 8px">Rodou em ${dbr(String(u.em).slice(0,10))} · histórico ${esc(u.periodo)} · ${u.diasTreino} dias de treino, ${u.diasTeste} de teste · ${u.tentativas} variações testadas${u.cortadas?` (${u.cortadas} ficaram para a próxima semana)`:''}</div>
+        ${(u.motivos||[]).map(x=>`<div style="font-size:13px;padding:2px 0">${esc(x)}</div>`).join('')}
+        <div class="tt" style="margin-top:6px">Simulação ao vivo da estratégia que estava em uso: ${u.aoVivo.operacoes} operações, ${dtR(u.aoVivo.resultadoBRL)}.</div>`;
+      if((u.ranking||[]).length) h += `<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>Estratégia</th><th>Parâmetros</th><th class="r">Treino</th><th class="r">Teste</th><th class="r">Ops teste</th><th class="r">Ganho/perda</th></tr></thead><tbody>
+        ${u.ranking.slice(0,8).map(r=>`<tr><td>${esc(dtNomeEst(r.estrategia))}${/proposta/.test(r.origem||'')?' <span class="st s-pu">proposta</span>':''}</td><td class="tt">${dtParams(r.parametros)}</td>
+          <td class="r n" style="color:${dtCor(r.treino.resultadoBRL)}">${moedaK(r.treino.resultadoBRL)}</td><td class="r n"><b style="color:${dtCor(r.teste.resultadoBRL)}">${moedaK(r.teste.resultadoBRL)}</b></td>
+          <td class="r n">${r.teste.operacoes}</td><td class="r n">${Number(r.teste.fatorLucro).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    const cand = (L.candidata||{})[m];
+    if(cand) h += `<div class="al aw" style="margin-top:10px"><i class="ti ti-bulb"></i><div style="flex:1"><b>Candidata nova esperando você:</b> ${esc(dtNomeEst(cand.id))} (${dtParams(cand.parametros)}). O mercado está em fase real, então nada troca sozinho.</div>
+      <button class="btn xs gn" onclick="dtAplicarCandidata('${m}')">Usar esta</button></div>`;
+    h += `</div></div>`;
+  }
+  const props = L.propostas || [];
+  h += `<div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-bulb"></i>Ideias dos agentes para a próxima rodada (${props.length})</div><div class="bd">
+    ${props.length ? props.map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--bg3)"><b>${esc(dtNomeEst(p.estrategia))}</b> · ${esc(p.mercado)} · <span class="tt">${dtParams(p.parametros)}</span>
+      <div class="tt">${esc(p.motivo||'')} — ${esc(p.de||'')}, ${dbr(String(p.em).slice(0,10))}</div></div>`).join('')
+      : '<div class="tt">Nenhuma. O Pesquisador Quant e o Auditor propõem na revisão de segunda-feira, com base no que o laboratório e a simulação mostraram.</div>'}</div></div>`;
+  const hist = (L.historico||[]).slice().reverse();
+  if(hist.length) h += `<div class="card tw"><div class="hd"><i class="ti ti-history"></i>Histórico das rodadas</div><div class="bd"><table>
+    <thead><tr><th>Quando</th><th>Mercado</th><th>Melhor no treino</th><th class="r">Teste</th><th>Decisão</th></tr></thead><tbody>
+    ${hist.map(x=>`<tr><td class="n">${dbr(String(x.em).slice(0,10))}</td><td>${esc(x.mercado)}</td><td>${x.melhor?esc(dtNomeEst(x.melhor.estrategia)):'—'}</td>
+      <td class="r n">${x.melhor?`<b style="color:${dtCor(x.melhor.teste.resultadoBRL)}">${moedaK(x.melhor.teste.resultadoBRL)}</b>`:'—'}</td><td class="tt">${esc(x.decisao)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  return h;
+}
+
+/* ---- imposto ---- */
+function dtAbaImposto(){
+  let h = `<div class="al aw" style="margin-top:0"><i class="ti ti-receipt"></i><div>Estimativa a partir das operações <b>reais</b> que você marcou como encerradas. Confira sempre com a nota de corretagem e, se precisar, com um contador.</div></div>`;
+  const b = DT_EST.bolsa.imposto, c = DT_EST.cripto.imposto;
+  h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-building-bank"></i>Bolsa — ${esc(b.regra)}</div><div class="bd"><table>
+    <thead><tr><th>Mês</th><th class="r">Lucro líquido</th><th class="r">Prejuízo compensado</th><th class="r">IR 20%</th><th class="r">IR retido (1%)</th><th class="r">DARF 6015</th><th>Vence</th></tr></thead><tbody>
+    ${b.meses.slice().reverse().map(l=>`<tr><td>${esc(l.mes)}</td><td class="r n" style="color:${dtCor(l.lucroLiquidoBRL)}">${dtR(l.lucroLiquidoBRL)}</td><td class="r n">${dtR(l.prejuizoCompensadoBRL)}</td>
+      <td class="r n">${dtR(l.irBRL)}</td><td class="r n">${dtR(l.irrfBRL)}</td><td class="r n"><b>${dtR(l.darfBRL)}</b>${l.acumulaProximoBRL?`<br><span class="tt">abaixo de R$ 10: soma no próximo</span>`:''}</td><td class="n">${l.vencimento?dbr(l.vencimento):'—'}</td></tr>`).join('')
+      || `<tr><td colspan="7" class="c tt" style="padding:14px">Nenhuma operação real ainda.</td></tr>`}</tbody></table></div></div>`;
+  h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-coin"></i>Cripto — ${esc(c.regra)}</div><div class="bd"><table>
+    <thead><tr><th>Mês</th><th class="r">Vendido</th><th class="r">Resultado</th><th class="r">Imposto</th><th>Observação</th></tr></thead><tbody>
+    ${c.meses.slice().reverse().map(l=>`<tr><td>${esc(l.mes)}</td><td class="r n">${dtR(l.vendidoBRL)}</td><td class="r n" style="color:${dtCor(l.resultadoLiquidoBRL)}">${dtR(l.resultadoLiquidoBRL)}</td><td class="r n"><b>${dtR(l.impostoBRL)}</b></td><td class="tt">${esc(l.obs)}</td></tr>`).join('')
+      || `<tr><td colspan="5" class="c tt" style="padding:14px">Nenhuma operação real ainda.</td></tr>`}</tbody></table></div></div>`;
+  const sb = DT_EST.bolsa.impostoSeFosseReal, sc = DT_EST.cripto.impostoSeFosseReal;
+  h += `<div class="card"><div class="hd"><i class="ti ti-calculator"></i>Se a simulação deste mês fosse real</div><div class="bd">
+    ${dtLinha('Bolsa: DARF estimado', sb ? dtR(sb.darfBRL) + ` sobre ${dtR(sb.lucroLiquidoBRL)} de resultado` : 'sem operações no mês')}
+    ${dtLinha('Cripto: imposto estimado', sc ? dtR(sc.impostoBRL) + ` — ${esc(sc.obs)}` : 'sem operações no mês')}
+    <div class="tt" style="margin-top:6px">Serve para você ver quanto do lucro fica com a Receita antes de decidir ir para o real.</div></div></div>`;
+  return h;
+}
+
+/* ---- como funciona (texto fixo, também no navegador) ---- */
+function dtAbaComo(){
+  const it = (t, x) => `<div style="padding:6px 0;border-bottom:1px solid var(--bg3)"><b>${t}</b><div style="font-size:13px">${x}</div></div>`;
+  return `<div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-alert-triangle"></i>A verdade antes de tudo</div><div class="bd">
+    ${it('A maioria perde', 'Estudo da FGV com dados da CVM: de quem fez day trade de mini-índice por mais de 300 pregões, 91% teve prejuízo; só 13 de 1.558 pessoas ganharam mais de R$ 300 por dia. Na pandemia, quase 1 milhão de pessoas perderam juntas R$ 9,9 bilhões.')}
+    ${it('Em cripto também', 'O Banco de Compensações Internacionais (BIS) estimou que cerca de três em cada quatro investidores de varejo perderam dinheiro com Bitcoin.')}
+    ${it('IA não é atalho', 'Testes ao vivo de agentes de IA operando mostraram que nota alta em ranking não vira lucro, e frotas de agentes com dinheiro real ficaram atrás da referência.')}
+    ${it('Por isso este módulo', 'Ninguém aqui promete lucro. O sistema só deixa uma estratégia avançar depois de provar com números, corta o prejuízo antes que cresça e fica de fora quando não há vantagem medida.')}
+  </div></div>
+  <div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-route"></i>As quatro fases</div><div class="bd">
+    ${it('1. Laboratório', 'Toda semana testa as estratégias no histórico real, com custos: escolhe no treino e só aprova se ganhar também no teste, em dias que ela nunca viu. No máximo 45 tentativas por semana por mercado.')}
+    ${it('2. Simulação ao vivo', 'A estratégia aprovada opera com dinheiro fictício, em tempo real, a cada 15 minutos. Se ao vivo ela for bem pior que no teste, era sorte — o Auditor avisa.')}
+    ${it('3. Real pequeno', 'Só você liga. Precisa de pelo menos 30 operações simuladas em 20 dias, ganhos de 1,2× as perdas e resultado positivo — ou você escreve ENTENDO O RISCO. O motor prepara a ordem; você executa na corretora.')}
+    ${it('4. Real', 'Mesmas regras, com o capital que você definir.')}
+  </div></div>
+  <div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-shield-lock"></i>Travas que nenhum agente afrouxa</div><div class="bd">
+    ${it('Por operação', 'Perde no máximo 0,75% do capital se o stop for atingido (você pode mudar).')}
+    ${it('Por dia e por semana', 'Perdeu 2,5% no dia ou 6% na semana: o mercado trava até você destravar.')}
+    ${it('Agentes', 'Podem travar e apertar limites. Afrouxar, destravar trava de perda e colocar dinheiro real é só você.')}
+    ${it('Day trade de verdade', 'Toda posição é zerada no fim do dia. Na bolsa, antes do fim do pregão; na cripto, no fim do dia.')}
+  </div></div>
+  <div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-receipt"></i>Custos e imposto (2026)</div><div class="bd">
+    ${it('Bolsa', 'Day trade paga 20% sobre o lucro líquido do mês, sem isenção, por DARF 6015. Mini-índice: margem mínima de R$ 155 por contrato; emolumentos e taxa de registro na entrada e na saída.')}
+    ${it('Cripto em corretora nacional', 'Isento se vender até R$ 35 mil no mês; acima disso, 15% sobre o ganho.')}
+    ${it('Cripto em corretora no exterior', '15% sobre o ganho, sem isenção.')}
+    ${it('Corretoras de cripto', 'Desde fevereiro de 2026 precisam de autorização do Banco Central para atender no Brasil.')}
+  </div></div>
+  <div class="card"><div class="hd"><i class="ti ti-users"></i>A equipe na sede</div><div class="bd">
+    ${it('Gerente de Day-Trade', 'Coordena e entrega ao Comandante o resumo semanal com números.')}
+    ${it('Analista de Bolsa e Analista de Cripto', 'Agenda de eventos que mexem com o preço e explicação do que a simulação fez.')}
+    ${it('Pesquisador Quant', 'Aperfeiçoamento contínuo: propõe até 5 variações por semana, com evidência, para o laboratório testar.')}
+    ${it('Gestão de Risco', 'Trava e aperta limites quando o risco sobe.')}
+    ${it('Preparador de Ordens', 'Nas fases reais, monta a ficha de cada ordem para você executar.')}
+    ${it('Auditor de Desempenho', 'Compara teste com simulação ao vivo e com não ter feito nada; diz quando é hora de ficar de fora.')}
+  </div></div>`;
+}
+
+/* ---------------------------------------------------------- ações do dono */
+async function dtComando(cmd, arg){
+  if(DT_OCUPADO){ toast('O motor ainda está trabalhando…','aw'); return; }
+  DT_OCUPADO = true; toast(cmd === 'laboratorio' ? 'Laboratório rodando — pode levar alguns minutos…' : 'Falando com o motor…', 'ai');
+  const r = await dtPedir(cmd, arg); DT_OCUPADO = false;
+  const erro = r && (r.erro || (r.ok === false && r.erro));
+  if(erro){ toast(erro, 'ae'); }
+  else if(cmd === 'ciclo') toast((r.log && r.log.length) ? r.log.slice(-1)[0] : 'Ciclo feito: nada a fazer agora.', 'ag');
+  else if(cmd === 'laboratorio'){ const x = r[arg] || r; toast(x.ok === false ? x.erro : ('Laboratório: ' + (x.decisao || 'pronto')), x.ok === false ? 'aw' : 'ag'); }
+  else toast((r && r.msg) || 'Feito.', 'ag');
+  await dtCarregar(); dtDesenhar();
+  return r;
+}
+function dtTravar(m){ confirmar('Travar ' + m, 'Nenhuma entrada nova até você destravar. Posições abertas seguem com stop e alvo.', () => dtComando('acao', { acao:'travar', mercado:m, motivo:'travado pelo dono no JeV' })); }
+function dtDestravar(m){ confirmar('Destravar ' + m, 'O mercado volta a aceitar entradas, dentro das travas de risco. Se a trava foi por perda, pense se o motivo passou.', () => dtComando('acao', { acao:'destravar', mercado:m })); }
+function dtLabAgora(m){
+  const usado = ((DT_EST && DT_EST.laboratorio.tentativas) || {})[m] || 0;
+  confirmar('Rodar o laboratório agora', `Baixa o histórico real e testa as estratégias de ${m}. Usa tentativas do limite da semana (${usado} de ${DT_EST.laboratorio.limiteSemana} já usadas). Pode levar alguns minutos.`, () => dtComando('laboratorio', m));
+}
+function dtAplicarCandidata(m){ confirmar('Trocar a estratégia', 'O mercado está em fase real: a partir de agora as ordens preparadas para você seguem a estratégia nova.', () => dtComando('acao', { acao:'aplicar_candidata', mercado:m })); }
+
+function dtOrdem(m, id, estado){
+  const o = (DT_EST[m].ordensPendentes||[]).find(x => x.id === id); if(!o) return;
+  if(estado === 'ignorada') return dtComando('acao', { acao:'ordem_ignorada', mercado:m, id });
+  const exec = estado === 'executada';
+  modal(exec ? 'Anotar ordem executada' : 'Anotar saída da operação', 'ti-list-check',
+    `<div class="tt" style="margin-bottom:8px">${esc(o.lado)} ${o.qtd} de <b>${esc(o.ativo)}</b> · stop ${Number(o.stop).toFixed(2)} · alvo ${Number(o.alvo).toFixed(2)}</div>
+     <div class="fr3"><div class="fg"><label>${exec?'Preço em que executou':'Preço de saída'}</label><input id="dto-preco" type="number" step="0.0001" value="${exec?Number(o.entradaRef).toFixed(2):''}"></div>
+     ${exec?`<div class="fg"><label>Quantidade</label><input id="dto-qtd" type="number" step="0.00000001" value="${o.qtd}"></div>`:`<div class="fg"><label>Resultado da nota (opcional)</label><input id="dto-res" type="number" step="0.01" placeholder="em branco = calcular"></div>`}</div>
+     <div class="hint">${exec?'Só anote se você realmente executou na sua corretora.':'O resultado vai para o diário e para a conta do imposto.'}</div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="dtOrdemSalvar('${m}','${id}','${estado}')"><i class="ti ti-device-floppy"></i>Anotar</button>`);
+}
+async function dtOrdemSalvar(m, id, estado){
+  const preco = num(val('dto-preco')); if(!(preco > 0)){ toast('Informe o preço.','aw'); return; }
+  const a = { acao: estado === 'executada' ? 'ordem_executada' : 'ordem_encerrada', mercado:m, id, preco };
+  if(estado === 'executada') a.qtd = num(val('dto-qtd'));
+  else { const r = val('dto-res'); if(r !== '') a.resultadoBRL = num(r); }
+  closeModal('mk-form'); await dtComando('acao', a);
+}
+
+function dtFormLimites(m){
+  const L = DT_EST[m].limites, p = v => +(v*100).toFixed(3);
+  modal('Travas de risco — ' + m, 'ti-shield-lock',
+    `<div class="fr3">
+      <div class="fg"><label>Risco por operação (%)</label><input id="dtl-r" type="number" step="0.05" value="${p(L.riscoPorOperacaoPct)}"></div>
+      <div class="fg"><label>Perda máxima do dia (%)</label><input id="dtl-d" type="number" step="0.1" value="${p(L.perdaMaxDiariaPct)}"></div>
+      <div class="fg"><label>Perda máxima da semana (%)</label><input id="dtl-s" type="number" step="0.1" value="${p(L.perdaMaxSemanalPct)}"></div></div>
+     <div class="fr3">
+      <div class="fg"><label>Operações por dia</label><input id="dtl-o" type="number" min="1" value="${L.maxOperacoesDia}"></div>
+      <div class="fg"><label>Posições ao mesmo tempo</label><input id="dtl-p" type="number" min="1" value="${L.maxPosicoesAbertas}"></div>
+      <div class="fg"><label>Capital da simulação (R$)</label><input id="dtl-c" type="number" step="100" value="${DT_EST[m].capitalSimulacao}"></div></div>
+     <div class="hint">Risco por operação acima de 3% não é aceito. Quem passa de 1% por operação costuma quebrar numa sequência ruim normal.</div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="dtSalvarLimites('${m}')"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function dtSalvarLimites(m){
+  const lim = { riscoPorOperacaoPct: num(val('dtl-r'))/100, perdaMaxDiariaPct: num(val('dtl-d'))/100, perdaMaxSemanalPct: num(val('dtl-s'))/100,
+                maxOperacoesDia: num(val('dtl-o')), maxPosicoesAbertas: num(val('dtl-p')) };
+  const cap = num(val('dtl-c'));
+  closeModal('mk-form');
+  await dtComando('acao', { acao:'limites', mercado:m, limites:lim });
+  if(cap !== DT_EST[m].capitalSimulacao) await dtComando('acao', { acao:'capital_simulacao', mercado:m, valor:cap });
+}
+
+function dtFormFase(m){
+  const e = DT_EST[m];
+  modal('Fase do mercado — ' + m, 'ti-route',
+    `<div class="fg"><label>Fase</label><select id="dtf-f" onchange="document.getElementById('dtf-real').style.display=/real/.test(this.value)?'':'none'">
+      ${Object.entries(DT_FASES).map(([k,[n]])=>`<option value="${k}" ${e.fase===k?'selected':''}>${n}</option>`).join('')}</select></div>
+     <div id="dtf-real" style="${/real/.test(e.fase)?'':'display:none'}">
+      <div class="al aw"><i class="ti ti-alert-triangle"></i><div>Dinheiro de verdade. O motor prepara as ordens e <b>você</b> executa na corretora, sempre com o stop junto. A maioria das pessoas físicas perde no day trade.</div></div>
+      <div class="fr3"><div class="fg"><label>Capital real que aceito arriscar (R$)</label><input id="dtf-cap" type="number" step="100" value="${e.capitalReal||''}"></div>
+      <div class="fg" style="grid-column:span 2"><label>${e.criteriosReal.atende?'Confirmação (opcional)':'A simulação ainda não provou: escreva ENTENDO O RISCO'}</label><input id="dtf-ok" placeholder="ENTENDO O RISCO"></div></div></div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="dtSalvarFase('${m}')"><i class="ti ti-device-floppy"></i>Mudar</button>`);
+}
+async function dtSalvarFase(m){
+  const fase = val('dtf-f'); const a = { acao:'fase', mercado:m, fase };
+  if(/real/.test(fase)){ a.capitalRealBRL = num(val('dtf-cap')); a.cienteDoRisco = String(val('dtf-ok')||'').trim().toUpperCase(); }
+  closeModal('mk-form'); await dtComando('acao', a);
+}
+/* =========================================================================
+   META R$ 50 MIL — o painel do plano de renda e o "comando único"
+
+   O que mede: o lucro do mês (receitas menos despesas do Financeiro, pela data
+   de competência) de cada frente do plano, contra a meta do mês do plano.
+   O que comanda: o piloto automático da sede (engine/renda/piloto.js) — "Rodar
+   tudo agora" e o piloto diário. A sede prepara; publicar, pagar e enviar
+   continuam com o dono (a fila do dono aparece aqui).
+
+   Mora fora de UNIDADES, como Escritório, Software e Day-Trade.
+   ========================================================================= */
+const META = {
+  id:'meta', pg:'meta', nome:'Meta R$ 50 mil', curto:'Meta R$ 50 mil',
+  ic:'ti-target', cor:'#1F7A44', bg:'#E7F4EC',
+  desc:'Plano de renda: placar por frente e o comando único',
+  tabs:[['meta','Meta R$ 50 mil','ti-target']]
+};
+const META_ALVO = 50000;
+const META_DOC = 'https://claude.ai/artifact/18ie5XgKkXfamkDTPT5ujG';
+/* metas de LUCRO por mês no mês 3, 6 e 12 do plano (o documento explica de onde vêm) */
+const META_FRENTES = [
+  { id:'infoprodutos', nome:'Infoprodutos',    ic:'ti-device-laptop',  uns:['info'],           m:[500, 4000, 12000], piloto:'infoprodutos' },
+  { id:'afiliados',    nome:'Afiliados',       ic:'ti-link',           uns:[], afil:true,      m:[500, 3000, 10000], piloto:'afiliados' },
+  { id:'imp3d',        nome:'Impressão 3D',    ic:'ti-3d-cube-sphere', uns:['imp3d'],          m:[1500, 4000, 8000], piloto:'imp3d' },
+  { id:'chacara',      nome:'Chácara',         ic:'ti-plant-2',        uns:['chacara'],        m:[1000, 4000, 7000], piloto:'chacara' },
+  { id:'midia',        nome:'Mídia (anúncio)', ic:'ti-share',          uns:['midia'],          m:[0, 500, 3500],     piloto:'midia' },
+  { id:'imoveis',      nome:'Imóveis',         ic:'ti-home',           uns:['imoveis'],        fixo:'imoveis',         piloto:'cobrancas' },
+  { id:'frota',        nome:'Veículos e máquinas', ic:'ti-car',        uns:['veiculos'],       fixo:'frota',           piloto:'frota' },
+  { id:'obras',        nome:'Obras',           ic:'ti-crane',          uns:['obras'],          m:null },
+];
+/* o que já entra: 6 aluguéis de R$ 1.300 e 1 de R$ 1.400, menos 10% da imobiliária (informado em 23/11/2026) */
+const META_IMOVEIS_PADRAO = 6 * 1300 * 0.9 + 1400 * 0.9;
+const META_CONTAS = [
+  ['shopee','Shopee Afiliados: dados fiscais, pagamento e pedido do Open API'],
+  ['ml','Mercado Livre: Programa de Afiliados e Criadores'],
+  ['amazon','Amazon Associados'],
+  ['hotmart','Hotmart: conta de produtor'],
+  ['kdp','Amazon KDP: conta de autor com dados fiscais'],
+  ['loja','Shopify ou Nuvemshop: loja da J&V Artigos 3D'],
+  ['vendedor','Shopee e Mercado Livre como vendedor (peças 3D)'],
+  ['tiktok','TikTok: 1.000 seguidores e TikTok Shop de afiliado'],
+  ['pinterest','Pinterest: conta comercial ligada à Shopee'],
+  ['zap','WhatsApp: número reserva próprio para os grupos de ofertas'],
+];
+let META_EST = null;      /* último estado do piloto vindo da sede */
+let META_POLL = null;
+
+function metaApp(){ const a = (typeof APP === 'function') ? APP() : null; return a && a.pilotoRodar ? a : null; }
+async function metaPiloto(cmd, arg){
+  const a = metaApp(); if(!a) return { ok:false, erro:'O piloto roda no aplicativo do Windows, junto com a sede dos agentes.' };
+  try { return await a.pilotoRodar(cmd, arg); } catch(e){ return { ok:false, erro:String(e && e.message || e) }; }
+}
+
+/* mês do plano: 1 no mês em que o plano começou */
+function metaInicio(){ return CFG.metaInicio || mesAtual(); }
+function metaMesDoPlano(mk){
+  const [a0,m0] = metaInicio().split('-').map(Number), [a1,m1] = (mk||mesAtual()).split('-').map(Number);
+  return Math.max(1, (a1-a0)*12 + (m1-m0) + 1);
+}
+/* meta interpolada entre (0,0) (3,m3) (6,m6) (12,m12); depois do 12 fica no m12 */
+function metaDoMes(m3m6m12, n){
+  if(!m3m6m12) return null;
+  const pts = [[0,0],[3,m3m6m12[0]],[6,m3m6m12[1]],[12,m3m6m12[2]]];
+  if(n >= 12) return m3m6m12[2];
+  for(let i=1;i<pts.length;i++){ const [x0,y0]=pts[i-1], [x1,y1]=pts[i];
+    if(n <= x1) return Math.round(y0 + (y1-y0)*(n-x0)/(x1-x0)); }
+  return m3m6m12[2];
+}
+/* metas das frentes que já existem: imóveis = o que os contratos rendem; frota = o plano de frota */
+function metaFixa(f, n){
+  if(f.fixo === 'imoveis') return Math.round(num(CFG.metaImoveis) || META_IMOVEIS_PADRAO);
+  if(f.fixo === 'frota') return (typeof frotaMetaMes === 'function') ? frotaMetaMes(n) : null;
+  return null;
+}
+
+/* lançamentos de comissão de afiliado: marcados pela categoria ou pela descrição */
+function metaEhAfiliado(l){ return /afiliad|comiss[aã]o/i.test(String(l.cat||'') + ' ' + String(l.desc||'')); }
+function metaLucroFrente(f, mk){
+  const doMes = FIN.filter(l => finVale(l) && String(l.data||'').slice(0,7) === mk);
+  let ls;
+  if(f.afil) ls = doMes.filter(metaEhAfiliado);
+  else ls = doMes.filter(l => f.uns.includes(l.un) && !metaEhAfiliado(l));
+  const rec = ls.filter(l=>l.tipo==='receita').reduce((s,l)=>s+num(l.valor),0);
+  const des = ls.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+num(l.valor),0);
+  return { rec, des, lucro: rec - des };
+}
+function metaPlacar(mk){
+  mk = mk || mesAtual();
+  const n = metaMesDoPlano(mk);
+  const linhas = META_FRENTES.map(f => {
+    const r = metaLucroFrente(f, mk);
+    const meta = f.m ? metaDoMes(f.m, n) : metaFixa(f, n);
+    return { ...f, ...r, meta };
+  });
+  const lucro = linhas.reduce((s,l)=>s+l.lucro,0);
+  const metaMes = linhas.reduce((s,l)=>s+(l.meta||0),0);
+  return { mk, n, linhas, lucro, metaMes };
+}
+
+/* ------------------------------------------------ cartão da página inicial */
+function metaCardHub(){
+  const u = META, P = metaPlacar();
+  const pc = Math.max(0, Math.min(100, P.lucro / META_ALVO * 100));
+  return `<div class="ucard" style="--uc:${u.cor};--ucb:${u.bg}" onclick="go('${u.pg}')">
+      <div class="bar"></div>
+      <div class="top2"><div class="ico"><i class="ti ${u.ic}"></i></div>
+        <div style="flex:1;min-width:0"><h3>${esc(u.curto)}</h3><div class="sub">${esc(u.desc)}</div></div></div>
+      <div class="body">
+        <div class="kv"><span>Mês do plano</span><b>${P.n} de 12</b></div>
+        <div class="kv"><span>Lucro do mês (frentes)</span><b style="color:${P.lucro>=0?'var(--green)':'var(--red)'}">${moedaK(P.lucro)}</b></div>
+        <div class="kv"><span>Meta deste mês</span><b>${moedaK(P.metaMes)}</b></div>
+        <div style="height:8px;border-radius:6px;background:var(--bg3);overflow:hidden;margin:8px 0 2px"><div style="height:100%;width:${pc.toFixed(1)}%;background:${u.cor}"></div></div>
+        <div class="foot">
+          <div><div class="tt">Caminho até os R$ 50 mil</div><div class="res">${pc.toFixed(0)}%</div></div>
+          <div class="go">Abrir <i class="ti ti-arrow-right"></i></div></div>
+      </div></div>`;
+}
+
+/* ------------------------------------------------ retrato que vai para a sede */
+async function metaRetrato(){
+  const P = metaPlacar();
+  const progs = await dbGetAll('programas').catch(()=>[]);
+  const prods = await dbGetAll('produtos').catch(()=>[]);
+  const contas = CFG.metaContas || {};
+  const L = [];
+  L.push(`# Retrato da meta — ${dmesL ? dmesL(P.mk) : P.mk}`, '');
+  L.push(`Gerado pelo JeV em ${new Date().toLocaleString('pt-BR')}. Mês ${P.n} do plano (início ${metaInicio()}). Meta final: R$ 50.000 de lucro por mês.`, '');
+  L.push('| Frente | Lucro no mês | Meta do mês |', '|---|---|---|');
+  P.linhas.forEach(l => L.push(`| ${l.nome} | ${moeda(l.lucro)} | ${l.meta==null?'—':moeda(l.meta)} |`));
+  L.push(`| **Total** | **${moeda(P.lucro)}** | **${moeda(P.metaMes)}** |`, '');
+  L.push('## Contas do dono', '');
+  META_CONTAS.forEach(([k,t]) => L.push(`- [${contas[k]?'x':' '}] ${t}`));
+  L.push('', '## Vitrine de afiliados', '');
+  const ativos = progs.filter(p=>p.ativo!==false);
+  L.push(`${ativos.length} item(ns) ativo(s), ${ativos.filter(p=>p.url).length} com link.`);
+  ativos.slice(0,30).forEach(p => L.push(`- ${p.produto} · ${p.plataforma||'?'} · ${p.url?'com link':'SEM LINK'} · divulgado em: ${(p.canais||[]).join(', ')||'nenhum canal'}${p.rel?` · relatório: ${p.rel.vendas||0} vendas, ${moeda(p.rel.comissao||0)}`:''}`));
+  L.push('', '## Infoprodutos', '');
+  const infos = prods.filter(p=>p.tipo==='Infoproduto');
+  if(!infos.length) L.push('Nenhum infoproduto cadastrado ainda.');
+  infos.forEach(p => { const lj = p.lojas || {}; L.push(`- ${p.nome} (${moeda(p.preco)}) · ${Object.entries(lj).map(([k,v])=>`${k}: ${v.status||'—'}`).join(', ') || 'nenhuma loja'}`); });
+  const cp = CFG.chacaraPlano;
+  L.push('', '## Plano da chácara', '');
+  L.push(cp ? `Adotado em ${cp.em}: lucro estimado ${moeda(cp.lucro)} por mês. ${cp.itens.map(i=>`${i.nome}: ${i.qtd} ${i.und}`).join('; ')}.` : 'Ainda não adotado no JeV.');
+  if(typeof frotaRetrato === 'function') L.push('', frotaRetrato());
+  return L.join('\n');
+}
+
+/* ------------------------------------------------ a tela */
+async function metaRender(){
+  const root = document.getElementById('meta-root'); if(!root) return;
+  await finLoad();
+  if(!CFG.metaInicio){ CFG.metaInicio = mesAtual(); await cfgSalvar(); }
+  const P = metaPlacar();
+  const app = metaApp();
+  if(app){ META_EST = await metaPiloto('estado'); } else META_EST = null;
+  const E = META_EST && META_EST.ok ? META_EST : null;
+  const pc = Math.max(0, Math.min(100, P.lucro / META_ALVO * 100));
+
+  let h = `<div class="ph"><div class="ic" style="background:${META.bg};color:${META.cor}"><i class="ti ti-target"></i></div>
+    <div><h1>Meta R$ 50 mil por mês</h1><p>Mês ${P.n} do plano · lucro de cada frente pelo Financeiro · a sede prepara, você publica</p></div>
+    <div class="sp"></div>
+    <a class="btn gh" href="${META_DOC}" target="_blank" rel="noopener"><i class="ti ti-file-text"></i>Ver o plano</a></div>`;
+
+  h += `<div class="kg" style="margin-bottom:14px">
+    <div class="kc gn"><div class="lb"><i class="ti ti-report-money"></i>Lucro do mês</div><div class="vl" style="color:${P.lucro>=0?'var(--green)':'var(--red)'}">${moedaK(P.lucro)}</div><div class="sb">soma das frentes em ${esc(dmesL(P.mk))}</div></div>
+    <div class="kc bl"><div class="lb"><i class="ti ti-target"></i>Meta deste mês</div><div class="vl">${moedaK(P.metaMes)}</div><div class="sb">mês ${P.n} do plano de 12</div></div>
+    <div class="kc pu"><div class="lb"><i class="ti ti-trophy"></i>Até os R$ 50 mil</div><div class="vl">${pc.toFixed(0)}%</div><div class="sb">faltam ${moedaK(Math.max(0, META_ALVO - P.lucro))}</div></div>
+    <div class="kc ${E && E.ligado ? 'gn' : 'am'}"><div class="lb"><i class="ti ti-clock"></i>Piloto diário</div><div class="vl" style="font-size:18px">${!app ? 'no app' : E ? (E.ligado ? 'Ligado' : 'Desligado') : 'sede fechada'}</div><div class="sb">${E && E.horario ? esc(E.horario) : '—'}</div></div>
+  </div>`;
+
+  /* o comando único */
+  h += `<div class="card" style="margin-bottom:12px;border:2px solid ${META.cor}"><div class="bd" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <div style="flex:1;min-width:260px"><b style="font-size:15px">Comando único</b>
+      <div class="tt" style="margin-top:3px">Manda à sede uma missão para cada frente do dia (mídia, afiliados, infoprodutos, impressão 3D, chácara, cobranças e placar). Os agentes pesquisam, escrevem e preparam; no fim, o que precisa de você aparece na fila abaixo.</div>
+      ${E && E.rodando ? `<div class="al ai" style="margin:8px 0 0"><i class="ti ti-loader"></i><div>Rodando desde ${esc(String(E.rodando.desde).slice(11,16))}${E.rodando.atual?` — agora: <b>${esc(E.rodando.atual)}</b>`:''}.</div></div>` : ''}
+      ${E && E.teto ? `<div class="tt" style="margin-top:6px">Gasto com IA hoje: ${moeda(E.teto.gastoHojeBRL)} de ${moeda(E.teto.tetoDiarioBRL)} (teto diário da sede).</div>` : ''}</div>
+    <button class="btn" style="background:${META.cor};font-size:15px;padding:12px 18px" ${!app || (E && E.rodando) ? 'disabled' : ''} onclick="metaRodar(false)"><i class="ti ti-player-play"></i>Rodar tudo agora</button>
+    ${app && E ? `<button class="btn gh" onclick="metaLigar(${E.ligado?'false':'true'})"><i class="ti ti-${E.ligado?'x':'clock'}"></i>${E.ligado?'Desligar piloto diário':'Ligar piloto diário'}</button>` : ''}
+  </div>${!app ? `<div class="bd" style="padding-top:0"><div class="al ai" style="margin:0"><i class="ti ti-info-circle"></i><div>O comando roda no <b>aplicativo do Windows</b>, junto com a sede dos agentes. Aqui no navegador dá para ver o placar e marcar as contas.</div></div></div>` : ''}
+  ${app && META_EST && !META_EST.ok ? `<div class="bd" style="padding-top:0"><div class="al ae" style="margin:0"><i class="ti ti-alert-circle"></i><div>${esc(META_EST.erro||'')}</div></div></div>` : ''}</div>`;
+
+  /* placar */
+  h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-chart-bar"></i>Placar de ${esc(dmesL(P.mk))}</div><div class="bd"><table>
+    <thead><tr><th>Frente</th><th class="r">Receita</th><th class="r">Despesa</th><th class="r">Lucro</th><th class="r">Meta do mês</th><th style="width:22%">Andamento</th><th>Sede</th></tr></thead><tbody>
+    ${P.linhas.map(l => {
+      const fr = E ? E.frentes.find(x => x.id === l.piloto) : null;
+      const pcl = l.meta ? Math.max(0, Math.min(100, l.lucro / l.meta * 100)) : null;
+      return `<tr><td><i class="ti ${l.ic}" style="color:var(--text3)"></i> <b>${esc(l.nome)}</b></td>
+        <td class="r n">${moeda(l.rec)}</td><td class="r n">${moeda(l.des)}</td>
+        <td class="r n"><b style="color:${l.lucro>=0?'var(--green)':'var(--red)'}">${moeda(l.lucro)}</b></td>
+        <td class="r n">${l.meta==null?'<span class="tt">sem meta</span>':moeda(l.meta)}</td>
+        <td>${pcl==null?'':`<div style="height:7px;border-radius:5px;background:var(--bg3);overflow:hidden"><div style="height:100%;width:${pcl.toFixed(0)}%;background:${pcl>=100?'var(--green)':META.cor}"></div></div><span class="tt">${pcl.toFixed(0)}%</span>`}</td>
+        <td>${fr ? `<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer"><input type="checkbox" ${fr.ligada?'checked':''} onchange="metaFrente('${fr.id}',this.checked)"> ${fr.missao?`<span class="st ${fr.missao.etapa==='concluida'?'s-ok':fr.missao.etapa==='bloqueada'?'s-bl':'s-pd'}" title="${esc(fr.missao.resultado||'')}">${esc(fr.missao.id)} ${esc(fr.missao.etapa)}</span>`:'<span class="tt">ainda não rodou</span>'}</label>` : '<span class="tt">—</span>'}</td></tr>`;
+    }).join('')}
+    <tr style="background:var(--bg2)"><td><b>Total</b></td><td></td><td></td><td class="r n"><b>${moeda(P.lucro)}</b></td><td class="r n"><b>${moeda(P.metaMes)}</b></td><td colspan="2"></td></tr>
+    </tbody></table>
+    <div class="tt" style="padding:8px 12px">Afiliados: entram os lançamentos com categoria ou descrição "afiliado" ou "comissão". As outras frentes contam pela unidade do lançamento, na data de competência.</div></div></div>`;
+
+  /* fila do dono */
+  if(E){
+    h += `<div class="card" style="margin-bottom:12px"><div class="hd"><i class="ti ti-list-check"></i>Fila do dono (${E.fila.reduce((s,f)=>s+f.itens.filter(i=>!i.feito).length,0)})<span class="sp"></span>
+      ${metaApp() && metaApp().agAbrir ? `<button class="btn xs gh" onclick="APP().agAbrir()"><i class="ti ti-external-link"></i>Abrir a sede</button>` : ''}</div><div class="bd">
+      ${E.fila.length ? E.fila.map(f => `<div style="padding:6px 0;border-bottom:1px solid var(--bg3)"><b>${esc(f.titulo.replace(/^Fila do dono\s*[—-]\s*/,''))}</b> <span class="tt">${esc(dbr(f.dia))}</span>
+        ${f.itens.map(i => `<div style="display:flex;gap:8px;padding:3px 0 0 4px;font-size:13px"><i class="ti ti-${i.feito?'check':'square'}" style="color:${i.feito?'var(--green)':'var(--text3)'}"></i><span>${esc(i.texto)}</span></div>`).join('')}
+        <div class="tt" style="padding-left:4px">${esc(f.arquivo)}</div></div>`).join('')
+        : '<div class="tt">Nada esperando você. Depois do primeiro "Rodar tudo", o que precisa de um clique seu aparece aqui.</div>'}
+    </div></div>`;
+  }
+
+  /* contas */
+  const contas = CFG.metaContas || {};
+  const feitas = META_CONTAS.filter(([k]) => contas[k]).length;
+  h += `<div class="fr2" style="align-items:start">
+    <div class="card"><div class="hd"><i class="ti ti-users"></i>Contas a abrir (${feitas}/${META_CONTAS.length})</div><div class="bd">
+      ${META_CONTAS.map(([k,t]) => `<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px;cursor:pointer"><input type="checkbox" ${contas[k]?'checked':''} onchange="metaConta('${k}',this.checked)"><span style="${contas[k]?'color:var(--text3);text-decoration:line-through':''}">${esc(t)}</span></label>`).join('')}
+      <div class="tt" style="margin-top:6px">Sem essas contas, os agentes trabalham, mas o dinheiro não tem por onde entrar.</div></div></div>
+    <div class="card"><div class="hd"><i class="ti ti-info-circle"></i>Como ler este painel</div><div class="bd" style="font-size:13px">
+      <p style="margin:0 0 8px">A meta de cada frente nova cresce mês a mês até o mês 12 (o plano explica cada número). Imóveis têm meta fixa no que os contratos rendem; Veículos e máquinas seguem o Plano de frota (Veículos → Plano de frota).</p>
+      <p style="margin:0 0 8px">Day-Trade fica fora: não tem retorno esperado até provar na simulação.</p>
+      <p style="margin:0">Início do plano: <b>${esc(dmesL(metaInicio()))}</b> · Imóveis: <b>${moeda(num(CFG.metaImoveis) || META_IMOVEIS_PADRAO)}</b> por mês · <a href="#" onclick="metaMudarInicio();return false">mudar</a></p></div></div></div>`;
+
+  root.innerHTML = h;
+  clearTimeout(META_POLL);
+  if(E && E.rodando) META_POLL = setTimeout(() => { if(document.getElementById('meta-root') && document.querySelector('#pg-meta.on')) metaRender(); }, 15000);
+}
+
+async function metaRodar(forcar){
+  confirmar('Rodar tudo agora',
+    'A sede abre uma missão para cada frente do dia e trabalha nelas uma a uma. Pode levar de minutos a algumas horas, e o gasto com IA fica dentro do teto diário da sede. Nada é publicado, pago ou enviado sem você.',
+    async () => {
+      toast('Montando o retrato da meta…', 'ai');
+      const retrato = await metaRetrato();
+      const r = await metaPiloto('rodar', { retrato, forcar: !!forcar });
+      toast(r.ok ? (r.msg || 'Piloto rodando.') : r.erro, r.ok ? 'ag' : 'ae');
+      setTimeout(metaRender, 2500);
+    });
+}
+async function metaLigar(sim){
+  const r = await metaPiloto(sim ? 'ligar' : 'desligar');
+  toast(r.ok ? r.msg : r.erro, r.ok ? 'ag' : 'ae'); metaRender();
+}
+async function metaFrente(id, ligada){
+  const r = await metaPiloto('acao', { tipo:'frente', id, ligada });
+  toast(r.ok ? r.msg : r.erro, r.ok ? 'ag' : 'ae');
+}
+async function metaConta(k, v){
+  CFG.metaContas = { ...(CFG.metaContas || {}), [k]: !!v }; await cfgSalvar(); metaRender();
+}
+function metaMudarInicio(){
+  modal('Início do plano', 'ti-calendar',
+    `<div class="fg"><label>Mês em que o plano começou</label><input id="meta-ini" type="month" value="${esc(metaInicio())}"></div>
+     <div class="fg"><label>Quanto os imóveis rendem por mês, líquido da imobiliária (R$)</label><input id="meta-imov" type="number" step="10" value="${Math.round(num(CFG.metaImoveis) || META_IMOVEIS_PADRAO)}"></div>
+     <div class="hint">A meta de cada frente é contada a partir deste mês. O valor dos imóveis é a meta da linha Imóveis.</div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="metaSalvarInicio()"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function metaSalvarInicio(){
+  const v = val('meta-ini'); if(!/^\d{4}-\d{2}$/.test(v)){ toast('Escolha um mês.','aw'); return; }
+  CFG.metaInicio = v; CFG.metaImoveis = num(val('meta-imov')) || META_IMOVEIS_PADRAO; await cfgSalvar(); closeModal('mk-form'); metaRender();
+}
+/* =========================================================================
+   VITRINE DE AFILIADOS — Produtos → Vitrine de afiliados
+
+   Cada item de afiliado (a ficha do store 'programas', a mesma do Canal de
+   Afiliado) com: onde é vendido, o link, onde está sendo divulgado, cliques,
+   vendas e comissão.
+
+   "Onde está sendo divulgado" junta duas fontes:
+     - automática: as publicações marcadas na Central (vídeo cujo roteiro leva
+       o produto), por rede;
+     - manual: os canais que você marcar (grupo de WhatsApp, Telegram etc.).
+   Cliques, vendas e comissão vêm do relatório CSV que a Shopee e o Mercado
+   Livre deixam baixar (Importar relatório) ou são digitados à mão.
+   ========================================================================= */
+const VIT_CANAIS = [
+  ['WhatsApp','ti-brand-whatsapp','#25D366'], ['YouTube','ti-brand-youtube','#C0392B'], ['YouTube Shorts','ti-brand-youtube','#E5484D'],
+  ['TikTok','ti-brand-tiktok','#111827'], ['Instagram','ti-brand-instagram','#C13584'], ['Facebook','ti-brand-facebook','#1877F2'],
+  ['Kwai','ti-video','#FF7A00'], ['Pinterest','ti-brand-pinterest','#E60023'], ['Telegram','ti-send','#229ED9'], ['X (Twitter)','ti-brand-x','#111111'],
+];
+let VIT_IMPORT = null;    /* prévia do relatório importado */
+
+function vitNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function vitCanal(nome){ return VIT_CANAIS.find(c => c[0] === nome) || [nome,'ti-share','#59636A']; }
+
+/* publicações marcadas na Central, por produto (via o roteiro que leva o produto) */
+async function vitPublicacoes(){
+  const pubs = await dbGetAll('publicacoes').catch(()=>[]);
+  const rots = await dbGetAll('roteiros').catch(()=>[]);
+  const rotPorId = {}; rots.forEach(r => rotPorId[r.id] = r);
+  const porProd = {};
+  pubs.forEach(p => {
+    const r = rotPorId[p.roteiroId]; if(!r) return;
+    const nomeRede = (typeof plat === 'function' && plat(p.plataforma)) ? plat(p.plataforma).nome : String(p.plataforma||'');
+    (r.produtos || []).forEach(x => {
+      const k = vitNorm(x.nome || x.produto || x.n || '');
+      if(!k) return;
+      (porProd[k] = porProd[k] || {});
+      porProd[k][nomeRede] = (porProd[k][nomeRede] || 0) + 1;
+    });
+  });
+  return porProd;
+}
+
+function vitNumeros(p){
+  const r = p.rel || {};
+  return { cliques: num(r.cliques != null ? r.cliques : p.cliques), vendas: num(r.vendas != null ? r.vendas : p.vendas),
+           ganho: num(r.comissao != null ? r.comissao : p.ganhoTotal) };
+}
+
+async function prodTabVitrine(un){
+  const body = document.getElementById('prd-body-'+un); if(!body) return;
+  const progs = (await dbGetAll('programas')).filter(p => p.produto).sort((a,b) => vitNumeros(b).ganho - vitNumeros(a).ganho || String(a.produto).localeCompare(String(b.produto)));
+  const pubs = await vitPublicacoes();
+  const ativos = progs.filter(p => p.ativo !== false);
+  const tot = ativos.reduce((s,p) => { const n = vitNumeros(p); s.c += n.cliques; s.v += n.vendas; s.g += n.ganho; return s; }, {c:0, v:0, g:0});
+
+  let h = `<div class="kg" style="margin-bottom:12px">
+    <div class="kc br"><div class="lb"><i class="ti ti-link"></i>Itens ativos</div><div class="vl">${ativos.length}</div><div class="sb">${ativos.filter(p=>p.url).length} com link · ${ativos.filter(p=>!p.url).length} sem link</div></div>
+    <div class="kc bl"><div class="lb"><i class="ti ti-eye"></i>Cliques</div><div class="vl">${tot.c.toLocaleString('pt-BR')}</div><div class="sb">do último relatório</div></div>
+    <div class="kc pu"><div class="lb"><i class="ti ti-shopping-cart"></i>Vendas</div><div class="vl">${tot.v.toLocaleString('pt-BR')}</div><div class="sb">${tot.c?((tot.v/tot.c)*100).toFixed(1).replace('.',',')+'% dos cliques':'—'}</div></div>
+    <div class="kc gn"><div class="lb"><i class="ti ti-coin"></i>Comissão</div><div class="vl">${moedaK(tot.g)}</div><div class="sb">soma dos itens</div></div>
+  </div>
+  <div class="card tw"><div class="hd"><i class="ti ti-building-store"></i>Vitrine de afiliados<span class="sp"></span>
+    <button class="btn sm gh" onclick="vitImportar('${un}')"><i class="ti ti-upload"></i>Importar relatório (CSV)</button>
+    <button class="btn sm gn" onclick="progForm(null)"><i class="ti ti-plus"></i>Novo item</button></div><div class="bd">`;
+  if(!progs.length){
+    h += `<div class="empty"><i class="ti ti-link-off"></i><b>Nenhum item de afiliado ainda</b>Clique em "Novo item", ou importe o relatório de comissões da Shopee ou do Mercado Livre.</div>`;
+  } else {
+    h += `<table><thead><tr><th>Produto</th><th>Vende em</th><th class="c">Link</th><th class="r">Comissão</th><th>Divulgado em</th><th class="r">Cliques</th><th class="r">Vendas</th><th class="r">Ganho</th><th></th></tr></thead><tbody>
+      ${progs.map(p => {
+        const n = vitNumeros(p);
+        const auto = pubs[vitNorm(p.produto)] || {};
+        const canais = [...new Set([...(p.canais || []), ...Object.keys(auto)])];
+        return `<tr style="${p.ativo===false?'opacity:.55':''}"><td><b>${esc(p.produto)}</b>${p.nicho?`<br><span class="tt">${esc(p.nicho)}</span>`:''}</td>
+          <td>${esc(p.plataforma||'—')}</td>
+          <td class="c">${p.url?`<a class="ib bl" title="Abrir o link" href="${esc(p.url)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i></a>`:'<span class="st s-wn">sem link</span>'}</td>
+          <td class="r n">${p.comissao?String(p.comissao).replace('.',',')+'%':'—'}</td>
+          <td>${canais.length ? canais.map(c => { const [nm, ic, cor] = vitCanal(c); const a = auto[c]; return `<span class="chip" style="padding:3px 8px;margin:1px" title="${esc(nm)}${a?` · ${a} publicação(ões) marcadas na Central`:' · marcado à mão'}"><i class="ti ${ic}" style="color:${cor}"></i> ${esc(nm)}${a?` ${a}`:''}</span>`; }).join('') : '<span class="tt">em nenhum canal</span>'}</td>
+          <td class="r n">${n.cliques.toLocaleString('pt-BR')}</td><td class="r n">${n.vendas.toLocaleString('pt-BR')}</td>
+          <td class="r n"><b style="color:${n.ganho>0?'var(--green)':'var(--text3)'}">${moeda(n.ganho)}</b>${p.rel&&p.rel.em?`<br><span class="tt">relatório ${esc(dbr(p.rel.em))}</span>`:''}</td>
+          <td class="r nowrap"><button class="ib" title="Divulgação e números" onclick="vitEditar(${p.id},'${un}')"><i class="ti ti-pencil"></i></button>
+            <button class="ib" title="Ficha completa" onclick="progForm(${p.id})"><i class="ti ti-file-text"></i></button></td></tr>`;
+      }).join('')}</tbody></table>
+      <div class="tt" style="padding:8px 12px">"Divulgado em" junta os canais que você marcou com as publicações marcadas na Central (Mídia → Afiliados). O número ao lado da rede é quantas publicações foram marcadas lá.</div>`;
+  }
+  h += `</div></div>`;
+  body.innerHTML = h;
+}
+
+async function vitEditar(id, un){
+  const p = await dbGet('programas', id); if(!p) return;
+  const n = vitNumeros(p), canais = p.canais || [];
+  modal('Divulgação — ' + p.produto, 'ti-building-store',
+    `<div class="fg"><label>Link de afiliado</label><input id="vt-url" value="${esc(p.url||'')}" placeholder="https://..."></div>
+     <div class="fg"><label>Onde você está divulgando</label><div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${VIT_CANAIS.map(([nm, ic, cor], i) => `<label class="chip" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="vt-c${i}" ${canais.includes(nm)?'checked':''}><i class="ti ${ic}" style="color:${cor}"></i>${esc(nm)}</label>`).join('')}</div></div>
+     <div class="fr3"><div class="fg"><label>Cliques</label><input id="vt-cli" type="number" min="0" value="${n.cliques}"></div>
+      <div class="fg"><label>Vendas</label><input id="vt-ven" type="number" min="0" value="${n.vendas}"></div>
+      <div class="fg"><label>Comissão recebida (R$)</label><input id="vt-com" type="number" step="0.01" min="0" value="${n.ganho}"></div></div>
+     <div class="hint">Os números aqui substituem os do último relatório importado. Para lançar a comissão no Financeiro, use a categoria "Comissão de afiliado": é assim que ela entra na Meta R$ 50 mil.</div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="vitSalvar(${id},'${un}')"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function vitSalvar(id, un){
+  const p = await dbGet('programas', id); if(!p) return;
+  const canais = VIT_CANAIS.filter((c, i) => document.getElementById('vt-c'+i)?.checked).map(c => c[0]);
+  const rel = { ...(p.rel || {}), cliques: num(val('vt-cli')), vendas: num(val('vt-ven')), comissao: num(val('vt-com')), em: (p.rel && p.rel.em) || hoje(), manual: true };
+  await dbPut('programas', { ...p, url: val('vt-url'), canais, rel, vendas: rel.vendas, ganhoTotal: rel.comissao });
+  closeModal('mk-form'); toast('Vitrine atualizada.'); prodTabVitrine(un);
+}
+
+/* ---------------------------------------------------------- relatório CSV */
+function vitImportar(un){
+  VIT_IMPORT = null;
+  modal('Importar relatório de comissões', 'ti-upload',
+    `<div class="fg"><label>Arquivo CSV baixado do painel de afiliados</label><input id="vt-arq" type="file" accept=".csv,text/csv" onchange="vitLerArquivo('${un}')"></div>
+     <div class="hint">Shopee: Painel de afiliados → Relatório de conversões → Exportar. Mercado Livre: Afiliados → Relatórios → Baixar. O JeV procura as colunas de produto, cliques, pedidos e comissão e junta tudo por produto.</div>
+     <div id="vt-prev"></div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" id="vt-apl" disabled onclick="vitAplicar('${un}')"><i class="ti ti-check"></i>Aplicar</button>`, 'lg');
+}
+function vitCsv(txt){
+  txt = String(txt||'').replace(/^﻿/, '');
+  const primeira = txt.split(/\r?\n/)[0] || '';
+  const sep = (primeira.match(/;/g)||[]).length > (primeira.match(/,/g)||[]).length ? ';' : (primeira.includes('\t') ? '\t' : ',');
+  const linhas = []; let campo = '', linha = [], aspas = false;
+  for(let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if(aspas){ if(c === '"'){ if(txt[i+1] === '"'){ campo += '"'; i++; } else aspas = false; } else campo += c; continue; }
+    if(c === '"') aspas = true;
+    else if(c === sep){ linha.push(campo); campo = ''; }
+    else if(c === '\n'){ linha.push(campo); linhas.push(linha); linha = []; campo = ''; }
+    else if(c !== '\r') campo += c;
+  }
+  if(campo !== '' || linha.length){ linha.push(campo); linhas.push(linha); }
+  return linhas.filter(l => l.some(x => String(x).trim() !== ''));
+}
+function vitNumBR(v){
+  let s = String(v||'').replace(/[^\d,.\-]/g,'');
+  if(s.includes(',') && s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g,'').replace(',', '.');
+  else s = s.replace(/,/g,'');
+  const n = parseFloat(s); return isFinite(n) ? n : 0;
+}
+function vitColunas(cab){
+  const acha = re => cab.findIndex(h => re.test(vitNorm(h)));
+  return {
+    produto: acha(/(nome do (item|produto)|item name|produto|product|^item$|titulo)/),
+    cliques: acha(/(clique|click)/),
+    vendas: acha(/(qtd|quantidade|pedido|venda|order|conversao|conversion)/),
+    comissao: acha(/(comissao total|comissao do afiliado|comissao estimada|comissao|commission|ganho|receita)/),
+  };
+}
+async function vitLerArquivo(un){
+  const f = document.getElementById('vt-arq')?.files?.[0]; if(!f) return;
+  const linhas = vitCsv(await f.text());
+  const prev = document.getElementById('vt-prev');
+  if(linhas.length < 2){ prev.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i><div>O arquivo não tem linhas de dados.</div></div>`; return; }
+  const cab = linhas[0], col = vitColunas(cab);
+  if(col.produto < 0 || (col.comissao < 0 && col.vendas < 0 && col.cliques < 0)){
+    prev.innerHTML = `<div class="al ae"><i class="ti ti-alert-circle"></i><div>Não reconheci as colunas. Cabeçalho encontrado: ${esc(cab.join(' | '))}</div></div>`; return;
+  }
+  const agg = {};
+  linhas.slice(1).forEach(l => {
+    const nome = String(l[col.produto] || '').trim(); if(!nome) return;
+    const k = vitNorm(nome); const a = agg[k] = agg[k] || { nome, cliques:0, vendas:0, comissao:0, linhas:0 };
+    a.linhas++;
+    if(col.cliques >= 0) a.cliques += vitNumBR(l[col.cliques]);
+    if(col.vendas >= 0) a.vendas += (vitNumBR(l[col.vendas]) || 1); else a.vendas += 1;
+    if(col.comissao >= 0) a.comissao += vitNumBR(l[col.comissao]);
+  });
+  const progs = await dbGetAll('programas');
+  const itens = Object.values(agg).map(a => {
+    const k = vitNorm(a.nome);
+    const alvo = progs.find(p => vitNorm(p.produto) === k)
+      || progs.find(p => { const q = vitNorm(p.produto); return q.length >= 6 && (k.includes(q) || q.includes(k.slice(0, 30))); });
+    return { ...a, progId: alvo ? alvo.id : null, progNome: alvo ? alvo.produto : null };
+  }).sort((x,y) => y.comissao - x.comissao);
+  VIT_IMPORT = { arquivo: f.name, itens, col: Object.fromEntries(Object.entries(col).map(([k,i]) => [k, i >= 0 ? cab[i] : '—'])) };
+  const casados = itens.filter(i => i.progId).length;
+  prev.innerHTML = `<div class="tt" style="margin:8px 0">Colunas usadas: produto = <b>${esc(VIT_IMPORT.col.produto)}</b>, cliques = <b>${esc(VIT_IMPORT.col.cliques)}</b>, vendas = <b>${esc(VIT_IMPORT.col.vendas)}</b>, comissão = <b>${esc(VIT_IMPORT.col.comissao)}</b>.
+      ${itens.length} produto(s); ${casados} ligado(s) a itens da vitrine.</div>
+    <div class="fg"><label><input type="checkbox" id="vt-novos" checked> Criar na vitrine os produtos que ainda não estão lá</label>
+      <select id="vt-plat"><option>Shopee</option><option>Mercado Livre</option><option>Amazon</option><option>TikTok Shop</option><option>Shein</option><option>Outra</option></select></div>
+    <div style="max-height:300px;overflow:auto"><table><thead><tr><th>Produto no relatório</th><th>Na vitrine</th><th class="r">Cliques</th><th class="r">Vendas</th><th class="r">Comissão</th></tr></thead><tbody>
+    ${itens.slice(0, 200).map(i => `<tr><td>${esc(i.nome)}</td><td>${i.progNome ? esc(i.progNome) : '<span class="st s-pd">novo</span>'}</td><td class="r n">${i.cliques}</td><td class="r n">${i.vendas}</td><td class="r n">${moeda(i.comissao)}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  const b = document.getElementById('vt-apl'); if(b) b.disabled = false;
+}
+async function vitAplicar(un){
+  if(!VIT_IMPORT) return;
+  const criar = document.getElementById('vt-novos')?.checked, plat = val('vt-plat') || 'Shopee';
+  let at = 0, nv = 0;
+  for(const i of VIT_IMPORT.itens){
+    const rel = { cliques: i.cliques, vendas: i.vendas, comissao: Math.round(i.comissao * 100) / 100, arquivo: VIT_IMPORT.arquivo, em: hoje() };
+    if(i.progId){ const p = await dbGet('programas', i.progId); await dbPut('programas', { ...p, rel, vendas: rel.vendas, ganhoTotal: rel.comissao }); at++; }
+    else if(criar){ await dbAdd('programas', { produto: i.nome, plataforma: plat, url: '', tipo: 'Físico', comissao: 0, preco: 0, nicho: '', vendas: rel.vendas, ganhoTotal: rel.comissao, beneficio: '', ativo: true, rel, canais: [] }); nv++; }
+  }
+  closeModal('mk-form'); VIT_IMPORT = null;
+  toast(`Relatório aplicado: ${at} atualizado(s), ${nv} novo(s).`); prodTabVitrine(un);
+}
+/* =========================================================================
+   CHÁCARA — PLANO DE MEIO HECTARE (aba "Plano 0,5 ha")
+
+   Calculadora das quatro fontes de renda que cabem em 5.000 m²: ovos caipiras,
+   alface hidropônica, cestas da horta e eventos/day use. Os valores padrão vêm
+   do plano (documento "Plano de Renda") e são ESTIMATIVAS para a região de
+   Campo Grande (MS): mude cada número para o seu. "Adotar este plano" grava
+   em CFG.chacaraPlano — é o que a sede lê no retrato da meta.
+   ========================================================================= */
+const CHP_PADRAO = {
+  aves: 300, postura: 80, precoDuzia: 11, racaoKg: 0.115, precoRacao: 2.5, embDuzia: 0.55, fixoAves: 300,
+  pes: 2000, precoPe: 2.8, custoPe: 1.3,
+  cestas: 15, precoCesta: 40, custoCesta: 18,
+  eventos: 0, diaria: 800, custoEvento: 250,
+};
+const CHP_AREAS = [
+  ['Galinhas: galpão e piquete', 250, 'R$ 15 a 25 mil', 'mês 2 com frangas prontas; mês 5 com pintinhas'],
+  ['Estufa de hidroponia (7 × 18 m) e corredor', 200, 'R$ 30 a 55 mil', 'mês 3'],
+  ['Canteiros de folhas, temperos e legumes', 1500, 'R$ 3 a 6 mil (gotejamento)', 'mês 2'],
+  ['Compostagem e minhocário', 100, 'R$ 1 mil', 'mês 4'],
+  ['Frutíferas nas bordas', 1500, 'R$ 2 a 4 mil', 'mês 9 a 18'],
+  ['Casa, acesso, água e lazer', 1450, '—', '—'],
+];
+
+function chpParams(){ return { ...CHP_PADRAO, ...((CFG.chacaraPlano && CFG.chacaraPlano.params) || {}) }; }
+function chpCalc(p){
+  const duzias = p.aves * (p.postura / 100) * 30 / 12;
+  const ovos = { rec: duzias * p.precoDuzia, cus: p.aves * p.racaoKg * 30 * p.precoRacao + duzias * p.embDuzia + (p.aves ? p.fixoAves : 0) };
+  const hidro = { rec: p.pes * p.precoPe, cus: p.pes * p.custoPe };
+  const cestas = { rec: p.cestas * 4.33 * p.precoCesta, cus: p.cestas * 4.33 * p.custoCesta };
+  const ev = { rec: p.eventos * p.diaria, cus: p.eventos * p.custoEvento };
+  const linhas = [
+    { id:'ovos', nome:'Ovos caipiras', qtd: Math.round(duzias), und:'dúzias/mês', ...ovos },
+    { id:'hidro', nome:'Alface hidropônica', qtd: p.pes, und:'pés/mês', ...hidro },
+    { id:'cestas', nome:'Cestas da horta', qtd: Math.round(p.cestas * 4.33), und:'cestas/mês', ...cestas },
+    { id:'eventos', nome:'Eventos e day use', qtd: p.eventos, und:'eventos/mês', ...ev },
+  ].map(l => ({ ...l, lucro: l.rec - l.cus }));
+  const rec = linhas.reduce((s,l)=>s+l.rec,0), cus = linhas.reduce((s,l)=>s+l.cus,0);
+  return { linhas, rec, cus, lucro: rec - cus };
+}
+
+async function chaTabPlano(){
+  const body = document.getElementById('cha-body'); if(!body) return;
+  const p = chpParams(), C = chpCalc(p), ad = CFG.chacaraPlano;
+  const campo = (id, rot, v, passo, suf) => `<div class="fg"><label>${rot}${suf?` <span class="tt">(${suf})</span>`:''}</label><input id="chp-${id}" type="number" step="${passo||1}" min="0" value="${v}" oninput="chpAtualizar()"></div>`;
+  let h = `<div class="al ai" style="margin-top:0"><i class="ti ti-info-circle"></i><div>Plano para <b>meio hectare (5.000 m²)</b> com quatro fontes de renda o ano todo. Os números padrão são estimativas para Campo Grande (MS). Troque cada um pelo seu: o lucro recalcula na hora. ${ad?`<b>Plano adotado em ${esc(dbr(ad.em))}</b>, com lucro estimado de ${moeda(ad.lucro)} por mês.`:''}</div></div>
+  <div id="chp-res">${chpResultadoHTML(C)}</div>
+  <div class="fr2" style="align-items:start">
+    <div class="card"><div class="hd"><i class="ti ti-basket"></i>Ovos caipiras</div><div class="bd"><div class="fr3">
+      ${campo('aves','Galinhas poedeiras',p.aves)}${campo('postura','Postura','' + p.postura,1,'% por dia')}${campo('precoDuzia','Preço da dúzia (R$)',p.precoDuzia,0.5)}</div><div class="fr3">
+      ${campo('racaoKg','Ração por ave','' + p.racaoKg,0.005,'kg/dia')}${campo('precoRacao','Preço da ração (R$/kg)',p.precoRacao,0.1)}${campo('embDuzia','Embalagem por dúzia (R$)',p.embDuzia,0.05)}</div>
+      ${campo('fixoAves','Outros custos do aviário (R$/mês)',p.fixoAves,50)}
+      <div class="hint">Cada ave come de 110 a 120 g de ração por dia; ração é o maior custo.</div></div></div>
+    <div class="card"><div class="hd"><i class="ti ti-plant"></i>Alface hidropônica</div><div class="bd"><div class="fr3">
+      ${campo('pes','Pés vendidos por mês',p.pes,100)}${campo('precoPe','Preço por pé (R$)',p.precoPe,0.1)}${campo('custoPe','Custo por pé (R$)',p.custoPe,0.05)}</div>
+      <div class="hint">O preço supõe venda direta (restaurantes, feira, cestas). No atacado, o pé sai por bem menos.</div></div></div>
+    <div class="card"><div class="hd"><i class="ti ti-shopping-bag"></i>Cestas da horta</div><div class="bd"><div class="fr3">
+      ${campo('cestas','Cestas por semana',p.cestas)}${campo('precoCesta','Preço da cesta (R$)',p.precoCesta,1)}${campo('custoCesta','Custo da cesta (R$)',p.custoCesta,1)}</div>
+      <div class="hint">Assinatura semanal pelo WhatsApp: o Vendedor da Chácara monta a mensagem toda segunda.</div></div></div>
+    <div class="card"><div class="hd"><i class="ti ti-home"></i>Eventos e day use</div><div class="bd"><div class="fr3">
+      ${campo('eventos','Eventos por mês',p.eventos)}${campo('diaria','Diária (R$)',p.diaria,50)}${campo('custoEvento','Custo por evento (R$)',p.custoEvento,10)}</div>
+      <div class="hint">Só vale com área coberta, banheiros e piscina. Em Campo Grande há anúncios de R$ 550 a R$ 2.100 a diária.</div></div></div>
+  </div>
+  <div class="card tw" style="margin-top:12px"><div class="hd"><i class="ti ti-map-2"></i>Como dividir os 5.000 m²</div><div class="bd"><table>
+    <thead><tr><th>Uso</th><th class="r">Área (m²)</th><th>Investimento (estimado)</th><th>Começa a render</th></tr></thead><tbody>
+    ${CHP_AREAS.map(a => `<tr><td>${esc(a[0])}</td><td class="r n">${a[1].toLocaleString('pt-BR')}</td><td>${esc(a[2])}</td><td class="tt">${esc(a[3])}</td></tr>`).join('')}
+    <tr style="background:var(--bg2)"><td><b>Total</b></td><td class="r n"><b>${CHP_AREAS.reduce((s,a)=>s+a[1],0).toLocaleString('pt-BR')}</b></td><td colspan="2"></td></tr></tbody></table>
+    <div class="tt" style="padding:8px 12px">Ordem sugerida: galinhas e canteiros primeiro (retorno mais rápido). A estufa entra quando os ovos já tiverem clientes fixos.</div></div></div>
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn gh" onclick="chpPadrao()"><i class="ti ti-refresh"></i>Voltar aos números do plano</button>
+    <button class="btn gn" onclick="chpAdotar()"><i class="ti ti-check"></i>Adotar este plano</button></div>`;
+  body.innerHTML = h;
+}
+function chpResultadoHTML(C){
+  return `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-calculator"></i>Resultado estimado por mês<span class="sp"></span><b style="color:${C.lucro>=0?'var(--green)':'var(--red)'};font-size:16px">${moeda(C.lucro)}</b></div><div class="bd"><table>
+    <thead><tr><th>Fonte</th><th class="r">Produção</th><th class="r">Receita</th><th class="r">Custo</th><th class="r">Lucro</th></tr></thead><tbody>
+    ${C.linhas.map(l => `<tr><td><b>${esc(l.nome)}</b></td><td class="r n">${Math.round(l.qtd).toLocaleString('pt-BR')} ${esc(l.und)}</td><td class="r n">${moeda(l.rec)}</td><td class="r n">${moeda(l.cus)}</td><td class="r n"><b style="color:${l.lucro>=0?'var(--green)':'var(--red)'}">${moeda(l.lucro)}</b></td></tr>`).join('')}
+    <tr style="background:var(--bg2)"><td><b>Total</b></td><td></td><td class="r n"><b>${moeda(C.rec)}</b></td><td class="r n"><b>${moeda(C.cus)}</b></td><td class="r n"><b>${moeda(C.lucro)}</b></td></tr></tbody></table>
+    <div class="tt" style="padding:8px 12px">Sem mão de obra contratada, frete e impostos. A meta da chácara no plano é de R$ 7 mil de lucro por mês no mês 12.</div></div></div>`;
+}
+function chpLerCampos(){
+  const p = { ...CHP_PADRAO };
+  Object.keys(CHP_PADRAO).forEach(k => { const el = document.getElementById('chp-'+k); if(el) p[k] = num(el.value); });
+  return p;
+}
+function chpAtualizar(){ const el = document.getElementById('chp-res'); if(el) el.innerHTML = chpResultadoHTML(chpCalc(chpLerCampos())); }
+async function chpAdotar(){
+  const params = chpLerCampos(), C = chpCalc(params);
+  CFG.chacaraPlano = { em: hoje(), params, receita: Math.round(C.rec), custo: Math.round(C.cus), lucro: Math.round(C.lucro),
+    itens: C.linhas.map(l => ({ id: l.id, nome: l.nome, qtd: Math.round(l.qtd), und: l.und, lucro: Math.round(l.lucro) })) };
+  await cfgSalvar(); toast('Plano da chácara adotado.'); chaTabPlano();
+}
+function chpPadrao(){
+  Object.entries(CHP_PADRAO).forEach(([k,v]) => { const el = document.getElementById('chp-'+k); if(el) el.value = v; });
+  chpAtualizar();
+}
+/* =========================================================================
+   INFOPRODUTOS — LOJAS E ANÚNCIOS (aba "Lojas e anúncios")
+
+   Para cada infoproduto: em que pé ele está na Hotmart, no Amazon KDP e na
+   loja (Shopify/Nuvemshop), com o link; e um gerador de anúncios que escreve
+   3 ângulos (dor, resultado, prova) para Meta, Google, TikTok e YouTube,
+   cortando cada texto no limite da rede. Os agentes do setor Infoprodutos
+   refinam esses textos todo dia no piloto; este gerador é o ponto de partida
+   que funciona até sem a sede ligada.
+   ========================================================================= */
+const INFO_LOJAS = [
+  { id:'hotmart', nome:'Hotmart', ic:'ti-device-laptop', taxa:'9,9% + R$ 2,49 por venda', url:'https://app-vlc.hotmart.com/products' },
+  { id:'kdp', nome:'Amazon KDP', ic:'ti-brand-amazon', taxa:'70% de royalties com KDP Select (R$ 5,99 a R$ 31,99)', url:'https://kdp.amazon.com/pt_BR/bookshelf' },
+  { id:'loja', nome:'Shopify / Nuvemshop', ic:'ti-building-store', taxa:'Shopify: US$ 29 a 39/mês + 2%', url:'https://admin.shopify.com' },
+];
+const INFO_ST = ['Não começou', 'Rascunho', 'Em revisão', 'À venda'];
+const INFO_ST_CLS = { 'Não começou':'s-nt', 'Rascunho':'s-pd', 'Em revisão':'s-wn', 'À venda':'s-ok' };
+const ANUNCIO_REDES = [
+  { id:'meta', nome:'Meta Ads (Facebook e Instagram)', ic:'ti-brand-facebook', campos:[['Texto principal',125],['Título',40],['Descrição',30]] },
+  { id:'google', nome:'Google Ads', ic:'ti-search', campos:[['Título 1',30],['Título 2',30],['Título 3',30],['Descrição 1',90],['Descrição 2',90]] },
+  { id:'tiktok', nome:'TikTok Ads', ic:'ti-brand-tiktok', campos:[['Texto do anúncio',100]] },
+  { id:'youtube', nome:'YouTube (anúncio em vídeo)', ic:'ti-brand-youtube', campos:[['Título',100],['Chamada',15]] },
+];
+let INFO_AN = null;
+
+async function infoTabLojas(un, prods){
+  const body = document.getElementById('prd-body-'+un); if(!body) return;
+  let h = `<div class="al ai" style="margin-top:0"><i class="ti ti-info-circle"></i><div>A escada do plano: um <b>e-book barato na Amazon</b> traz o leitor e o <b>curso na Hotmart</b> dá o lucro. Só pague anúncio para um produto depois da primeira venda sem anúncio. Hotmart abaixo de R$ 10 cobra 20%: nada abaixo de R$ 19.</div></div>`;
+  if(!prods.length){
+    body.innerHTML = h + `<div class="card"><div class="bd"><div class="empty"><i class="ti ti-device-laptop"></i><b>Nenhum infoproduto cadastrado</b>Cadastre em "Novo infoproduto". Sugestões do plano: curso "Renda com impressão 3D" (R$ 197), planilha "Finanças para um Juvenil" (R$ 47), e-book "Ovos caipiras em meio hectare" (R$ 24,90).</div></div></div>`;
+    return;
+  }
+  h += `<div class="card tw"><div class="hd"><i class="ti ti-building-store"></i>Onde cada produto está à venda</div><div class="bd"><table>
+    <thead><tr><th>Infoproduto</th><th class="r">Preço</th>${INFO_LOJAS.map(l => `<th title="${esc(l.taxa)}"><i class="ti ${l.ic}"></i> ${esc(l.nome)}</th>`).join('')}<th></th></tr></thead><tbody>
+    ${prods.map(p => { const lj = p.lojas || {};
+      return `<tr><td><b>${esc(p.nome)}</b>${p.cat?`<br><span class="tt">${esc(p.cat)}</span>`:''}</td><td class="r n">${moeda(p.preco)}</td>
+        ${INFO_LOJAS.map(l => { const s = (lj[l.id] || {}).status || 'Não começou'; const u = (lj[l.id] || {}).url;
+          return `<td><span class="st ${INFO_ST_CLS[s]||'s-nt'}" style="cursor:pointer" onclick="infoLojaForm(${p.id},'${l.id}')">${esc(s)}</span>${u?` <a class="ib bl" href="${esc(u)}" target="_blank" rel="noopener" title="Abrir"><i class="ti ti-external-link"></i></a>`:''}</td>`; }).join('')}
+        <td class="r nowrap"><button class="btn xs bl" onclick="infoAnuncios(${p.id})"><i class="ti ti-sparkles"></i>Gerar anúncios</button></td></tr>`; }).join('')}
+    </tbody></table>
+    <div class="tt" style="padding:8px 12px">Clique na situação para mudar e guardar o link. Taxas de 2026: ${INFO_LOJAS.map(l => `${esc(l.nome)} — ${esc(l.taxa)}`).join(' · ')}.</div></div></div>`;
+  body.innerHTML = h;
+}
+
+async function infoLojaForm(id, loja){
+  const p = await dbGet('produtos', id); if(!p) return;
+  const L = INFO_LOJAS.find(x => x.id === loja), atual = (p.lojas || {})[loja] || {};
+  modal(`${L.nome} — ${p.nome}`, L.ic,
+    `<div class="fg"><label>Situação</label><select id="il-st">${INFO_ST.map(s => `<option ${s===(atual.status||'Não começou')?'selected':''}>${s}</option>`).join('')}</select></div>
+     <div class="fg"><label>Link do produto nessa plataforma</label><input id="il-url" value="${esc(atual.url||'')}" placeholder="https://..."></div>
+     <div class="hint">${esc(L.taxa)}. <a href="${esc(L.url)}" target="_blank" rel="noopener">Abrir o painel da ${esc(L.nome)}</a>.</div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="infoLojaSalvar(${id},'${loja}')"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function infoLojaSalvar(id, loja){
+  const p = await dbGet('produtos', id); if(!p) return;
+  const lojas = { ...(p.lojas || {}), [loja]: { status: val('il-st'), url: val('il-url'), em: hoje() } };
+  await dbPut('produtos', { ...p, lojas }); closeModal('mk-form'); toast('Salvo.'); infoRender();
+}
+
+/* ------------------------------------------------------ gerador de anúncios */
+const AN_SOLTAS = /\s+(e|ou|no|na|nos|nas|de|do|da|dos|das|com|para|pra|o|a|os|as|em|um|uma|que|por|seu|sua|ao|à)$/i;
+function anCorta(t, max){
+  t = String(t || '').replace(/\s+/g, ' ').trim();
+  if(t.length <= max) return { t, cortou:false };
+  let c = t.slice(0, max);
+  /* prefere terminar numa frase inteira */
+  const fim = Math.max(c.lastIndexOf('. '), c.lastIndexOf('? '), c.lastIndexOf('! '), /[.?!]$/.test(c) ? c.length - 1 : -1);
+  if(fim >= max * 0.5) return { t: c.slice(0, fim + 1).trim(), cortou:true };
+  const i = c.lastIndexOf(' ');
+  c = (i > max * 0.5 ? c.slice(0, i) : c).replace(/[\s,;:\-–—]+$/, '');
+  while(AN_SOLTAS.test(c)) c = c.replace(AN_SOLTAS, '');
+  return { t: c, cortou:true };
+}
+function anPreco(v){ return v ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }) : ''; }
+function anCap(s){ s = String(s || '').trim(); return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function anGerar(p, b){
+  /* nome curto nos textos: o nome inteiro de um curso estoura qualquer limite */
+  const nome = anCorta(p.nome, 30).t, preco = anPreco(p.preco), comPreco = preco ? ' por ' + preco : '';
+  const pub = b.publico || 'quem está começando', dor = b.dor || 'não sabe por onde começar';
+  const res = b.resultado || 'dar o primeiro passo com segurança', prova = b.prova || 'passo a passo testado na prática';
+  const ang = {
+    dor:       { tag:'Dor',
+      meta:[`Você ${dor}? O ${nome} mostra o caminho, passo a passo, para ${pub}.`, anCap(res), nome],
+      google:[nome, 'Passo a passo completo', 'Acesso imediato', `Você ${dor}? Aprenda com o ${nome}.`, `${anCap(prova)}. Acesso imediato${comPreco}.`],
+      tiktok:[`Você ${dor}? Conheça o ${nome}. Link na bio.`],
+      youtube:[`Você ${dor}? Veja como ${res}.`, 'Saiba mais'] },
+    resultado: { tag:'Resultado',
+      meta:[`Quer ${res}? O ${nome} foi feito para ${pub}. ${anCap(prova)}.`, anCap(res), `Acesso imediato${preco ? ' · ' + preco : ''}`],
+      google:[anCap(res), nome, 'Comece hoje mesmo', `${nome}: para ${pub} que quer ${res}.`, `${anCap(prova)}. Comece hoje${comPreco}.`],
+      tiktok:[`Quer ${res}? O ${nome} mostra como. Link na bio.`],
+      youtube:[`Como ${res}: ${nome}`, 'Comece hoje'] },
+    prova:     { tag:'Prova',
+      meta:[`${anCap(prova)}. O ${nome} junta tudo em um só lugar para ${pub}.`, anCap(prova), nome],
+      google:[anCap(prova), nome, 'Sem enrolação', `${nome}: ${prova}. Direto ao ponto.`, `Acesso imediato e 7 dias para pedir o dinheiro de volta${comPreco ? '.' + comPreco.replace(' por', ' Valor:') : ''}.`],
+      tiktok:[`${anCap(prova)}. Conheça o ${nome}. Link na bio.`],
+      youtube:[`${nome}: ${prova}`, 'Ver agora'] },
+  };
+  return Object.values(ang).map(a => ({ tag: a.tag, redes: ANUNCIO_REDES.map(r => ({ ...r, textos: r.campos.map(([rot, max], i) => ({ rot, max, ...anCorta((a[r.id] || [])[i] || '', max) })) })) }));
+}
+
+async function infoAnuncios(id){
+  const p = await dbGet('produtos', id); if(!p) return;
+  const b = p.anuncio || {};
+  INFO_AN = { id };
+  modal('Anúncios — ' + p.nome, 'ti-sparkles',
+    `<div class="fr2"><div class="fg"><label>Para quem é</label><input id="an-pub" value="${esc(b.publico||'')}" placeholder="quem tem uma impressora 3D parada"></div>
+      <div class="fg"><label>A dor (o que a pessoa sente hoje)</label><input id="an-dor" value="${esc(b.dor||'')}" placeholder="não sabe o que imprimir para vender"></div></div>
+     <div class="fr2"><div class="fg"><label>O resultado (sem prometer ganho)</label><input id="an-res" value="${esc(b.resultado||'')}" placeholder="vender as primeiras peças na Shopee"></div>
+      <div class="fg"><label>A prova (por que acreditar)</label><input id="an-prova" value="${esc(b.prova||'')}" placeholder="feito por quem imprime e vende todo dia"></div></div>
+     <div style="margin:6px 0 10px"><button class="btn sm bl" onclick="infoAnunciosGerar()"><i class="ti ti-sparkles"></i>Gerar</button></div>
+     <div id="an-out"></div>
+     <div class="hint">Regras das redes: nada de promessa de ganho garantido, antes/depois de dinheiro ou "fique rico". Confira antes de subir; os agentes do setor Infoprodutos melhoram estes textos no piloto.</div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Fechar</button>`, 'lg');
+  if(b.publico || b.dor) infoAnunciosGerar();
+}
+async function infoAnunciosGerar(){
+  if(!INFO_AN) return;
+  const p = await dbGet('produtos', INFO_AN.id); if(!p) return;
+  const b = { publico: val('an-pub'), dor: val('an-dor'), resultado: val('an-res'), prova: val('an-prova') };
+  await dbPut('produtos', { ...p, anuncio: { ...b, em: hoje() } });
+  const V = anGerar(p, b); INFO_AN.v = V;
+  document.getElementById('an-out').innerHTML = V.map((a, ai) => `<div class="card" style="margin-bottom:10px"><div class="hd"><i class="ti ti-sparkles"></i>Ângulo: ${esc(a.tag)}</div><div class="bd">
+    ${a.redes.map((r, ri) => `<div style="padding:6px 0;border-bottom:1px solid var(--bg3)"><b style="font-size:13px"><i class="ti ${r.ic}"></i> ${esc(r.nome)}</b>
+      <button class="btn xs gh" style="float:right" onclick="infoAnCopiar(${ai},${ri})"><i class="ti ti-copy"></i>Copiar</button>
+      ${r.textos.map(t => `<div style="display:flex;gap:8px;align-items:baseline;font-size:13px;margin-top:3px"><span class="tt" style="min-width:96px">${esc(t.rot)}</span><span style="flex:1">${esc(t.t)}</span><span class="tt" style="color:${t.t.length>t.max?'var(--red)':t.cortou?'var(--amber)':'var(--text3)'}" title="${t.cortou?'cortado para caber no limite':''}">${t.t.length}/${t.max}</span></div>`).join('')}</div>`).join('')}
+    </div></div>`).join('');
+}
+async function infoAnCopiar(ai, ri){
+  const r = INFO_AN && INFO_AN.v && INFO_AN.v[ai] && INFO_AN.v[ai].redes[ri]; if(!r) return;
+  const txt = r.textos.map(t => `${t.rot}: ${t.t}`).join('\n');
+  try { await navigator.clipboard.writeText(txt); toast('Copiado.'); } catch(e){ toast(txt, 'aw'); }
+}
+/* =========================================================================
+   VEÍCULOS — PLANO DE FROTA (aba "Plano de frota")
+
+   O plano de 23/11/2026: de 1 caminhão para 5 carros pequenos (aluguel para
+   motorista de aplicativo), 1 retroescavadeira e um 2º pesado, em 12 meses.
+   Cada compra tem um GATILHO — se o gatilho não foi cumprido, a compra
+   espera; o calendário não manda sozinho.
+
+   Guarda em CFG.frotaPlano (sem mexer no banco). A Meta R$ 50 mil lê daqui
+   a meta da frente "Veículos e máquinas"; a sede lê pelo retrato da meta.
+   Números padrão = estimativas do documento "Plano de frota" (Campo Grande-MS).
+   ========================================================================= */
+const FROTA_DOC = 'https://claude.ai/artifact/AaYVtYtNmeEkA9unrBUnAn';
+const FROTA_PADRAO = {
+  semanal: 650, seguro: 400, manut: 300, ipva: 180, rastreador: 60, reservaPct: 10,
+  precoCarro: 52000, deprecPct: 7.6,
+  finEntradaPct: 20, finTaxaMes: 1.5, finMeses: 48,
+  maqValor: 200000, maqAluguel: 13000, maqCustoPct: 35, maqTaxaAno: 12, maqMeses: 60,
+  basculante: 3500,
+};
+const FROTA_MARCOS = [
+  { id:'reajuste', mes:1, tipo:'Ação',    nome:'Reajustar o aluguel do basculante', gatilho:'Próximo vencimento do contrato do caminhão' },
+  { id:'carro1',   mes:1, tipo:'Carro',   nome:'Carro 1 (Kwid ou Mobi 2022–2023)', gatilho:'Contrato, seguro de uso comercial e rastreador prontos antes da chave' },
+  { id:'carro2',   mes:1, tipo:'Carro',   nome:'Carro 2 (Kwid ou Mobi 2022–2023)', gatilho:'Igual ao carro 1' },
+  { id:'retro',    mes:3, tipo:'Máquina', nome:'Retroescavadeira usada', gatilho:'Contrato de 6 meses ou mais assinado com um cliente' },
+  { id:'carro3',   mes:6, tipo:'Carro',   nome:'Carro 3', gatilho:'Os 2 carros alugados 3 meses seguidos, sem atraso' },
+  { id:'carro4',   mes:9, tipo:'Carro',   nome:'Carro 4', gatilho:'Os 3 carros alugados 3 meses seguidos, sem atraso' },
+  { id:'pesado2',  mes:9, tipo:'Máquina', nome:'2º basculante ou minicarregadeira', gatilho:'Retroescavadeira ocupada 80% ou mais e contrato novo assinado' },
+  { id:'carro5',   mes:12, tipo:'Carro',  nome:'Carro 5', gatilho:'Reserva em caixa de 1 mês de custos da frota inteira' },
+];
+const FROTA_STATUS = ['Planejado', 'Em andamento', 'Feito', 'Adiado'];
+const FROTA_ST_CLS = { 'Planejado':'s-nt', 'Em andamento':'s-pd', 'Feito':'s-ok', 'Adiado':'s-wn' };
+const FROTA_PROTECAO = [
+  ['contrato','Contrato escrito para cada veículo: prazo mínimo, pagamento adiantado, limite de km, multa e devolução'],
+  ['caucao','Caução de R$ 1.200 a R$ 2.000 por carro'],
+  ['seguro','Seguro de uso comercial (o seguro de passeio pode negar cobertura em aplicativo)'],
+  ['rastreador','Rastreador com bloqueio remoto em todos os carros e máquinas'],
+  ['triagem','Triagem do motorista: CNH com EAR, nota no aplicativo e antecedentes'],
+  ['vistoria','Vistoria com fotos na entrega e na devolução'],
+  ['maquinas','Máquinas: contrato seco ou com operador, horímetro e quem paga a prancha'],
+];
+
+function frotaPlano(){
+  const p = CFG.frotaPlano || {};
+  return { inicio: p.inicio || (CFG.metaInicio || mesAtual()), params: { ...FROTA_PADRAO, ...(p.params || {}) },
+           marcos: p.marcos || {}, protecao: p.protecao || {} };
+}
+async function frotaGravar(fp){ CFG.frotaPlano = fp; await cfgSalvar(); }
+function frotaMesDoPlano(fp, mk){
+  const [a0,m0] = fp.inicio.split('-').map(Number), [a1,m1] = (mk||mesAtual()).split('-').map(Number);
+  return Math.max(1, (a1-a0)*12 + (m1-m0) + 1);
+}
+function frotaMesCal(fp, n){ const [a,m] = fp.inicio.split('-').map(Number); const d = new Date(a, m - 1 + n - 1, 1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+
+/* conta de um carro */
+function frotaCarro(P){
+  const bruto = P.semanal * 52 / 12;
+  const reserva = bruto * P.reservaPct / 100;
+  const custos = P.seguro + P.manut + P.ipva + P.rastreador + reserva;
+  const liquido = bruto - custos;
+  const deprec = P.precoCarro * P.deprecPct / 100 / 12;
+  const fin = P.precoCarro * (1 - P.finEntradaPct / 100), i = P.finTaxaMes / 100;
+  const parcela = i ? fin * i / (1 - Math.pow(1 + i, -P.finMeses)) : fin / P.finMeses;
+  return { bruto, reserva, custos, liquido, deprec, resultado: liquido - deprec, parcela, sobraFin: liquido - parcela,
+           retornoAno: (liquido - deprec) * 12 / P.precoCarro * 100 };
+}
+function frotaMaquina(P){
+  const liquido = P.maqAluguel * (1 - P.maqCustoPct / 100);
+  const i = Math.pow(1 + P.maqTaxaAno / 100, 1/12) - 1;
+  const parcela = i ? P.maqValor * i / (1 - Math.pow(1 + i, -P.maqMeses)) : P.maqValor / P.maqMeses;
+  return { liquido, parcela, sobra: liquido - parcela, payback: liquido > 0 ? P.maqValor / liquido : null };
+}
+/* meta da frente Veículos e máquinas no mês n do plano (o que o plano prevê, não o que já entrou) */
+function frotaMetaMes(n){
+  const fp = frotaPlano(), P = fp.params, c = frotaCarro(P), m = frotaMaquina(P);
+  const carros = n >= 12 ? 5 : n >= 9 ? 4 : n >= 6 ? 3 : 2;
+  return Math.round(P.basculante + carros * c.liquido + (n >= 4 ? m.liquido : 0));
+}
+
+async function veiTabPlano(){
+  const body = document.getElementById('vei-body'); if(!body) return;
+  const fp = frotaPlano(), P = fp.params, C = frotaCarro(P), M = frotaMaquina(P);
+  const n = frotaMesDoPlano(fp), veic = await dbGetAll('veiculos').catch(()=>[]);
+  const st = id => (fp.marcos[id] || {}).status || 'Planejado';
+  const feitosCarros = FROTA_MARCOS.filter(x => x.tipo === 'Carro' && st(x.id) === 'Feito').length;
+  const atrasados = FROTA_MARCOS.filter(x => x.mes < n && !['Feito','Adiado'].includes(st(x.id)));
+  const campo = (id, rot, v, passo, suf) => `<div class="fg"><label>${rot}${suf?` <span class="tt">(${suf})</span>`:''}</label><input id="fr-${id}" type="number" step="${passo||1}" min="0" value="${v}" oninput="frotaRecalc()"></div>`;
+
+  let h = `<div class="al ai" style="margin-top:0"><i class="ti ti-info-circle"></i><div style="flex:1">Plano de 12 meses: <b>5 carros pequenos</b> para motorista de aplicativo, <b>1 retroescavadeira</b> e um <b>2º pesado</b>. Cada compra só acontece quando o gatilho estiver cumprido. Mês ${n} do plano (início ${esc(dmesL(fp.inicio))}).</div>
+      <a class="btn xs gh" href="${FROTA_DOC}" target="_blank" rel="noopener"><i class="ti ti-file-text"></i>Ver o plano</a></div>`;
+  if(atrasados.length) h += `<div class="al aw"><i class="ti ti-alert-triangle"></i><div><b>Passou do mês previsto:</b> ${atrasados.map(x => esc(x.nome)).join(' · ')}. Confira o gatilho: se ainda não foi cumprido, marque "Adiado".</div></div>`;
+
+  h += `<div class="kg" style="margin-bottom:12px">
+    <div class="kc pu"><div class="lb"><i class="ti ti-car"></i>Frota cadastrada</div><div class="vl">${veic.length}</div><div class="sb">${veic.filter(v=>v.status==='Locado').length} locado(s)</div></div>
+    <div class="kc bl"><div class="lb"><i class="ti ti-checklist"></i>Carros do plano</div><div class="vl">${feitosCarros}/5</div><div class="sb">comprados e alugados</div></div>
+    <div class="kc gn"><div class="lb"><i class="ti ti-report-money"></i>Líquido por carro</div><div class="vl">${moedaK(C.liquido)}</div><div class="sb">${C.retornoAno.toFixed(0)}% ao ano depois da depreciação</div></div>
+    <div class="kc gd"><div class="lb"><i class="ti ti-target"></i>Meta da frota neste mês</div><div class="vl">${moedaK(frotaMetaMes(n))}</div><div class="sb">basculante + carros + máquina previstos</div></div>
+  </div>`;
+
+  h += `<div class="card tw" style="margin-bottom:12px"><div class="hd"><i class="ti ti-calendar-event"></i>Linha do tempo e gatilhos</div><div class="bd"><table>
+    <thead><tr><th>Mês</th><th>Item</th><th>Gatilho para comprar</th><th>Situação</th></tr></thead><tbody>
+    ${FROTA_MARCOS.map(x => { const s = st(x.id), ob = (fp.marcos[x.id] || {}).obs || '';
+      const atraso = x.mes < n && !['Feito','Adiado'].includes(s);
+      return `<tr style="${s==='Feito'?'opacity:.7':''}"><td class="n"><b>${x.mes}</b><br><span class="tt">${esc(dmesL(frotaMesCal(fp, x.mes)))}</span></td>
+        <td><span class="st ${x.tipo==='Máquina'?'s-pu':x.tipo==='Ação'?'s-wn':'s-bl'}">${esc(x.tipo)}</span> <b>${esc(x.nome)}</b>${ob?`<br><span class="tt">${esc(ob)}</span>`:''}</td>
+        <td class="tt">${esc(x.gatilho)}</td>
+        <td><select onchange="frotaMarco('${x.id}',this.value)" style="${atraso?'border-color:var(--amber)':''}">${FROTA_STATUS.map(o => `<option ${o===s?'selected':''}>${o}</option>`).join('')}</select>
+          <button class="ib" title="Anotação" onclick="frotaObs('${x.id}')"><i class="ti ti-pencil"></i></button></td></tr>`; }).join('')}
+    </tbody></table></div></div>`;
+
+  h += `<div class="fr2" style="align-items:start">
+    <div class="card"><div class="hd"><i class="ti ti-car"></i>Conta de um carro pequeno</div><div class="bd">
+      <div class="fr3">${campo('semanal','Aluguel por semana (R$)',P.semanal,10)}${campo('seguro','Seguro comercial (R$/mês)',P.seguro,10)}${campo('manut','Manutenção e pneus (R$/mês)',P.manut,10)}</div>
+      <div class="fr3">${campo('ipva','IPVA e licenciamento (R$/mês)',P.ipva,10)}${campo('rastreador','Rastreador (R$/mês)',P.rastreador,5)}${campo('reservaPct','Reserva para parado/atraso','' + P.reservaPct,1,'%')}</div>
+      <div class="fr3">${campo('precoCarro','Preço do carro (R$)',P.precoCarro,1000)}${campo('deprecPct','Depreciação',P.deprecPct,0.1,'% ao ano')}</div>
+      <div class="fr3">${campo('finEntradaPct','Entrada se financiar',P.finEntradaPct,5,'%')}${campo('finTaxaMes','Juro do financiamento',P.finTaxaMes,0.1,'% ao mês')}${campo('finMeses','Parcelas',P.finMeses,6)}</div>
+      <div id="fr-res-carro">${frotaResCarro(C)}</div></div></div>
+    <div class="card"><div class="hd"><i class="ti ti-tools"></i>Máquina (retroescavadeira)</div><div class="bd">
+      <div class="fr3">${campo('maqValor','Preço (R$)',P.maqValor,5000)}${campo('maqAluguel','Aluguel por mês (R$)',P.maqAluguel,500)}${campo('maqCustoPct','Custos (manutenção, seguro, prancha)',P.maqCustoPct,1,'% do aluguel')}</div>
+      <div class="fr3">${campo('maqTaxaAno','Juro BNDES + banco',P.maqTaxaAno,0.5,'% ao ano')}${campo('maqMeses','Parcelas',P.maqMeses,6)}${campo('basculante','Basculante atual (R$/mês)',P.basculante,100)}</div>
+      <div id="fr-res-maq">${frotaResMaq(M)}</div>
+      <div class="hint">Regra do plano: <b>primeiro o contrato, depois a máquina</b>. Máquina parada dá prejuízo alto.</div></div></div>
+  </div>
+  <div style="margin:8px 0 12px;display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn gh" onclick="frotaPadrao()"><i class="ti ti-refresh"></i>Voltar aos números do plano</button>
+    <button class="btn gn" onclick="frotaSalvarParams()"><i class="ti ti-device-floppy"></i>Salvar números</button></div>`;
+
+  h += `<div class="card"><div class="hd"><i class="ti ti-shield-check"></i>Proteção antes da primeira chave (${FROTA_PROTECAO.filter(([k]) => fp.protecao[k]).length}/${FROTA_PROTECAO.length})</div><div class="bd">
+    ${FROTA_PROTECAO.map(([k,t]) => `<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px;cursor:pointer"><input type="checkbox" ${fp.protecao[k]?'checked':''} onchange="frotaProtecao('${k}',this.checked)"><span style="${fp.protecao[k]?'color:var(--text3);text-decoration:line-through':''}">${esc(t)}</span></label>`).join('')}
+    </div></div>`;
+  body.innerHTML = h;
+}
+function frotaResCarro(C){
+  const l = (r, v, b) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bg3);font-size:13px"><span class="tt">${r}</span>${b?`<b>${v}</b>`:`<span>${v}</span>`}</div>`;
+  return l('Aluguel por mês', moeda(C.bruto)) + l('Custos (com reserva)', '− ' + moeda(C.custos)) + l('<b>Líquido</b>', moeda(C.liquido), 1)
+    + l('Depreciação', '− ' + moeda(C.deprec)) + l('<b>Resultado</b>', moeda(C.resultado), 1)
+    + l('Se financiar: parcela', moeda(C.parcela)) + l('Se financiar: sobra por mês', `<span style="color:${C.sobraFin>=0?'var(--green)':'var(--red)'}">${moeda(C.sobraFin)}</span>`, 1);
+}
+function frotaResMaq(M){
+  const l = (r, v, b) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bg3);font-size:13px"><span class="tt">${r}</span>${b?`<b>${v}</b>`:`<span>${v}</span>`}</div>`;
+  return l('<b>Líquido por mês</b>', moeda(M.liquido), 1) + l('Parcela do financiamento', moeda(M.parcela))
+    + l('<b>Sobra por mês, financiada</b>', `<span style="color:${M.sobra>=0?'var(--green)':'var(--red)'}">${moeda(M.sobra)}</span>`, 1)
+    + l('À vista, se paga em', M.payback ? Math.ceil(M.payback) + ' meses' : '—');
+}
+function frotaLerCampos(){
+  const P = { ...frotaPlano().params };
+  Object.keys(FROTA_PADRAO).forEach(k => { const el = document.getElementById('fr-'+k); if(el) P[k] = num(el.value); });
+  return P;
+}
+function frotaRecalc(){
+  const P = frotaLerCampos();
+  const a = document.getElementById('fr-res-carro'), b = document.getElementById('fr-res-maq');
+  if(a) a.innerHTML = frotaResCarro(frotaCarro(P)); if(b) b.innerHTML = frotaResMaq(frotaMaquina(P));
+}
+async function frotaSalvarParams(){ const fp = frotaPlano(); fp.params = frotaLerCampos(); await frotaGravar(fp); toast('Números da frota salvos.'); veiTabPlano(); }
+function frotaPadrao(){ Object.entries(FROTA_PADRAO).forEach(([k,v]) => { const el = document.getElementById('fr-'+k); if(el) el.value = v; }); frotaRecalc(); }
+async function frotaMarco(id, status){
+  const fp = frotaPlano(); fp.marcos[id] = { ...(fp.marcos[id] || {}), status, em: hoje() };
+  await frotaGravar(fp); toast('Situação atualizada.'); veiTabPlano();
+}
+function frotaObs(id){
+  const fp = frotaPlano(), x = FROTA_MARCOS.find(m => m.id === id);
+  modal('Anotação — ' + x.nome, 'ti-pencil',
+    `<div class="fg"><label>Anotação (cotação, cliente, placa, data)</label><textarea id="fr-obs" rows="3">${esc((fp.marcos[id] || {}).obs || '')}</textarea></div>`,
+    `<button class="btn gh" onclick="closeModal('mk-form')">Cancelar</button>
+     <button class="btn gn" onclick="frotaObsSalvar('${id}')"><i class="ti ti-device-floppy"></i>Salvar</button>`);
+}
+async function frotaObsSalvar(id){
+  const fp = frotaPlano(); fp.marcos[id] = { ...(fp.marcos[id] || {}), obs: val('fr-obs') };
+  await frotaGravar(fp); closeModal('mk-form'); veiTabPlano();
+}
+async function frotaProtecao(k, v){ const fp = frotaPlano(); fp.protecao[k] = !!v; await frotaGravar(fp); veiTabPlano(); }
+
+/* resumo para o retrato da meta (sede) */
+function frotaRetrato(){
+  const fp = frotaPlano(), n = frotaMesDoPlano(fp), C = frotaCarro(fp.params);
+  const L = ['## Plano de frota', '', `Mês ${n} do plano. Líquido estimado por carro: ${moeda(C.liquido)}. Meta da frota neste mês: ${moeda(frotaMetaMes(n))}.`, ''];
+  FROTA_MARCOS.forEach(x => { const m = fp.marcos[x.id] || {}; L.push(`- Mês ${x.mes} · ${x.nome} · ${m.status || 'Planejado'} · gatilho: ${x.gatilho}${m.obs ? ' · obs: ' + m.obs : ''}`); });
+  L.push('', 'Proteção: ' + FROTA_PROTECAO.map(([k,t]) => `${fp.protecao[k] ? '[x]' : '[ ]'} ${t.split(':')[0]}`).join('; '));
+  return L.join('\n');
 }
 /* =========================================================================
    INICIALIZAÇÃO
