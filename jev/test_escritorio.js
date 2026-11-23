@@ -132,13 +132,16 @@ const ESTADO = {
     return {
       quantos: cards.length,
       totalUnidades: UNIDADES.length,
-      ultimo: cards.indexOf(meu) === cards.length - 1,
+      ultimo: cards.indexOf(meu) === UNIDADES.length,
+      softUltimo: /Software/.test(cards[cards.length-1].querySelector('h3').textContent),
       leva: (meu.getAttribute('onclick')||''),
       texto: meu.innerText,
     };
   });
-  t('o card do Escritório está na fileira', card.quantos === card.totalUnidades + 1, card.quantos + ' cards');
-  t('é o último, depois de todos os negócios', card.ultimo);
+  /* o Software entrou ao lado do Escritório: são os negócios + Escritório + Software */
+  t('o card do Escritório está na fileira', card.quantos === card.totalUnidades + 2, card.quantos + ' cards');
+  t('vem logo depois de todos os negócios', card.ultimo);
+  t('e o Software fecha a fileira, ao lado dele', card.softUltimo);
   t('e clicar nele abre o Controle', /go\('ctl'\)/.test(card.leva), card.leva);
   t('não fala em receita, despesa nem resultado do mês',
     !/Receita do mês|Despesa do mês|Resultado do mês/.test(card.texto));
@@ -236,7 +239,7 @@ const ESTADO = {
   t('o Escritório aparece no menu Negócios', /Escrit/i.test(menu));
   /* o menu mostra o nome longo (u.nome), não o curto do card */
   t('e continua listando os sete negócios',
-    /Obras e Edificações/.test(menu) && /Canais de Vídeo/.test(menu), menu.replace(/\n/g,' | '));
+    /Obras e Edificações/.test(menu) && /Redes Sociais/.test(menu), menu.replace(/\n/g,' | '));
 
   console.log(`\n${ok} passaram, ${fail} falharam`);
   await browser.close();
